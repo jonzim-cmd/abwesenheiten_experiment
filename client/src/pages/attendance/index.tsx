@@ -51,15 +51,13 @@ const AttendanceAnalyzer = () => {
     }
   };
 
-  // Include all the processing logic from the original implementation
-  // [Previous implementation of calculateSchoolYearStats]
   const calculateSchoolYearStats = useCallback((data: any[]) => {
     const schoolYear = getCurrentSchoolYear();
     const startDate = new Date(Date.UTC(schoolYear.start, 8, 1)); // September 1st
     const endDate = new Date(Date.UTC(schoolYear.end, 7, 31)); // August 31st
-    
+
     const stats: any = {};
-    
+
     data.forEach(row => {
       if (!row.Beginndatum || !row.Langname || !row.Vorname) return;
       if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
@@ -67,7 +65,7 @@ const AttendanceAnalyzer = () => {
       const [day, month, year] = row.Beginndatum.split('.');
       const date = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
       const studentName = `${row.Langname}, ${row.Vorname}`;
-      
+
       if (date >= startDate && date <= endDate) {
         if (!stats[studentName]) {
           stats[studentName] = { 
@@ -75,10 +73,10 @@ const AttendanceAnalyzer = () => {
             fehlzeiten_unentsch: 0 
           };
         }
-        
+
         const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
         const isUnentschuldigt = row.Status === 'nicht entsch.' || row.Status === 'nicht akzep.';
-        
+
         if (isUnentschuldigt) {
           if (isVerspaetung) {
             stats[studentName].verspaetungen_unentsch++;
@@ -88,15 +86,14 @@ const AttendanceAnalyzer = () => {
         }
       }
     });
-    
+
     setSchoolYearStats(stats);
   }, []);
 
-  // [Previous implementation of calculateWeeklyStats]
   const calculateWeeklyStats = useCallback((data: any[]) => {
     const weeks = getLastNWeeks(parseInt(selectedWeeks));
     const stats: any = {};
-    
+
     data.forEach(row => {
       if (!row.Beginndatum || !row.Langname || !row.Vorname) return;
       if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
@@ -106,20 +103,20 @@ const AttendanceAnalyzer = () => {
       const studentName = `${row.Langname}, ${row.Vorname}`;
       const weekNumber = getWeekNumber(date);
       const yearNumber = date.getFullYear();
-      
+
       const weekIndex = weeks.findIndex(w => w.week === weekNumber && w.year === yearNumber);
       if (weekIndex === -1) return;
-      
+
       if (!stats[studentName]) {
         stats[studentName] = {
           verspaetungen: { total: 0, weekly: Array(weeks.length).fill(0) },
           fehlzeiten: { total: 0, weekly: Array(weeks.length).fill(0) }
         };
       }
-      
+
       const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
       const isUnentschuldigt = row.Status === 'nicht entsch.' || row.Status === 'nicht akzep.';
-      
+
       if (isUnentschuldigt) {
         if (isVerspaetung) {
           stats[studentName].verspaetungen.weekly[weekIndex]++;
@@ -130,11 +127,10 @@ const AttendanceAnalyzer = () => {
         }
       }
     });
-    
+
     setWeeklyStats(stats);
   }, [selectedWeeks]);
 
-  // [Previous implementation of processData]
   const processData = useCallback((data: any[], startDateTime: Date, endDateTime: Date) => {
     try {
       const today = new Date();
@@ -224,7 +220,7 @@ const AttendanceAnalyzer = () => {
       }
 
       const text = await file.text();
-      
+
       Papa.parse(text, {
         header: true,
         skipEmptyLines: true,
@@ -268,7 +264,7 @@ const AttendanceAnalyzer = () => {
 
   const getFilteredStudents = () => {
     if (!results) return [];
-    
+
     return Object.entries(results)
       .filter(([student, stats]: [string, any]) => {
         const matchesSearch = student.toLowerCase().includes(searchQuery.toLowerCase());
@@ -276,15 +272,15 @@ const AttendanceAnalyzer = () => {
         const hasUnexcusedAbsent = filterUnexcusedAbsent ? stats.fehlzeiten_unentsch > 0 : true;
         const meetsMinUnexcusedLates = minUnexcusedLates === '' || stats.verspaetungen_unentsch >= parseInt(minUnexcusedLates);
         const meetsMinUnexcusedAbsences = minUnexcusedAbsences === '' || stats.fehlzeiten_unentsch >= parseInt(minUnexcusedAbsences);
-        
+
         if (!filterUnexcusedLate && !filterUnexcusedAbsent) {
           return matchesSearch && meetsMinUnexcusedLates && meetsMinUnexcusedAbsences;
         }
-        
+
         if (filterUnexcusedLate && filterUnexcusedAbsent) {
           return matchesSearch && (hasUnexcusedLate || hasUnexcusedAbsent) && meetsMinUnexcusedLates && meetsMinUnexcusedAbsences;
         }
-        
+
         return matchesSearch && (hasUnexcusedLate && hasUnexcusedAbsent) && meetsMinUnexcusedLates && meetsMinUnexcusedAbsences;
       })
       .sort(([a], [b]) => a.localeCompare(b));
