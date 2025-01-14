@@ -16,27 +16,41 @@ export interface Week {
 
 export const getLastNWeeks = (n: number): Week[] => {
   const today = new Date();
-  const currentWeek = getWeekNumber(today);
-  const currentYear = today.getFullYear();
+  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+
+  // Find the last completed Friday
+  let lastFriday = new Date(today);
+  lastFriday.setHours(23, 59, 59, 999);
+
+  // Adjustiere auf den letzten abgeschlossenen Freitag
+  if (dayOfWeek === 0) { // Sonntag
+    lastFriday.setDate(lastFriday.getDate() - 2);
+  } else if (dayOfWeek === 6) { // Samstag
+    lastFriday.setDate(lastFriday.getDate() - 1);
+  } else { // Montag bis Freitag
+    lastFriday.setDate(lastFriday.getDate() - (dayOfWeek + 2));
+  }
 
   const weeks: Week[] = [];
-  let weekCounter = n;
-  let currentWeekNum = currentWeek;
-  let year = currentYear;
 
-  while (weekCounter > 0) {
-    if (currentWeekNum < 1) {
-      year--;
-      currentWeekNum = getWeekNumber(new Date(year, 11, 31));
-    }
-    const startDate = new Date(year, 0, 1);
-    startDate.setDate(1 + (currentWeekNum - 1) * 7 - startDate.getDay() + 1);
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 6);
+  // Gehe n Wochen zurück
+  for (let i = 0; i < n; i++) {
+    // Berechne Freitag der aktuellen Woche
+    const friday = new Date(lastFriday);
+    friday.setDate(lastFriday.getDate() - (7 * i));
+    friday.setHours(23, 59, 59, 999);
 
-    weeks.unshift({ week: currentWeekNum, year, startDate, endDate });
-    currentWeekNum--;
-    weekCounter--;
+    // Berechne Montag derselben Woche (4 Tage vor Freitag)
+    const monday = new Date(friday);
+    monday.setDate(friday.getDate() - 4);
+    monday.setHours(0, 0, 0, 0);
+
+    weeks.unshift({
+      week: getWeekNumber(monday),
+      year: monday.getFullYear(),
+      startDate: monday,
+      endDate: friday
+    });
   }
 
   return weeks;
@@ -73,7 +87,7 @@ export interface AbsenceEntry {
   beginnZeit?: string;
   endZeit?: string;
   grund?: string;
-  status: AbsenceStatus;
+  status?: AbsenceStatus;
 }
 
 export interface StudentStats {
@@ -86,14 +100,28 @@ export interface StudentStats {
   klasse: string;
 }
 
-export const isEntschuldigt = (status: AbsenceStatus): boolean =>
+// Hilfsfunktionen für die Statusprüfung
+const isEntschuldigt = (status: AbsenceStatus): boolean =>
   ['entsch.', 'Attest', 'Attest Amtsarzt'].includes(status);
 
-export const isUnentschuldigt = (status: AbsenceStatus): boolean =>
+const isUnentschuldigt = (status: AbsenceStatus): boolean =>
   ['nicht entsch.', 'nicht akzep.'].includes(status);
 
-export const isOffen = (status: AbsenceStatus): boolean =>
-  !status || (!isEntschuldigt(status) && !isUnentschuldigt(status));
+const isUnentschuldigtOrOverdue = (entry: AbsenceEntry, today: Date): boolean => {
+  const status = entry.status || '';
+  if (isUnentschuldigt(status)) return true;
+
+  // Wenn kein Status vorhanden ist, prüfe ob die 7-Tage-Frist überschritten wurde
+  if (!status) {
+    const date = new Date(entry.datum);
+    const deadlineDate = new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000);
+    return today > deadlineDate;
+  }
+
+  return false;
+};
+
+const isVerspaetung = (entry: AbsenceEntry): boolean => entry.art === 'Verspätung';
 
 export interface FilterCriteria {
   startDate: Date;
@@ -107,45 +135,45 @@ export const filterAbsenceEntries = (
   entries: AbsenceEntry[],
   criteria: FilterCriteria
 ): AbsenceEntry[] => {
-  if (!entries || entries.length === 0) return [];
+  if (!entries?.length) return [];
 
-  const { startDate, endDate, type, weekData, selectedWeeks } = criteria;
+  const { startDate, endDate, type } = criteria;
+  const today = new Date();
 
   // Hilfsfunktion für Datumsprüfung
-  const isInDateRange = (date: Date) => {
-    const dateObj = new Date(date);
-    return dateObj >= startDate && dateObj <= endDate;
+  const isInDateRange = (date: Date, rangeStart: Date, rangeEnd: Date): boolean => {
+    return date >= rangeStart && date <= rangeEnd;
   };
 
-  // Hilfsfunktion für Verspätungsprüfung
-  const isVerspaetung = (entry: AbsenceEntry) => entry.art === 'Verspätung';
-
-  // 1. Details Button
+  // 1. Details Button - zeige alle Einträge im Zeitraum
   if (type === 'details') {
     return entries.filter(entry => {
       const date = new Date(entry.datum);
-      return isInDateRange(date) && (isUnentschuldigt(entry.status) || isOffen(entry.status));
+      return isInDateRange(date, startDate, endDate);
     });
   }
 
-  // 2. E/U/O Spalten
+  // 2. Entschuldigt/Unentschuldigt/Offen Spalten
   const statusMatch = type.match(/^(verspaetungen|fehlzeiten)_(entsch|unentsch|offen)$/);
   if (statusMatch) {
     const [_, category, status] = statusMatch;
     return entries.filter(entry => {
       const date = new Date(entry.datum);
-      if (!isInDateRange(date)) return false;
+      if (!isInDateRange(date, startDate, endDate)) return false;
 
-      // Prüfe ob Verspätung oder Fehlzeit
-      if (category === 'verspaetungen' && !isVerspaetung(entry)) return false;
-      if (category === 'fehlzeiten' && isVerspaetung(entry)) return false;
+      const isCorrectType = category === 'verspaetungen' ? isVerspaetung(entry) : !isVerspaetung(entry);
+      if (!isCorrectType) return false;
 
-      // Prüfe den Status
+      const entryStatus = entry.status || '';
       switch (status) {
-        case 'entsch': return isEntschuldigt(entry.status);
-        case 'unentsch': return isUnentschuldigt(entry.status);
-        case 'offen': return isOffen(entry.status);
-        default: return false;
+        case 'entsch':
+          return isEntschuldigt(entryStatus);
+        case 'unentsch':
+          return isUnentschuldigtOrOverdue(entry, today);
+        case 'offen':
+          return !entryStatus && !isUnentschuldigtOrOverdue(entry, today);
+        default:
+          return false;
       }
     });
   }
@@ -154,37 +182,31 @@ export const filterAbsenceEntries = (
   if (type === 'sj_verspaetungen' || type === 'sj_fehlzeiten') {
     const { start: schoolYearStart } = getCurrentSchoolYear();
     const yearStart = new Date(schoolYearStart, 8, 1); // 1. September
-    const today = new Date();
 
     return entries.filter(entry => {
       const date = new Date(entry.datum);
-      if (date < yearStart || date > today) return false;
+      if (!isInDateRange(date, yearStart, today)) return false;
 
-      // Für Schuljahresstatistik zählen sowohl unentschuldigte als auch offene Einträge
-      if (!isUnentschuldigt(entry.status) && !isOffen(entry.status)) return false;
+      if (!isUnentschuldigtOrOverdue(entry, today)) return false;
 
-      const isVerspaetungenFilter = type === 'sj_verspaetungen';
-      return isVerspaetungenFilter === isVerspaetung(entry);
+      return type === 'sj_verspaetungen' ? isVerspaetung(entry) : !isVerspaetung(entry);
     });
   }
 
   // 4. Wochenstatistik
-  if (weekData && selectedWeeks && type.match(/^(weekly|sum)_(verspaetungen|fehlzeiten)$/)) {
-    const weeks = getLastNWeeks(parseInt(selectedWeeks));
+  if (criteria.weekData && criteria.selectedWeeks && type.match(/^(weekly|sum)_(verspaetungen|fehlzeiten)$/)) {
+    const weeks = getLastNWeeks(parseInt(criteria.selectedWeeks));
     const isVerspaetungenFilter = type.includes('verspaetungen');
 
     return entries.filter(entry => {
-      // Für Wochenstatistik zählen sowohl unentschuldigte als auch offene Einträge
-      if (!isUnentschuldigt(entry.status) && !isOffen(entry.status)) return false;
-
-      if (isVerspaetungenFilter !== isVerspaetung(entry)) return false;
-
       const date = new Date(entry.datum);
-      const weekIndex = weeks.findIndex(week => 
-        date >= week.startDate && date <= week.endDate
-      );
+      if (!isUnentschuldigtOrOverdue(entry, today)) return false;
 
-      return weekIndex !== -1 && weekData[weekIndex] > 0;
+      const isCorrectType = isVerspaetungenFilter ? isVerspaetung(entry) : !isVerspaetung(entry);
+      if (!isCorrectType) return false;
+
+      const weekIndex = weeks.findIndex(week => isInDateRange(date, week.startDate, week.endDate));
+      return weekIndex !== -1 && criteria.weekData[weekIndex] > 0;
     });
   }
 
