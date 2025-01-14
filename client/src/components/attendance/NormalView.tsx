@@ -4,7 +4,7 @@ import StudentTableHeader from './table/StudentTableHeader';
 import StudentTableRow from './table/StudentTableRow';
 import StudentDetailsRow from './table/StudentDetailsRow';
 import { StudentStats, AbsenceEntry, isEntschuldigt, isUnentschuldigt, isOffen } from '@/lib/attendance-utils';
-import { getLastNWeeks, getCurrentSchoolYear } from '@/lib/attendance';
+import { getLastNWeeks, getCurrentSchoolYear } from '@/lib/attendance-utils';
 
 interface NormalViewProps {
   filteredStudents: [string, StudentStats][];
@@ -43,7 +43,7 @@ const NormalView = ({
   const toggleAllDetails = () => {
     if (visibleDetails.size === filteredStudents.length) {
       setVisibleDetails(new Set());
-      setFilteredDetails({}); // Alle gefilterten Details zurücksetzen
+      setFilteredDetails({});
     } else {
       setVisibleDetails(new Set(filteredStudents.map(([student]) => student)));
     }
@@ -53,7 +53,6 @@ const NormalView = ({
     const newVisibleDetails = new Set(visibleDetails);
     if (newVisibleDetails.has(student)) {
       newVisibleDetails.delete(student);
-      // Gefilterte Details für diesen Schüler zurücksetzen
       const newFilteredDetails = { ...filteredDetails };
       delete newFilteredDetails[student];
       setFilteredDetails(newFilteredDetails);
@@ -65,62 +64,93 @@ const NormalView = ({
 
   const showFilteredDetails = (student: string, type: string, weekData?: number[]) => {
     const newFilteredDetails = { ...filteredDetails };
+    const currentFilter = newFilteredDetails[student];
+    const newVisibleDetails = new Set(visibleDetails);
 
-    // Wenn der gleiche Filter erneut geklickt wird, alle Filter für diesen Schüler entfernen
-    if (newFilteredDetails[student]?.type === type) {
+    // Wenn der gleiche Filter erneut geklickt wird, Details komplett ausblenden
+    if (currentFilter?.type === type) {
       delete newFilteredDetails[student];
+      newVisibleDetails.delete(student);
     } else {
+      // Neuen Filter setzen und Details einblenden
       newFilteredDetails[student] = { student, type, weekData };
-      // Automatisch die Details einblenden
-      setVisibleDetails(new Set([...Array.from(visibleDetails), student]));
+      newVisibleDetails.add(student);
     }
 
+    setVisibleDetails(newVisibleDetails);
     setFilteredDetails(newFilteredDetails);
   };
 
   const getFilteredDetailData = (student: string, type: string, weekData?: number[]) => {
     const data = detailedData[student] || [];
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+
+    const filterWithinDateRange = (entry: AbsenceEntry, dateStart: Date, dateEnd: Date) => {
+      const entryDate = new Date(entry.datum);
+      return entryDate >= dateStart && entryDate <= dateEnd;
+    };
 
     switch (type) {
       case 'verspaetungen_entsch':
         return data.filter(entry => 
-          entry.art === 'Verspätung' && isEntschuldigt(entry.status));
+          entry.art === 'Verspätung' && 
+          isEntschuldigt(entry.status) &&
+          filterWithinDateRange(entry, startDateObj, endDateObj)
+        );
 
       case 'verspaetungen_unentsch':
         return data.filter(entry => 
-          entry.art === 'Verspätung' && isUnentschuldigt(entry.status));
+          entry.art === 'Verspätung' && 
+          isUnentschuldigt(entry.status) &&
+          filterWithinDateRange(entry, startDateObj, endDateObj)
+        );
 
       case 'verspaetungen_offen':
         return data.filter(entry => 
-          entry.art === 'Verspätung' && isOffen(entry.status));
+          entry.art === 'Verspätung' && 
+          isOffen(entry.status) &&
+          filterWithinDateRange(entry, startDateObj, endDateObj)
+        );
 
       case 'fehlzeiten_entsch':
         return data.filter(entry => 
-          entry.art !== 'Verspätung' && isEntschuldigt(entry.status));
+          entry.art !== 'Verspätung' && 
+          isEntschuldigt(entry.status) &&
+          filterWithinDateRange(entry, startDateObj, endDateObj)
+        );
 
       case 'fehlzeiten_unentsch':
         return data.filter(entry => 
-          entry.art !== 'Verspätung' && isUnentschuldigt(entry.status));
+          entry.art !== 'Verspätung' && 
+          isUnentschuldigt(entry.status) &&
+          filterWithinDateRange(entry, startDateObj, endDateObj)
+        );
 
       case 'fehlzeiten_offen':
         return data.filter(entry => 
-          entry.art !== 'Verspätung' && isOffen(entry.status));
+          entry.art !== 'Verspätung' && 
+          isOffen(entry.status) &&
+          filterWithinDateRange(entry, startDateObj, endDateObj)
+        );
 
       case 'sj_verspaetungen':
       case 'sj_fehlzeiten': {
         const schoolYear = getCurrentSchoolYear();
-        const startDate = new Date(schoolYear.start, 8, 1); // September 1st
-        const endDate = new Date(schoolYear.end, 7, 31); // August 31st
+        const schoolYearStart = new Date(schoolYear.start, 8, 1); // September 1st
+        const schoolYearEnd = new Date(); // Current date
 
         return data.filter(entry => {
           const entryDate = new Date(entry.datum);
           if (isNaN(entryDate.getTime())) return false;
 
-          const isInSchoolYear = entryDate >= startDate && entryDate <= endDate;
           const isVerspaetung = entry.art === 'Verspätung';
           const matchesType = type === 'sj_verspaetungen' ? isVerspaetung : !isVerspaetung;
 
-          return isInSchoolYear && isUnentschuldigt(entry.status) && matchesType;
+          return entryDate >= schoolYearStart && 
+                 entryDate <= schoolYearEnd && 
+                 isUnentschuldigt(entry.status) && 
+                 matchesType;
         });
       }
 
@@ -149,7 +179,7 @@ const NormalView = ({
       }
 
       default:
-        return data;
+        return [];
     }
   };
 
@@ -203,7 +233,7 @@ const NormalView = ({
                             filteredDetails[student].type,
                             filteredDetails[student].weekData
                           )
-                        : detailedData[student] || []
+                        : []
                     }
                     rowColor={rowColor}
                     isVisible={visibleDetails.has(student)}
