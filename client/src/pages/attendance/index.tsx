@@ -323,6 +323,8 @@ const AttendanceAnalyzer = () => {
                 <Select
                   onValueChange={(value) => {
                     const now = new Date();
+                    const currentYear = now.getFullYear();
+                    const currentMonth = now.getMonth();
                     let start, end;
 
                     switch (value) {
@@ -345,13 +347,13 @@ const AttendanceAnalyzer = () => {
                         break;
                       }
                       case 'thisMonth': {
-                        start = new Date(now.getFullYear(), now.getMonth(), 1);
-                        end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                        start = new Date(currentYear, currentMonth, 1);
+                        end = new Date(currentYear, currentMonth + 1, 0);
                         break;
                       }
                       case 'lastMonth': {
-                        start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                        end = new Date(now.getFullYear(), now.getMonth(), 0);
+                        start = new Date(currentYear, currentMonth - 1, 1);
+                        end = new Date(currentYear, currentMonth, 0);
                         break;
                       }
                       case 'schoolYear': {
