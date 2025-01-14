@@ -37,12 +37,6 @@ const NormalView = ({
     weekData?: number[];
   } | null>(null);
 
-  // Hilfsfunktion: Prüft ob ein Datum im Zeitraum liegt
-  const isInDateRange = (date: Date, start: Date, end: Date): boolean => {
-    return date >= start && date <= end;
-  };
-
-  // Alle Details schließen
   const toggleAllDetails = () => {
     setExpandedStudent(null);
     setActiveFilter(null);
@@ -61,7 +55,6 @@ const NormalView = ({
 
   // Gefilterte Details anzeigen
   const showFilteredDetails = (student: string, type: string, weekData?: number[]) => {
-    // Wenn der gleiche Filter für den gleichen Schüler erneut geklickt wird, alles ausblenden
     if (expandedStudent === student && activeFilter?.type === type) {
       setExpandedStudent(null);
       setActiveFilter(null);
@@ -79,32 +72,28 @@ const NormalView = ({
     const entries = detailedData[student] || [];
     if (!entries.length) return [];
 
+    const start = new Date(startDate);
+    const end = new Date(endDate);
     const { type, weekData } = activeFilter;
 
-    // 1. Detail-Button (zeigt alle unentschuldigten Fälle im Zeitraum)
+    // Details-Button: Zeigt alle unentschuldigten Fälle im Zeitraum
     if (type === 'details') {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-
       return entries.filter(entry => {
         const date = new Date(entry.datum);
-        return isInDateRange(date, start, end) && isUnentschuldigt(entry.status);
+        return date >= start && date <= end && isUnentschuldigt(entry.status);
       });
     }
 
-    // 2. E/U/O Filter (zeigt entsprechende Fälle im Zeitraum)
+    // Status-Filter (E/U/O) für Verspätungen und Fehlzeiten
     if (type.includes('_entsch') || type.includes('_unentsch') || type.includes('_offen')) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
       const isVerspaetung = type.startsWith('verspaetungen');
       const statusType = type.split('_')[1];
 
       return entries.filter(entry => {
-        // Prüfe Zeitraum
         const date = new Date(entry.datum);
-        if (!isInDateRange(date, start, end)) return false;
+        if (date < start || date > end) return false;
 
-        // Prüfe Typ (Verspätung oder Fehlzeit)
+        // Prüfe Verspätung/Fehlzeit
         const matchesType = isVerspaetung ? 
           entry.art === 'Verspätung' : 
           entry.art !== 'Verspätung';
@@ -118,18 +107,17 @@ const NormalView = ({
       });
     }
 
-    // 3. Schuljahresstatistik (zeigt unentschuldigte Fälle des gesamten Schuljahres)
+    // Schuljahresstatistik (SJ)
     if (type.startsWith('sj_')) {
       const schoolYear = getCurrentSchoolYear();
-      const start = new Date(schoolYear.start, 8, 1); // 1. September
-      const end = new Date();
+      const yearStart = new Date(schoolYear.start, 8, 1); // 1. September
       const isVerspaetung = type === 'sj_verspaetungen';
 
       return entries.filter(entry => {
         if (!isUnentschuldigt(entry.status)) return false;
 
         const date = new Date(entry.datum);
-        if (!isInDateRange(date, start, end)) return false;
+        if (date < yearStart || date > new Date()) return false;
 
         return isVerspaetung ? 
           entry.art === 'Verspätung' : 
@@ -137,7 +125,7 @@ const NormalView = ({
       });
     }
 
-    // 4. Wochenstatistik (zeigt unentschuldigte Fälle der ausgewählten Wochen)
+    // Wochenstatistik (weekly_ und sum_)
     if (weekData && (type.includes('weekly_') || type.includes('sum_'))) {
       const weeks = getLastNWeeks(parseInt(selectedWeeks));
       const isVerspaetung = type.includes('verspaetungen');
@@ -153,10 +141,9 @@ const NormalView = ({
         // Finde die entsprechende Woche
         const date = new Date(entry.datum);
         const weekIndex = weeks.findIndex(week => 
-          isInDateRange(date, week.startDate, week.endDate)
+          date >= week.startDate && date <= week.endDate
         );
 
-        // Zeige nur Fälle aus Wochen mit Werten > 0
         return weekIndex !== -1 && weekData[weekIndex] > 0;
       });
     }
