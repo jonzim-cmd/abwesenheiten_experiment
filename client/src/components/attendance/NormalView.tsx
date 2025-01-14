@@ -3,15 +3,22 @@ import { Button } from "@/components/ui/button";
 import StudentTableHeader from './table/StudentTableHeader';
 import StudentTableRow from './table/StudentTableRow';
 import StudentDetailsRow from './table/StudentDetailsRow';
-import { StudentStats } from '@/lib/attendance-utils';
+import { StudentStats, AbsenceEntry, isEntschuldigt, isUnentschuldigt, isOffen } from '@/lib/attendance-utils';
+import { getLastNWeeks, getCurrentSchoolYear } from '@/lib/attendance';
 
 interface NormalViewProps {
   filteredStudents: [string, StudentStats][];
-  detailedData: Record<string, any>;
+  detailedData: Record<string, AbsenceEntry[]>;
   startDate: string;
   endDate: string;
-  schoolYearStats: Record<string, any>;
-  weeklyStats: Record<string, any>;
+  schoolYearStats: Record<string, {
+    verspaetungen_unentsch: number;
+    fehlzeiten_unentsch: number;
+  }>;
+  weeklyStats: Record<string, {
+    verspaetungen: { total: number; weekly: number[] };
+    fehlzeiten: { total: number; weekly: number[] };
+  }>;
   selectedWeeks: string;
 }
 
@@ -36,6 +43,7 @@ const NormalView = ({
   const toggleAllDetails = () => {
     if (visibleDetails.size === filteredStudents.length) {
       setVisibleDetails(new Set());
+      setFilteredDetails({}); // Alle gefilterten Details zurücksetzen
     } else {
       setVisibleDetails(new Set(filteredStudents.map(([student]) => student)));
     }
@@ -45,82 +53,103 @@ const NormalView = ({
     const newVisibleDetails = new Set(visibleDetails);
     if (newVisibleDetails.has(student)) {
       newVisibleDetails.delete(student);
+      // Gefilterte Details für diesen Schüler zurücksetzen
+      const newFilteredDetails = { ...filteredDetails };
+      delete newFilteredDetails[student];
+      setFilteredDetails(newFilteredDetails);
     } else {
       newVisibleDetails.add(student);
     }
     setVisibleDetails(newVisibleDetails);
-
-    // Wenn Details ausgeblendet werden, auch gefilterte Details ausblenden
-    if (!newVisibleDetails.has(student)) {
-      const newFilteredDetails = { ...filteredDetails };
-      delete newFilteredDetails[student];
-      setFilteredDetails(newFilteredDetails);
-    }
   };
 
   const showFilteredDetails = (student: string, type: string, weekData?: number[]) => {
     const newFilteredDetails = { ...filteredDetails };
+
+    // Wenn der gleiche Filter erneut geklickt wird, alle Filter für diesen Schüler entfernen
     if (newFilteredDetails[student]?.type === type) {
       delete newFilteredDetails[student];
     } else {
       newFilteredDetails[student] = { student, type, weekData };
-
-      // Automatisch die Details einblenden, wenn sie noch nicht sichtbar sind
-      if (!visibleDetails.has(student)) {
-        setVisibleDetails(new Set([...visibleDetails, student]));
-      }
+      // Automatisch die Details einblenden
+      setVisibleDetails(new Set([...Array.from(visibleDetails), student]));
     }
+
     setFilteredDetails(newFilteredDetails);
   };
 
   const getFilteredDetailData = (student: string, type: string, weekData?: number[]) => {
-    if (!detailedData[student]) return [];
+    const data = detailedData[student] || [];
 
     switch (type) {
       case 'verspaetungen_entsch':
-        return detailedData[student].filter(entry => 
-          entry.art === 'Verspätung' && ['entsch.', 'Attest', 'Attest Amtsarzt'].includes(entry.status));
+        return data.filter(entry => 
+          entry.art === 'Verspätung' && isEntschuldigt(entry.status));
+
       case 'verspaetungen_unentsch':
-        return detailedData[student].filter(entry => 
-          entry.art === 'Verspätung' && ['nicht entsch.', 'nicht akzep.'].includes(entry.status));
+        return data.filter(entry => 
+          entry.art === 'Verspätung' && isUnentschuldigt(entry.status));
+
       case 'verspaetungen_offen':
-        return detailedData[student].filter(entry => 
-          entry.art === 'Verspätung' && !['entsch.', 'Attest', 'Attest Amtsarzt', 'nicht entsch.', 'nicht akzep.'].includes(entry.status));
+        return data.filter(entry => 
+          entry.art === 'Verspätung' && isOffen(entry.status));
+
       case 'fehlzeiten_entsch':
-        return detailedData[student].filter(entry => 
-          entry.art !== 'Verspätung' && ['entsch.', 'Attest', 'Attest Amtsarzt'].includes(entry.status));
+        return data.filter(entry => 
+          entry.art !== 'Verspätung' && isEntschuldigt(entry.status));
+
       case 'fehlzeiten_unentsch':
-        return detailedData[student].filter(entry => 
-          entry.art !== 'Verspätung' && ['nicht entsch.', 'nicht akzep.'].includes(entry.status));
+        return data.filter(entry => 
+          entry.art !== 'Verspätung' && isUnentschuldigt(entry.status));
+
       case 'fehlzeiten_offen':
-        return detailedData[student].filter(entry => 
-          entry.art !== 'Verspätung' && !['entsch.', 'Attest', 'Attest Amtsarzt', 'nicht entsch.', 'nicht akzep.'].includes(entry.status));
+        return data.filter(entry => 
+          entry.art !== 'Verspätung' && isOffen(entry.status));
+
       case 'sj_verspaetungen':
-      case 'sj_fehlzeiten':
-        // Diese Daten kommen aus schoolYearStats und zeigen nur unentschuldigte Fälle
-        return detailedData[student].filter(entry => 
-          (type === 'sj_verspaetungen' ? entry.art === 'Verspätung' : entry.art !== 'Verspätung') && 
-          ['nicht entsch.', 'nicht akzep.'].includes(entry.status));
+      case 'sj_fehlzeiten': {
+        const schoolYear = getCurrentSchoolYear();
+        const startDate = new Date(schoolYear.start, 8, 1); // September 1st
+        const endDate = new Date(schoolYear.end, 7, 31); // August 31st
+
+        return data.filter(entry => {
+          const entryDate = new Date(entry.datum);
+          if (isNaN(entryDate.getTime())) return false;
+
+          const isInSchoolYear = entryDate >= startDate && entryDate <= endDate;
+          const isVerspaetung = entry.art === 'Verspätung';
+          const matchesType = type === 'sj_verspaetungen' ? isVerspaetung : !isVerspaetung;
+
+          return isInSchoolYear && isUnentschuldigt(entry.status) && matchesType;
+        });
+      }
+
       case 'weekly_verspaetungen':
       case 'weekly_fehlzeiten':
       case 'sum_verspaetungen':
-      case 'sum_fehlzeiten':
+      case 'sum_fehlzeiten': {
         if (!weekData) return [];
         const weeks = getLastNWeeks(parseInt(selectedWeeks));
-        return detailedData[student]
-          .filter(entry => {
-            const isVerspaetung = type.includes('verspaetungen');
-            const matchesType = isVerspaetung ? entry.art === 'Verspätung' : entry.art !== 'Verspätung';
-            if (!matchesType) return false;
 
-            const entryDate = new Date(entry.datum);
-            const weekIndex = weeks.findIndex(w => 
-              entryDate >= w.startDate && entryDate <= w.endDate);
+        return data.filter(entry => {
+          const entryDate = new Date(entry.datum);
+          if (isNaN(entryDate.getTime())) return false;
 
-            return weekIndex !== -1 && weekData[weekIndex] > 0;
-          });
+          const isVerspaetung = type.includes('verspaetungen');
+          const matchesType = isVerspaetung ? entry.art === 'Verspätung' : entry.art !== 'Verspätung';
+
+          if (!matchesType || !isUnentschuldigt(entry.status)) return false;
+
+          const weekIndex = weeks.findIndex(w => 
+            entryDate >= w.startDate && entryDate <= w.endDate
+          );
+
+          return weekIndex !== -1 && weekData[weekIndex] > 0;
+        });
+      }
+
       default:
-        return detailedData[student];
+        return data;
     }
   };
 
@@ -189,5 +218,4 @@ const NormalView = ({
   );
 };
 
-import { getLastNWeeks } from '@/lib/attendance';
 export default NormalView;
