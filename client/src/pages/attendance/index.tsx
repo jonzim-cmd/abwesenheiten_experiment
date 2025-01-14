@@ -101,11 +101,15 @@ const AttendanceAnalyzer = () => {
       const [day, month, year] = row.Beginndatum.split('.');
       const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
       const studentName = `${row.Langname}, ${row.Vorname}`;
-      const weekNumber = getWeekNumber(date);
-      const yearNumber = date.getFullYear();
 
-      const weekIndex = weeks.findIndex(w => w.week === weekNumber && w.year === yearNumber);
-      if (weekIndex === -1) return;
+      // Finde die passende Woche für das Datum
+      const weekIndex = weeks.findIndex(w => {
+        const startDate = w.startDate;
+        const endDate = w.endDate;
+        return date >= startDate && date <= endDate;
+      });
+
+      if (weekIndex === -1) return; // Datum liegt außerhalb der betrachteten Wochen
 
       if (!stats[studentName]) {
         stats[studentName] = {
