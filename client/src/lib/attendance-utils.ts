@@ -29,7 +29,6 @@ export const getLastNWeeks = (n: number): Week[] => {
       year--;
       currentWeekNum = getWeekNumber(new Date(year, 11, 31));
     }
-    // Berechne Start- und Enddatum für diese Woche
     const startDate = new Date(year, 0, 1);
     startDate.setDate(1 + (currentWeekNum - 1) * 7 - startDate.getDay() + 1);
     const endDate = new Date(startDate);
@@ -58,9 +57,9 @@ export const getCurrentSchoolYear = (): SchoolYear => {
     : { start: currentYear - 1, end: currentYear };
 };
 
-export type AbsenceStatus = 
-  | 'entsch.' 
-  | 'Attest' 
+export type AbsenceStatus =
+  | 'entsch.'
+  | 'Attest'
   | 'Attest Amtsarzt'
   | 'nicht entsch.'
   | 'nicht akzep.'
@@ -87,11 +86,104 @@ export interface StudentStats {
   klasse: string;
 }
 
-export const isEntschuldigt = (status: AbsenceStatus): boolean => 
+export const isEntschuldigt = (status: AbsenceStatus): boolean =>
   ['entsch.', 'Attest', 'Attest Amtsarzt'].includes(status);
 
-export const isUnentschuldigt = (status: AbsenceStatus): boolean => 
+export const isUnentschuldigt = (status: AbsenceStatus): boolean =>
   ['nicht entsch.', 'nicht akzep.'].includes(status);
 
-export const isOffen = (status: AbsenceStatus): boolean => 
+export const isOffen = (status: AbsenceStatus): boolean =>
   !status || (!isEntschuldigt(status) && !isUnentschuldigt(status));
+
+export interface FilterCriteria {
+  startDate: Date;
+  endDate: Date;
+  type: string;
+  weekData?: number[];
+  selectedWeeks?: string;
+}
+
+export const filterAbsenceEntries = (
+  entries: AbsenceEntry[],
+  criteria: FilterCriteria
+): AbsenceEntry[] => {
+  if (!entries || entries.length === 0) return [];
+
+  const { startDate, endDate, type, weekData, selectedWeeks } = criteria;
+
+  // Hilfsfunktion für Datumsprüfung
+  const isInDateRange = (date: Date) => {
+    const dateObj = new Date(date);
+    return dateObj >= startDate && dateObj <= endDate;
+  };
+
+  // Hilfsfunktion für Verspätungsprüfung
+  const isVerspaetung = (entry: AbsenceEntry) => entry.art === 'Verspätung';
+
+  // 1. Details Button
+  if (type === 'details') {
+    return entries.filter(entry => {
+      const date = new Date(entry.datum);
+      return isInDateRange(date) && isUnentschuldigt(entry.status);
+    });
+  }
+
+  // 2. E/U/O Spalten
+  const statusMatch = type.match(/^(verspaetungen|fehlzeiten)_(entsch|unentsch|offen)$/);
+  if (statusMatch) {
+    const [_, category, status] = statusMatch;
+    return entries.filter(entry => {
+      const date = new Date(entry.datum);
+      if (!isInDateRange(date)) return false;
+
+      // Prüfe ob Verspätung oder Fehlzeit
+      if (category === 'verspaetungen' && !isVerspaetung(entry)) return false;
+      if (category === 'fehlzeiten' && isVerspaetung(entry)) return false;
+
+      // Prüfe den Status
+      switch (status) {
+        case 'entsch': return isEntschuldigt(entry.status);
+        case 'unentsch': return isUnentschuldigt(entry.status);
+        case 'offen': return isOffen(entry.status);
+        default: return false;
+      }
+    });
+  }
+
+  // 3. Schuljahresstatistik
+  if (type === 'sj_verspaetungen' || type === 'sj_fehlzeiten') {
+    const { start: schoolYearStart } = getCurrentSchoolYear();
+    const yearStart = new Date(schoolYearStart, 8, 1); // 1. September
+
+    return entries.filter(entry => {
+      if (!isUnentschuldigt(entry.status)) return false;
+
+      const date = new Date(entry.datum);
+      if (date < yearStart || date > new Date()) return false;
+
+      const isVerspaetungenFilter = type === 'sj_verspaetungen';
+      return isVerspaetungenFilter === isVerspaetung(entry);
+    });
+  }
+
+  // 4. Wochenstatistik
+  if (weekData && selectedWeeks && type.match(/^(weekly|sum)_(verspaetungen|fehlzeiten)$/)) {
+    const weeks = getLastNWeeks(parseInt(selectedWeeks));
+    const isVerspaetungenFilter = type.includes('verspaetungen');
+
+    return entries.filter(entry => {
+      if (!isUnentschuldigt(entry.status)) return false;
+
+      if (isVerspaetungenFilter !== isVerspaetung(entry)) return false;
+
+      const date = new Date(entry.datum);
+      const weekIndex = weeks.findIndex(week => 
+        date >= week.startDate && date <= week.endDate
+      );
+
+      return weekIndex !== -1 && weekData[weekIndex] > 0;
+    });
+  }
+
+  return [];
+};

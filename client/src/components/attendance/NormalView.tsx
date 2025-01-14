@@ -3,8 +3,7 @@ import { Button } from "@/components/ui/button";
 import StudentTableHeader from './table/StudentTableHeader';
 import StudentTableRow from './table/StudentTableRow';
 import StudentDetailsRow from './table/StudentDetailsRow';
-import { StudentStats, AbsenceEntry, isEntschuldigt, isUnentschuldigt, isOffen } from '@/lib/attendance-utils';
-import { getLastNWeeks, getCurrentSchoolYear } from '@/lib/attendance-utils';
+import { StudentStats, AbsenceEntry, filterAbsenceEntries } from '@/lib/attendance-utils';
 
 interface NormalViewProps {
   filteredStudents: [string, StudentStats][];
@@ -33,122 +32,48 @@ const NormalView = ({
 }: NormalViewProps) => {
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<{
+    student: string;
     type: string;
     weekData?: number[];
   } | null>(null);
 
-  const toggleAllDetails = () => {
-    setExpandedStudent(null);
-    setActiveFilter(null);
-  };
-
-  // Details für einen einzelnen Schüler ein-/ausblenden
   const toggleDetails = (student: string) => {
-    if (expandedStudent === student) {
+    if (expandedStudent === student && activeFilter?.type === 'details') {
       setExpandedStudent(null);
       setActiveFilter(null);
     } else {
       setExpandedStudent(student);
-      setActiveFilter({ type: 'details' });
+      setActiveFilter({ student, type: 'details' });
     }
   };
 
-  // Gefilterte Details anzeigen
   const showFilteredDetails = (student: string, type: string, weekData?: number[]) => {
     if (expandedStudent === student && activeFilter?.type === type) {
       setExpandedStudent(null);
       setActiveFilter(null);
-      return;
+    } else {
+      setExpandedStudent(student);
+      setActiveFilter({ student, type, weekData });
     }
-
-    setExpandedStudent(student);
-    setActiveFilter({ type, weekData });
   };
 
-  // Detaildaten basierend auf aktivem Filter filtern
   const getFilteredDetailData = (student: string): AbsenceEntry[] => {
-    if (!expandedStudent || expandedStudent !== student || !activeFilter) return [];
+    // Nur fortfahren, wenn ein Student expandiert ist und ein aktiver Filter existiert
+    if (!expandedStudent || !activeFilter) return [];
 
-    const entries = detailedData[student] || [];
-    if (!entries.length) return [];
+    // Sicherstellen, dass wir die Details für den richtigen Studenten anzeigen
+    if (expandedStudent !== student || activeFilter.student !== student) return [];
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const { type, weekData } = activeFilter;
+    const entries = detailedData[student];
+    if (!entries?.length) return [];
 
-    // Details-Button: Zeigt alle unentschuldigten Fälle im Zeitraum
-    if (type === 'details') {
-      return entries.filter(entry => {
-        const date = new Date(entry.datum);
-        return date >= start && date <= end && isUnentschuldigt(entry.status);
-      });
-    }
-
-    // Status-Filter (E/U/O) für Verspätungen und Fehlzeiten
-    if (type.includes('_entsch') || type.includes('_unentsch') || type.includes('_offen')) {
-      const isVerspaetung = type.startsWith('verspaetungen');
-      const statusType = type.split('_')[1];
-
-      return entries.filter(entry => {
-        const date = new Date(entry.datum);
-        if (date < start || date > end) return false;
-
-        // Prüfe Verspätung/Fehlzeit
-        const matchesType = isVerspaetung ? 
-          entry.art === 'Verspätung' : 
-          entry.art !== 'Verspätung';
-        if (!matchesType) return false;
-
-        // Prüfe Status (E/U/O)
-        if (statusType === 'entsch') return isEntschuldigt(entry.status);
-        if (statusType === 'unentsch') return isUnentschuldigt(entry.status);
-        if (statusType === 'offen') return isOffen(entry.status);
-        return false;
-      });
-    }
-
-    // Schuljahresstatistik (SJ)
-    if (type.startsWith('sj_')) {
-      const schoolYear = getCurrentSchoolYear();
-      const yearStart = new Date(schoolYear.start, 8, 1); // 1. September
-      const isVerspaetung = type === 'sj_verspaetungen';
-
-      return entries.filter(entry => {
-        if (!isUnentschuldigt(entry.status)) return false;
-
-        const date = new Date(entry.datum);
-        if (date < yearStart || date > new Date()) return false;
-
-        return isVerspaetung ? 
-          entry.art === 'Verspätung' : 
-          entry.art !== 'Verspätung';
-      });
-    }
-
-    // Wochenstatistik (weekly_ und sum_)
-    if (weekData && (type.includes('weekly_') || type.includes('sum_'))) {
-      const weeks = getLastNWeeks(parseInt(selectedWeeks));
-      const isVerspaetung = type.includes('verspaetungen');
-
-      return entries.filter(entry => {
-        if (!isUnentschuldigt(entry.status)) return false;
-
-        const matchesType = isVerspaetung ? 
-          entry.art === 'Verspätung' : 
-          entry.art !== 'Verspätung';
-        if (!matchesType) return false;
-
-        // Finde die entsprechende Woche
-        const date = new Date(entry.datum);
-        const weekIndex = weeks.findIndex(week => 
-          date >= week.startDate && date <= week.endDate
-        );
-
-        return weekIndex !== -1 && weekData[weekIndex] > 0;
-      });
-    }
-
-    return [];
+    return filterAbsenceEntries(entries, {
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      type: activeFilter.type,
+      weekData: activeFilter.weekData,
+      selectedWeeks: selectedWeeks
+    });
   };
 
   return (
@@ -160,9 +85,12 @@ const NormalView = ({
         <Button
           variant="outline"
           size="sm"
-          onClick={toggleAllDetails}
+          onClick={() => {
+            setExpandedStudent(null);
+            setActiveFilter(null);
+          }}
         >
-          {expandedStudent ? 'Alle Details einklappen' : 'Alle Details ausklappen'}
+          Alle Details einklappen
         </Button>
       </div>
       <div className="overflow-x-auto">
@@ -192,12 +120,15 @@ const NormalView = ({
                     onToggleDetails={() => toggleDetails(student)}
                     onShowFilteredDetails={showFilteredDetails}
                   />
-                  <StudentDetailsRow
-                    student={student}
-                    detailedData={getFilteredDetailData(student)}
-                    rowColor={rowColor}
-                    isVisible={expandedStudent === student}
-                  />
+                  {expandedStudent === student && (
+                    <StudentDetailsRow
+                      student={student}
+                      detailedData={getFilteredDetailData(student)}
+                      rowColor={rowColor}
+                      isVisible={true}
+                      filterType={activeFilter?.type}
+                    />
+                  )}
                 </React.Fragment>
               );
             })}
