@@ -22,12 +22,6 @@ interface NormalViewProps {
   selectedWeeks: string;
 }
 
-interface FilteredDetailState {
-  student: string;
-  type: string;
-  weekData?: number[];
-}
-
 const NormalView = ({ 
   filteredStudents, 
   detailedData, 
@@ -37,150 +31,132 @@ const NormalView = ({
   weeklyStats, 
   selectedWeeks 
 }: NormalViewProps) => {
-  const [visibleDetails, setVisibleDetails] = useState<Set<string>>(new Set());
-  const [filteredDetails, setFilteredDetails] = useState<Record<string, FilteredDetailState>>({});
+  // State for expanded student and active filter
+  const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<{
+    type: string;
+    weekData?: number[];
+  } | null>(null);
 
+  // Close all details
   const toggleAllDetails = () => {
-    if (visibleDetails.size === filteredStudents.length) {
-      setVisibleDetails(new Set());
-      setFilteredDetails({});
-    } else {
-      setVisibleDetails(new Set(filteredStudents.map(([student]) => student)));
-    }
+    setExpandedStudent(null);
+    setActiveFilter(null);
   };
 
+  // Toggle details for a single student
   const toggleDetails = (student: string) => {
-    const newVisibleDetails = new Set(visibleDetails);
-    if (newVisibleDetails.has(student)) {
-      newVisibleDetails.delete(student);
-      const newFilteredDetails = { ...filteredDetails };
-      delete newFilteredDetails[student];
-      setFilteredDetails(newFilteredDetails);
+    if (expandedStudent === student) {
+      setExpandedStudent(null);
+      setActiveFilter(null);
     } else {
-      newVisibleDetails.add(student);
+      setExpandedStudent(student);
+      setActiveFilter(null);
     }
-    setVisibleDetails(newVisibleDetails);
   };
 
+  // Show filtered details
   const showFilteredDetails = (student: string, type: string, weekData?: number[]) => {
-    const newFilteredDetails = { ...filteredDetails };
-    const currentFilter = newFilteredDetails[student];
-    const newVisibleDetails = new Set(visibleDetails);
-
-    // Wenn der gleiche Filter erneut geklickt wird, Details komplett ausblenden
-    if (currentFilter?.type === type) {
-      delete newFilteredDetails[student];
-      newVisibleDetails.delete(student);
-    } else {
-      // Neuen Filter setzen und Details einblenden
-      newFilteredDetails[student] = { student, type, weekData };
-      newVisibleDetails.add(student);
+    // If clicking the same filter again, close details completely
+    if (expandedStudent === student && activeFilter?.type === type) {
+      setExpandedStudent(null);
+      setActiveFilter(null);
+      return;
     }
 
-    setVisibleDetails(newVisibleDetails);
-    setFilteredDetails(newFilteredDetails);
+    // Set new student and filter
+    setExpandedStudent(student);
+    setActiveFilter({ type, weekData });
   };
 
-  const getFilteredDetailData = (student: string, type: string, weekData?: number[]) => {
-    const data = detailedData[student] || [];
-    const startDateObj = new Date(startDate);
-    const endDateObj = new Date(endDate);
-
-    const filterWithinDateRange = (entry: AbsenceEntry, dateStart: Date, dateEnd: Date) => {
-      const entryDate = new Date(entry.datum);
-      return entryDate >= dateStart && entryDate <= dateEnd;
-    };
-
-    switch (type) {
-      case 'verspaetungen_entsch':
-        return data.filter(entry => 
-          entry.art === 'Verspätung' && 
-          isEntschuldigt(entry.status) &&
-          filterWithinDateRange(entry, startDateObj, endDateObj)
-        );
-
-      case 'verspaetungen_unentsch':
-        return data.filter(entry => 
-          entry.art === 'Verspätung' && 
-          isUnentschuldigt(entry.status) &&
-          filterWithinDateRange(entry, startDateObj, endDateObj)
-        );
-
-      case 'verspaetungen_offen':
-        return data.filter(entry => 
-          entry.art === 'Verspätung' && 
-          isOffen(entry.status) &&
-          filterWithinDateRange(entry, startDateObj, endDateObj)
-        );
-
-      case 'fehlzeiten_entsch':
-        return data.filter(entry => 
-          entry.art !== 'Verspätung' && 
-          isEntschuldigt(entry.status) &&
-          filterWithinDateRange(entry, startDateObj, endDateObj)
-        );
-
-      case 'fehlzeiten_unentsch':
-        return data.filter(entry => 
-          entry.art !== 'Verspätung' && 
-          isUnentschuldigt(entry.status) &&
-          filterWithinDateRange(entry, startDateObj, endDateObj)
-        );
-
-      case 'fehlzeiten_offen':
-        return data.filter(entry => 
-          entry.art !== 'Verspätung' && 
-          isOffen(entry.status) &&
-          filterWithinDateRange(entry, startDateObj, endDateObj)
-        );
-
-      case 'sj_verspaetungen':
-      case 'sj_fehlzeiten': {
-        const schoolYear = getCurrentSchoolYear();
-        const schoolYearStart = new Date(schoolYear.start, 8, 1); // September 1st
-        const schoolYearEnd = new Date(); // Current date
-
-        return data.filter(entry => {
-          const entryDate = new Date(entry.datum);
-          if (isNaN(entryDate.getTime())) return false;
-
-          const isVerspaetung = entry.art === 'Verspätung';
-          const matchesType = type === 'sj_verspaetungen' ? isVerspaetung : !isVerspaetung;
-
-          return entryDate >= schoolYearStart && 
-                 entryDate <= schoolYearEnd && 
-                 isUnentschuldigt(entry.status) && 
-                 matchesType;
-        });
-      }
-
-      case 'weekly_verspaetungen':
-      case 'weekly_fehlzeiten':
-      case 'sum_verspaetungen':
-      case 'sum_fehlzeiten': {
-        if (!weekData) return [];
-        const weeks = getLastNWeeks(parseInt(selectedWeeks));
-
-        return data.filter(entry => {
-          const entryDate = new Date(entry.datum);
-          if (isNaN(entryDate.getTime())) return false;
-
-          const isVerspaetung = type.includes('verspaetungen');
-          const matchesType = isVerspaetung ? entry.art === 'Verspätung' : entry.art !== 'Verspätung';
-
-          if (!matchesType || !isUnentschuldigt(entry.status)) return false;
-
-          const weekIndex = weeks.findIndex(w => 
-            entryDate >= w.startDate && entryDate <= w.endDate
-          );
-
-          return weekIndex !== -1 && weekData[weekIndex] > 0;
-        });
-      }
-
-      default:
-        return [];
+  // Get filtered data based on current filter
+  const getFilteredDetailData = (student: string): AbsenceEntry[] => {
+    if (!expandedStudent || !activeFilter || expandedStudent !== student) {
+      return [];
     }
+
+    const entries = detailedData[student] || [];
+    const { type, weekData } = activeFilter;
+
+    // Helper function to check if entry is within date range
+    const isInRange = (date: Date, start: Date, end: Date) => 
+      date >= start && date <= end;
+
+    // Period filters (E/U/O)
+    if (type.includes('_entsch') || type.includes('_unentsch') || type.includes('_offen')) {
+      const periodStart = new Date(startDate);
+      const periodEnd = new Date(endDate);
+      const isLate = type.startsWith('verspaetungen');
+      const statusType = type.split('_')[1]; // 'entsch', 'unentsch', or 'offen'
+
+      return entries.filter(entry => {
+        const entryDate = new Date(entry.datum);
+
+        // Check if entry is within the selected period
+        if (!isInRange(entryDate, periodStart, periodEnd)) return false;
+
+        // Check if entry type matches (late or absence)
+        const matchesType = isLate ? 
+          entry.art === 'Verspätung' : 
+          entry.art !== 'Verspätung';
+        if (!matchesType) return false;
+
+        // Check status based on filter type
+        switch (statusType) {
+          case 'entsch': return isEntschuldigt(entry.status);
+          case 'unentsch': return isUnentschuldigt(entry.status);
+          case 'offen': return isOffen(entry.status);
+          default: return false;
+        }
+      });
+    }
+
+    // School year statistics (∑SJ V/F)
+    if (type.startsWith('sj_')) {
+      const schoolYear = getCurrentSchoolYear();
+      const schoolYearStart = new Date(schoolYear.start, 8, 1); // September 1st
+      const today = new Date();
+      const isLate = type === 'sj_verspaetungen';
+
+      return entries.filter(entry => {
+        const entryDate = new Date(entry.datum);
+
+        // Check if entry is within the school year
+        if (!isInRange(entryDate, schoolYearStart, today)) return false;
+
+        // Must be unexcused and match the type (late or absence)
+        return isUnentschuldigt(entry.status) && 
+               (isLate ? entry.art === 'Verspätung' : entry.art !== 'Verspätung');
+      });
+    }
+
+    // Weekly statistics
+    if (weekData && (type.includes('weekly_') || type.includes('sum_'))) {
+      const weeks = getLastNWeeks(parseInt(selectedWeeks));
+      const isLate = type.includes('verspaetungen');
+
+      return entries.filter(entry => {
+        // Must be unexcused
+        if (!isUnentschuldigt(entry.status)) return false;
+
+        const entryDate = new Date(entry.datum);
+
+        // Check type (late or absence)
+        const matchesType = isLate ? 
+          entry.art === 'Verspätung' : 
+          entry.art !== 'Verspätung';
+        if (!matchesType) return false;
+
+        // Find matching week and check if there's a value > 0
+        const weekIndex = weeks.findIndex(week => 
+          isInRange(entryDate, week.startDate, week.endDate)
+        );
+
+        return weekIndex !== -1 && weekData[weekIndex] > 0;
+      });
+    }
+
+    return [];
   };
 
   return (
@@ -194,7 +170,7 @@ const NormalView = ({
           size="sm"
           onClick={toggleAllDetails}
         >
-          {visibleDetails.size === filteredStudents.length ? 'Alle Details einklappen' : 'Alle Details ausklappen'}
+          {expandedStudent ? 'Alle Details einklappen' : 'Alle Details ausklappen'}
         </Button>
       </div>
       <div className="overflow-x-auto">
@@ -226,17 +202,9 @@ const NormalView = ({
                   />
                   <StudentDetailsRow
                     student={student}
-                    detailedData={
-                      filteredDetails[student]
-                        ? getFilteredDetailData(
-                            student,
-                            filteredDetails[student].type,
-                            filteredDetails[student].weekData
-                          )
-                        : []
-                    }
+                    detailedData={getFilteredDetailData(student)}
                     rowColor={rowColor}
-                    isVisible={visibleDetails.has(student)}
+                    isVisible={expandedStudent === student}
                   />
                 </React.Fragment>
               );
