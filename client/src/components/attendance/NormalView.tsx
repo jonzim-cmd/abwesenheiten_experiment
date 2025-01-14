@@ -37,6 +37,7 @@ const NormalView = ({
     weekData?: number[];
   } | null>(null);
 
+  // Toggle details for a student when clicking the details button
   const toggleDetails = (student: string) => {
     if (expandedStudent === student && activeFilter?.type === 'details') {
       setExpandedStudent(null);
@@ -47,6 +48,7 @@ const NormalView = ({
     }
   };
 
+  // Show filtered details based on the selected type (verspaetungen, fehlzeiten, etc.)
   const showFilteredDetails = (student: string, type: string, weekData?: number[]) => {
     if (expandedStudent === student && activeFilter?.type === type) {
       setExpandedStudent(null);
@@ -57,12 +59,11 @@ const NormalView = ({
     }
   };
 
+  // Get filtered detail data for a specific student
   const getFilteredDetailData = (student: string): AbsenceEntry[] => {
-    // Nur fortfahren, wenn ein Student expandiert ist und ein aktiver Filter existiert
-    if (!expandedStudent || !activeFilter) return [];
-
-    // Sicherstellen, dass wir die Details für den richtigen Studenten anzeigen
-    if (expandedStudent !== student || activeFilter.student !== student) return [];
+    if (!expandedStudent || !activeFilter || expandedStudent !== student || activeFilter.student !== student) {
+      return [];
+    }
 
     const entries = detailedData[student];
     if (!entries?.length) return [];
@@ -72,7 +73,7 @@ const NormalView = ({
       endDate: new Date(endDate),
       type: activeFilter.type,
       weekData: activeFilter.weekData,
-      selectedWeeks: selectedWeeks
+      selectedWeeks
     });
   };
 

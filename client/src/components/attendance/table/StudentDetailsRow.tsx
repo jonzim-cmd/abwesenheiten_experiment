@@ -13,7 +13,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
   const getFilterTitle = () => {
     switch (filterType) {
       case 'details':
-        return 'Unentschuldigte Verspätungen und Fehlzeiten im ausgewählten Zeitraum';
+        return 'Detaillierte Übersicht der Abwesenheiten';
       case 'verspaetungen_entsch':
         return 'Entschuldigte Verspätungen im ausgewählten Zeitraum';
       case 'verspaetungen_unentsch':
@@ -33,14 +33,23 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
       default:
         if (filterType?.startsWith('weekly_')) {
           const isVerspaetung = filterType.includes('verspaetungen');
-          return `Unentschuldigte ${isVerspaetung ? 'Verspätungen' : 'Fehlzeiten'} (Durchschnitt)`;
+          return `Unentschuldigte ${isVerspaetung ? 'Verspätungen' : 'Fehlzeiten'} (Wochendurchschnitt)`;
         }
         if (filterType?.startsWith('sum_')) {
           const isVerspaetung = filterType.includes('verspaetungen');
-          return `Unentschuldigte ${isVerspaetung ? 'Verspätungen' : 'Fehlzeiten'} (Summe)`;
+          return `Unentschuldigte ${isVerspaetung ? 'Verspätungen' : 'Fehlzeiten'} (Gesamtsumme)`;
         }
-        return 'Details';
+        return 'Abwesenheitsdetails';
     }
+  };
+
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString('de-DE', {
+      weekday: 'long',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
   };
 
   return (
@@ -51,28 +60,38 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     >
       <td colSpan={14} className="px-4 py-2 text-sm">
         <div className="space-y-2">
-          <h4 className="font-medium">{getFilterTitle()}</h4>
+          <h4 className="font-medium text-gray-900">{getFilterTitle()}</h4>
           <div className="pl-4">
             {detailedData.length > 0 ? (
-              detailedData.map((entry, i) => (
-                <div 
-                  key={i}
-                  className={`${entry.art === 'Verspätung' ? 'text-orange-600' : 'text-red-600'} mb-1`}
-                >
-                  {new Date(entry.datum).toLocaleDateString('de-DE', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                  })}
-                  {entry.art === 'Verspätung' 
-                    ? ` (${entry.beginnZeit} - ${entry.endZeit} Uhr)`
-                    : ` - ${entry.art}${entry.grund ? ` (${entry.grund})` : ''}`
-                  }
-                </div>
-              ))
+              <div className="space-y-1">
+                {detailedData.map((entry, i) => (
+                  <div 
+                    key={i}
+                    className={`
+                      ${entry.art === 'Verspätung' ? 'text-orange-600' : 'text-red-600'}
+                      hover:bg-gray-50 p-1 rounded
+                    `}
+                  >
+                    <span className="font-medium">{formatDate(entry.datum)}</span>
+                    {entry.art === 'Verspätung' ? (
+                      <span className="ml-2">
+                        {entry.beginnZeit} - {entry.endZeit} Uhr
+                        {entry.grund && ` (${entry.grund})`}
+                      </span>
+                    ) : (
+                      <span className="ml-2">
+                        {entry.art}
+                        {entry.grund && ` - ${entry.grund}`}
+                      </span>
+                    )}
+                    <span className="ml-2 text-gray-500">
+                      Status: {entry.status || 'Offen'}
+                    </span>
+                  </div>
+                ))}
+              </div>
             ) : (
-              <div className="text-gray-500">Keine Einträge gefunden</div>
+              <div className="text-gray-500 italic">Keine Einträge für den ausgewählten Zeitraum gefunden</div>
             )}
           </div>
         </div>
