@@ -15,6 +15,12 @@ interface NormalViewProps {
   selectedWeeks: string;
 }
 
+interface FilteredDetailState {
+  student: string;
+  type: string;
+  weekData?: number[];
+}
+
 const NormalView = ({ 
   filteredStudents, 
   detailedData, 
@@ -25,6 +31,7 @@ const NormalView = ({
   selectedWeeks 
 }: NormalViewProps) => {
   const [visibleDetails, setVisibleDetails] = useState<Set<string>>(new Set());
+  const [filteredDetails, setFilteredDetails] = useState<Record<string, FilteredDetailState>>({});
 
   const toggleAllDetails = () => {
     if (visibleDetails.size === filteredStudents.length) {
@@ -42,6 +49,79 @@ const NormalView = ({
       newVisibleDetails.add(student);
     }
     setVisibleDetails(newVisibleDetails);
+
+    // Wenn Details ausgeblendet werden, auch gefilterte Details ausblenden
+    if (!newVisibleDetails.has(student)) {
+      const newFilteredDetails = { ...filteredDetails };
+      delete newFilteredDetails[student];
+      setFilteredDetails(newFilteredDetails);
+    }
+  };
+
+  const showFilteredDetails = (student: string, type: string, weekData?: number[]) => {
+    const newFilteredDetails = { ...filteredDetails };
+    if (newFilteredDetails[student]?.type === type) {
+      delete newFilteredDetails[student];
+    } else {
+      newFilteredDetails[student] = { student, type, weekData };
+
+      // Automatisch die Details einblenden, wenn sie noch nicht sichtbar sind
+      if (!visibleDetails.has(student)) {
+        setVisibleDetails(new Set([...visibleDetails, student]));
+      }
+    }
+    setFilteredDetails(newFilteredDetails);
+  };
+
+  const getFilteredDetailData = (student: string, type: string, weekData?: number[]) => {
+    if (!detailedData[student]) return [];
+
+    switch (type) {
+      case 'verspaetungen_entsch':
+        return detailedData[student].filter(entry => 
+          entry.art === 'Verspätung' && ['entsch.', 'Attest', 'Attest Amtsarzt'].includes(entry.status));
+      case 'verspaetungen_unentsch':
+        return detailedData[student].filter(entry => 
+          entry.art === 'Verspätung' && ['nicht entsch.', 'nicht akzep.'].includes(entry.status));
+      case 'verspaetungen_offen':
+        return detailedData[student].filter(entry => 
+          entry.art === 'Verspätung' && !['entsch.', 'Attest', 'Attest Amtsarzt', 'nicht entsch.', 'nicht akzep.'].includes(entry.status));
+      case 'fehlzeiten_entsch':
+        return detailedData[student].filter(entry => 
+          entry.art !== 'Verspätung' && ['entsch.', 'Attest', 'Attest Amtsarzt'].includes(entry.status));
+      case 'fehlzeiten_unentsch':
+        return detailedData[student].filter(entry => 
+          entry.art !== 'Verspätung' && ['nicht entsch.', 'nicht akzep.'].includes(entry.status));
+      case 'fehlzeiten_offen':
+        return detailedData[student].filter(entry => 
+          entry.art !== 'Verspätung' && !['entsch.', 'Attest', 'Attest Amtsarzt', 'nicht entsch.', 'nicht akzep.'].includes(entry.status));
+      case 'sj_verspaetungen':
+      case 'sj_fehlzeiten':
+        // Diese Daten kommen aus schoolYearStats und zeigen nur unentschuldigte Fälle
+        return detailedData[student].filter(entry => 
+          (type === 'sj_verspaetungen' ? entry.art === 'Verspätung' : entry.art !== 'Verspätung') && 
+          ['nicht entsch.', 'nicht akzep.'].includes(entry.status));
+      case 'weekly_verspaetungen':
+      case 'weekly_fehlzeiten':
+      case 'sum_verspaetungen':
+      case 'sum_fehlzeiten':
+        if (!weekData) return [];
+        const weeks = getLastNWeeks(parseInt(selectedWeeks));
+        return detailedData[student]
+          .filter(entry => {
+            const isVerspaetung = type.includes('verspaetungen');
+            const matchesType = isVerspaetung ? entry.art === 'Verspätung' : entry.art !== 'Verspätung';
+            if (!matchesType) return false;
+
+            const entryDate = new Date(entry.datum);
+            const weekIndex = weeks.findIndex(w => 
+              entryDate >= w.startDate && entryDate <= w.endDate);
+
+            return weekIndex !== -1 && weekData[weekIndex] > 0;
+          });
+      default:
+        return detailedData[student];
+    }
   };
 
   return (
@@ -83,10 +163,19 @@ const NormalView = ({
                     selectedWeeks={selectedWeeks}
                     rowColor={rowColor}
                     onToggleDetails={() => toggleDetails(student)}
+                    onShowFilteredDetails={showFilteredDetails}
                   />
                   <StudentDetailsRow
                     student={student}
-                    detailedData={detailedData[student] || []}
+                    detailedData={
+                      filteredDetails[student]
+                        ? getFilteredDetailData(
+                            student,
+                            filteredDetails[student].type,
+                            filteredDetails[student].weekData
+                          )
+                        : detailedData[student] || []
+                    }
                     rowColor={rowColor}
                     isVisible={visibleDetails.has(student)}
                   />
@@ -100,4 +189,5 @@ const NormalView = ({
   );
 };
 
+import { getLastNWeeks } from '@/lib/attendance';
 export default NormalView;

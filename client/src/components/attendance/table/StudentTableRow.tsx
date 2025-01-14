@@ -16,6 +16,7 @@ interface StudentTableRowProps {
   selectedWeeks: string;
   rowColor: string;
   onToggleDetails: () => void;
+  onShowFilteredDetails: (student: string, type: string, weekData?: number[]) => void;
 }
 
 const StudentTableRow = ({
@@ -25,16 +26,35 @@ const StudentTableRow = ({
   weeklyData,
   selectedWeeks,
   rowColor,
-  onToggleDetails
+  onToggleDetails,
+  onShowFilteredDetails
 }: StudentTableRowProps) => {
   const verspaetungenAvg = (weeklyData.verspaetungen.total / parseInt(selectedWeeks)).toFixed(2);
   const fehlzeitenAvg = (weeklyData.fehlzeiten.total / parseInt(selectedWeeks)).toFixed(2);
-  
+
   const verspaetungenWeekly = `${verspaetungenAvg}(${weeklyData.verspaetungen.weekly.join(',')})`;
   const fehlzeitenWeekly = `${fehlzeitenAvg}(${weeklyData.fehlzeiten.weekly.join(',')})`;
-  
+
   const verspaetungenSum = `${weeklyData.verspaetungen.total}(${weeklyData.verspaetungen.weekly.join(',')})`;
   const fehlzeitenSum = `${weeklyData.fehlzeiten.total}(${weeklyData.fehlzeiten.weekly.join(',')})`;
+
+  const createClickableCell = (value: number, type: string, className: string = "") => (
+    <span 
+      className={`cursor-pointer hover:underline ${className}`}
+      onClick={() => onShowFilteredDetails(student, type)}
+    >
+      {value}
+    </span>
+  );
+
+  const createClickableWeeklyCell = (displayText: string, weeklyData: number[], type: string) => (
+    <span 
+      className="cursor-pointer hover:underline"
+      onClick={() => onShowFilteredDetails(student, type, weeklyData)}
+    >
+      {displayText}
+    </span>
+  );
 
   return (
     <tr className={rowColor}>
@@ -42,40 +62,40 @@ const StudentTableRow = ({
         {student} ({stats.klasse})
       </td>
       <td className="px-4 py-3 text-sm text-center text-green-600 border-r border-gray-200">
-        {stats.verspaetungen_entsch}
+        {createClickableCell(stats.verspaetungen_entsch, 'verspaetungen_entsch', 'text-green-600')}
       </td>
       <td className="px-4 py-3 text-sm text-center text-red-600 border-r border-gray-200">
-        {stats.verspaetungen_unentsch}
+        {createClickableCell(stats.verspaetungen_unentsch, 'verspaetungen_unentsch', 'text-red-600')}
       </td>
       <td className="px-4 py-3 text-sm text-center text-yellow-600 border-r border-gray-200">
-        {stats.verspaetungen_offen}
+        {createClickableCell(stats.verspaetungen_offen, 'verspaetungen_offen', 'text-yellow-600')}
       </td>
       <td className="px-4 py-3 text-sm text-center text-green-600 border-r border-gray-200">
-        {stats.fehlzeiten_entsch}
+        {createClickableCell(stats.fehlzeiten_entsch, 'fehlzeiten_entsch', 'text-green-600')}
       </td>
       <td className="px-4 py-3 text-sm text-center text-red-600 border-r border-gray-200">
-        {stats.fehlzeiten_unentsch}
+        {createClickableCell(stats.fehlzeiten_unentsch, 'fehlzeiten_unentsch', 'text-red-600')}
       </td>
       <td className="px-4 py-3 text-sm text-center text-yellow-600 border-r border-gray-200">
-        {stats.fehlzeiten_offen}
+        {createClickableCell(stats.fehlzeiten_offen, 'fehlzeiten_offen', 'text-yellow-600')}
       </td>
       <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
-        {schoolYearData.verspaetungen_unentsch}
+        {createClickableCell(schoolYearData.verspaetungen_unentsch, 'sj_verspaetungen')}
       </td>
       <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
-        {schoolYearData.fehlzeiten_unentsch}
+        {createClickableCell(schoolYearData.fehlzeiten_unentsch, 'sj_fehlzeiten')}
       </td>
       <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
-        {verspaetungenWeekly}
+        {createClickableWeeklyCell(verspaetungenWeekly, weeklyData.verspaetungen.weekly, 'weekly_verspaetungen')}
       </td>
       <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
-        {fehlzeitenWeekly}
+        {createClickableWeeklyCell(fehlzeitenWeekly, weeklyData.fehlzeiten.weekly, 'weekly_fehlzeiten')}
       </td>
       <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
-        {verspaetungenSum}
+        {createClickableWeeklyCell(verspaetungenSum, weeklyData.verspaetungen.weekly, 'sum_verspaetungen')}
       </td>
       <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
-        {fehlzeitenSum}
+        {createClickableWeeklyCell(fehlzeitenSum, weeklyData.fehlzeiten.weekly, 'sum_fehlzeiten')}
       </td>
       <td className="px-4 py-3 text-sm text-center">
         <Button
