@@ -1,13 +1,13 @@
-import { AbsenceEntry } from "@/lib/attendance-utils";
+import { Button } from "@/components/ui/button";
 
 interface ReportViewProps {
   filteredStudents: [string, any][];
-  detailedData: Record<string, AbsenceEntry[]>;
+  detailedData: Record<string, any>;
   startDate: string;
   endDate: string;
 }
 
-export const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: ReportViewProps) => {
+const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: ReportViewProps) => {
   return (
     <div className="mt-6 space-y-4">
       <h3 className="text-lg font-semibold">
@@ -88,3 +88,5 @@ export const ReportView = ({ filteredStudents, detailedData, startDate, endDate 
     </div>
   );
 };
+
+export default ReportView;

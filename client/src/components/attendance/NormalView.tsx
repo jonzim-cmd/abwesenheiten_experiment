@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { AbsenceEntry } from "@/lib/attendance-utils";
 
 interface NormalViewProps {
   filteredStudents: [string, any][];
-  detailedData: Record<string, AbsenceEntry[]>;
+  detailedData: Record<string, any>;
   startDate: string;
   endDate: string;
   schoolYearStats: Record<string, any>;
@@ -12,7 +11,7 @@ interface NormalViewProps {
   selectedWeeks: string;
 }
 
-export const NormalView = ({ 
+const NormalView = ({ 
   filteredStudents, 
   detailedData, 
   startDate, 
@@ -47,7 +46,6 @@ export const NormalView = ({
           {areAllDetailsVisible ? 'Alle Details einklappen' : 'Alle Details ausklappen'}
         </Button>
       </div>
-
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse bg-white">
           <thead>
@@ -118,8 +116,8 @@ export const NormalView = ({
               const fehlzeitenSum = `${weeklyData.fehlzeiten.total}(${weeklyData.fehlzeiten.weekly.join(',')})`;
 
               return (
-                <>
-                  <tr key={student} className={rowColor}>
+                <React.Fragment key={student}>
+                  <tr className={rowColor}>
                     <td className="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200">
                       {student} ({stats.klasse})
                     </td>
@@ -211,7 +209,7 @@ export const NormalView = ({
                       </div>
                     </td>
                   </tr>
-                </>
+                </React.Fragment>
               );
             })}
           </tbody>
@@ -220,3 +218,5 @@ export const NormalView = ({
     </div>
   );
 };
+
+export default NormalView;
