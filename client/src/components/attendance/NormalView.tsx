@@ -31,127 +31,132 @@ const NormalView = ({
   weeklyStats, 
   selectedWeeks 
 }: NormalViewProps) => {
-  // State for expanded student and active filter
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<{
     type: string;
     weekData?: number[];
   } | null>(null);
 
-  // Close all details
+  // Hilfsfunktion: Prüft ob ein Datum im Zeitraum liegt
+  const isInDateRange = (date: Date, start: Date, end: Date): boolean => {
+    return date >= start && date <= end;
+  };
+
+  // Alle Details schließen
   const toggleAllDetails = () => {
     setExpandedStudent(null);
     setActiveFilter(null);
   };
 
-  // Toggle details for a single student
+  // Details für einen einzelnen Schüler ein-/ausblenden
   const toggleDetails = (student: string) => {
     if (expandedStudent === student) {
       setExpandedStudent(null);
       setActiveFilter(null);
     } else {
       setExpandedStudent(student);
-      setActiveFilter(null);
+      setActiveFilter({ type: 'details' });
     }
   };
 
-  // Show filtered details
+  // Gefilterte Details anzeigen
   const showFilteredDetails = (student: string, type: string, weekData?: number[]) => {
-    // If clicking the same filter again, close details completely
+    // Wenn der gleiche Filter für den gleichen Schüler erneut geklickt wird, alles ausblenden
     if (expandedStudent === student && activeFilter?.type === type) {
       setExpandedStudent(null);
       setActiveFilter(null);
       return;
     }
 
-    // Set new student and filter
     setExpandedStudent(student);
     setActiveFilter({ type, weekData });
   };
 
-  // Get filtered data based on current filter
+  // Detaildaten basierend auf aktivem Filter filtern
   const getFilteredDetailData = (student: string): AbsenceEntry[] => {
-    if (!expandedStudent || !activeFilter || expandedStudent !== student) {
-      return [];
-    }
+    if (!expandedStudent || expandedStudent !== student || !activeFilter) return [];
 
     const entries = detailedData[student] || [];
+    if (!entries.length) return [];
+
     const { type, weekData } = activeFilter;
 
-    // Helper function to check if entry is within date range
-    const isInRange = (date: Date, start: Date, end: Date) => 
-      date >= start && date <= end;
-
-    // Period filters (E/U/O)
-    if (type.includes('_entsch') || type.includes('_unentsch') || type.includes('_offen')) {
-      const periodStart = new Date(startDate);
-      const periodEnd = new Date(endDate);
-      const isLate = type.startsWith('verspaetungen');
-      const statusType = type.split('_')[1]; // 'entsch', 'unentsch', or 'offen'
+    // 1. Detail-Button (zeigt alle unentschuldigten Fälle im Zeitraum)
+    if (type === 'details') {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
 
       return entries.filter(entry => {
-        const entryDate = new Date(entry.datum);
+        const date = new Date(entry.datum);
+        return isInDateRange(date, start, end) && isUnentschuldigt(entry.status);
+      });
+    }
 
-        // Check if entry is within the selected period
-        if (!isInRange(entryDate, periodStart, periodEnd)) return false;
+    // 2. E/U/O Filter (zeigt entsprechende Fälle im Zeitraum)
+    if (type.includes('_entsch') || type.includes('_unentsch') || type.includes('_offen')) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const isVerspaetung = type.startsWith('verspaetungen');
+      const statusType = type.split('_')[1];
 
-        // Check if entry type matches (late or absence)
-        const matchesType = isLate ? 
+      return entries.filter(entry => {
+        // Prüfe Zeitraum
+        const date = new Date(entry.datum);
+        if (!isInDateRange(date, start, end)) return false;
+
+        // Prüfe Typ (Verspätung oder Fehlzeit)
+        const matchesType = isVerspaetung ? 
           entry.art === 'Verspätung' : 
           entry.art !== 'Verspätung';
         if (!matchesType) return false;
 
-        // Check status based on filter type
-        switch (statusType) {
-          case 'entsch': return isEntschuldigt(entry.status);
-          case 'unentsch': return isUnentschuldigt(entry.status);
-          case 'offen': return isOffen(entry.status);
-          default: return false;
-        }
+        // Prüfe Status (E/U/O)
+        if (statusType === 'entsch') return isEntschuldigt(entry.status);
+        if (statusType === 'unentsch') return isUnentschuldigt(entry.status);
+        if (statusType === 'offen') return isOffen(entry.status);
+        return false;
       });
     }
 
-    // School year statistics (∑SJ V/F)
+    // 3. Schuljahresstatistik (zeigt unentschuldigte Fälle des gesamten Schuljahres)
     if (type.startsWith('sj_')) {
       const schoolYear = getCurrentSchoolYear();
-      const schoolYearStart = new Date(schoolYear.start, 8, 1); // September 1st
-      const today = new Date();
-      const isLate = type === 'sj_verspaetungen';
+      const start = new Date(schoolYear.start, 8, 1); // 1. September
+      const end = new Date();
+      const isVerspaetung = type === 'sj_verspaetungen';
 
       return entries.filter(entry => {
-        const entryDate = new Date(entry.datum);
+        if (!isUnentschuldigt(entry.status)) return false;
 
-        // Check if entry is within the school year
-        if (!isInRange(entryDate, schoolYearStart, today)) return false;
+        const date = new Date(entry.datum);
+        if (!isInDateRange(date, start, end)) return false;
 
-        // Must be unexcused and match the type (late or absence)
-        return isUnentschuldigt(entry.status) && 
-               (isLate ? entry.art === 'Verspätung' : entry.art !== 'Verspätung');
+        return isVerspaetung ? 
+          entry.art === 'Verspätung' : 
+          entry.art !== 'Verspätung';
       });
     }
 
-    // Weekly statistics
+    // 4. Wochenstatistik (zeigt unentschuldigte Fälle der ausgewählten Wochen)
     if (weekData && (type.includes('weekly_') || type.includes('sum_'))) {
       const weeks = getLastNWeeks(parseInt(selectedWeeks));
-      const isLate = type.includes('verspaetungen');
+      const isVerspaetung = type.includes('verspaetungen');
 
       return entries.filter(entry => {
-        // Must be unexcused
         if (!isUnentschuldigt(entry.status)) return false;
 
-        const entryDate = new Date(entry.datum);
-
-        // Check type (late or absence)
-        const matchesType = isLate ? 
+        const matchesType = isVerspaetung ? 
           entry.art === 'Verspätung' : 
           entry.art !== 'Verspätung';
         if (!matchesType) return false;
 
-        // Find matching week and check if there's a value > 0
+        // Finde die entsprechende Woche
+        const date = new Date(entry.datum);
         const weekIndex = weeks.findIndex(week => 
-          isInRange(entryDate, week.startDate, week.endDate)
+          isInDateRange(date, week.startDate, week.endDate)
         );
 
+        // Zeige nur Fälle aus Wochen mit Werten > 0
         return weekIndex !== -1 && weekData[weekIndex] > 0;
       });
     }
