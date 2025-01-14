@@ -19,13 +19,13 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
       case 'verspaetungen_unentsch':
         return 'Unentschuldigte Verspätungen im ausgewählten Zeitraum';
       case 'verspaetungen_offen':
-        return 'Offene Verspätungen im ausgewählten Zeitraum';
+        return 'Noch zu entschuldigende Verspätungen (Frist läuft noch)';
       case 'fehlzeiten_entsch':
         return 'Entschuldigte Fehlzeiten im ausgewählten Zeitraum';
       case 'fehlzeiten_unentsch':
         return 'Unentschuldigte Fehlzeiten im ausgewählten Zeitraum';
       case 'fehlzeiten_offen':
-        return 'Offene Fehlzeiten im ausgewählten Zeitraum';
+        return 'Noch zu entschuldigende Fehlzeiten (Frist läuft noch)';
       case 'sj_verspaetungen':
         return 'Unentschuldigte Verspätungen im gesamten Schuljahr';
       case 'sj_fehlzeiten':
@@ -84,9 +84,6 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
                         {entry.grund && ` - ${entry.grund}`}
                       </span>
                     )}
-                    <span className="ml-2 text-gray-500">
-                      Status: {entry.status || 'Offen'}
-                    </span>
                   </div>
                 ))}
               </div>

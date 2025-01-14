@@ -3,11 +3,18 @@ import { Button } from "@/components/ui/button";
 import StudentTableHeader from './table/StudentTableHeader';
 import StudentTableRow from './table/StudentTableRow';
 import StudentDetailsRow from './table/StudentDetailsRow';
-import { StudentStats, AbsenceEntry, filterAbsenceEntries } from '@/lib/attendance-utils';
+import { StudentStats, AbsenceEntry } from '@/lib/attendance-utils';
 
 interface NormalViewProps {
   filteredStudents: [string, StudentStats][];
-  detailedData: Record<string, AbsenceEntry[]>;
+  detailedData: Record<string, {
+    verspaetungen_entsch: AbsenceEntry[];
+    verspaetungen_unentsch: AbsenceEntry[];
+    verspaetungen_offen: AbsenceEntry[];
+    fehlzeiten_entsch: AbsenceEntry[];
+    fehlzeiten_unentsch: AbsenceEntry[];
+    fehlzeiten_offen: AbsenceEntry[];
+  }>;
   startDate: string;
   endDate: string;
   schoolYearStats: Record<string, {
@@ -27,15 +34,54 @@ const NormalView = ({
   startDate, 
   endDate, 
   schoolYearStats, 
-  weeklyStats, 
+  weeklyStats,
   selectedWeeks 
 }: NormalViewProps) => {
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<{
     student: string;
     type: string;
-    weekData?: number[];
   } | null>(null);
+
+  // Get filtered detail data for a specific student
+  const getFilteredDetailData = (student: string): AbsenceEntry[] => {
+    if (!expandedStudent || !activeFilter || expandedStudent !== student) return [];
+
+    const studentData = detailedData[student];
+    if (!studentData) return [];
+
+    // Return the appropriate entries based on the filter type
+    switch (activeFilter.type) {
+      case 'details':
+        // Combine all entries for the complete overview
+        return [
+          ...studentData.verspaetungen_entsch,
+          ...studentData.verspaetungen_unentsch,
+          ...studentData.verspaetungen_offen,
+          ...studentData.fehlzeiten_entsch,
+          ...studentData.fehlzeiten_unentsch,
+          ...studentData.fehlzeiten_offen
+        ].sort((a, b) => new Date(b.datum).getTime() - new Date(a.datum).getTime());
+      case 'verspaetungen_entsch':
+        return studentData.verspaetungen_entsch;
+      case 'verspaetungen_unentsch':
+        return studentData.verspaetungen_unentsch;
+      case 'verspaetungen_offen':
+        return studentData.verspaetungen_offen;
+      case 'fehlzeiten_entsch':
+        return studentData.fehlzeiten_entsch;
+      case 'fehlzeiten_unentsch':
+        return studentData.fehlzeiten_unentsch;
+      case 'fehlzeiten_offen':
+        return studentData.fehlzeiten_offen;
+      case 'sj_verspaetungen':
+        return studentData.verspaetungen_unentsch;
+      case 'sj_fehlzeiten':
+        return studentData.fehlzeiten_unentsch;
+      default:
+        return [];
+    }
+  };
 
   // Toggle details for a student when clicking the details button
   const toggleDetails = (student: string) => {
@@ -48,33 +94,15 @@ const NormalView = ({
     }
   };
 
-  // Show filtered details based on the selected type (verspaetungen, fehlzeiten, etc.)
-  const showFilteredDetails = (student: string, type: string, weekData?: number[]) => {
+  // Show filtered details based on the selected type
+  const showFilteredDetails = (student: string, type: string) => {
     if (expandedStudent === student && activeFilter?.type === type) {
       setExpandedStudent(null);
       setActiveFilter(null);
     } else {
       setExpandedStudent(student);
-      setActiveFilter({ student, type, weekData });
+      setActiveFilter({ student, type });
     }
-  };
-
-  // Get filtered detail data for a specific student
-  const getFilteredDetailData = (student: string): AbsenceEntry[] => {
-    if (!expandedStudent || !activeFilter || expandedStudent !== student || activeFilter.student !== student) {
-      return [];
-    }
-
-    const entries = detailedData[student];
-    if (!entries?.length) return [];
-
-    return filterAbsenceEntries(entries, {
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
-      type: activeFilter.type,
-      weekData: activeFilter.weekData,
-      selectedWeeks
-    });
   };
 
   return (

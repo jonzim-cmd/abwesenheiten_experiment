@@ -10,6 +10,26 @@ import NormalView from '@/components/attendance/NormalView';
 import ReportView from '@/components/attendance/ReportView';
 import { getWeekNumber, getLastNWeeks, getCurrentSchoolYear } from '@/lib/attendance';
 
+interface AbsenceEntry {
+  datum: Date;
+  art: string;
+  beginnZeit?: string;
+  endZeit?: string;
+  grund?: string;
+  status: AbsenceStatus;
+}
+
+type AbsenceStatus = 'entsch.' | 'nicht entsch.' | 'nicht akzep.' | 'Attest' | 'Attest Amtsarzt' | '';
+
+interface DetailedStats {
+  verspaetungen_entsch: AbsenceEntry[];
+  verspaetungen_unentsch: AbsenceEntry[];
+  verspaetungen_offen: AbsenceEntry[];
+  fehlzeiten_entsch: AbsenceEntry[];
+  fehlzeiten_unentsch: AbsenceEntry[];
+  fehlzeiten_offen: AbsenceEntry[];
+}
+
 const AttendanceAnalyzer = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [rawData, setRawData] = useState(null);
@@ -18,7 +38,7 @@ const AttendanceAnalyzer = () => {
   const [endDate, setEndDate] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState('');
-  const [detailedData, setDetailedData] = useState<any>({});
+  const [detailedData, setDetailedData] = useState<Record<string, DetailedStats>>({});
   const [filterUnexcusedLate, setFilterUnexcusedLate] = useState(false);
   const [filterUnexcusedAbsent, setFilterUnexcusedAbsent] = useState(false);
   const [minUnexcusedLates, setMinUnexcusedLates] = useState('');
@@ -139,7 +159,7 @@ const AttendanceAnalyzer = () => {
     try {
       const today = new Date();
       const studentStats: any = {};
-      const detailedUnexcused: any = {};
+      const detailedStats: Record<string, DetailedStats> = {};
 
       data.forEach(row => {
         if (!row.Beginndatum || !row.Langname || !row.Vorname) return;
@@ -150,6 +170,7 @@ const AttendanceAnalyzer = () => {
         const studentName = `${row.Langname}, ${row.Vorname}`;
 
         if (date >= startDateTime && date <= endDateTime) {
+          // Initialize statistics for new student
           if (!studentStats[studentName]) {
             studentStats[studentName] = {
               verspaetungen_entsch: 0,
@@ -162,8 +183,16 @@ const AttendanceAnalyzer = () => {
             };
           }
 
-          if (!detailedUnexcused[studentName]) {
-            detailedUnexcused[studentName] = [];
+          // Initialize detailed stats for new student
+          if (!detailedStats[studentName]) {
+            detailedStats[studentName] = {
+              verspaetungen_entsch: [],
+              verspaetungen_unentsch: [],
+              verspaetungen_offen: [],
+              fehlzeiten_entsch: [],
+              fehlzeiten_unentsch: [],
+              fehlzeiten_offen: []
+            };
           }
 
           const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
@@ -174,41 +203,44 @@ const AttendanceAnalyzer = () => {
           const deadlineDate = new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000);
           const isOverDeadline = today > deadlineDate;
 
+          // Create entry object
+          const entry: AbsenceEntry = {
+            datum: date,
+            art: isVerspaetung ? 'Verspätung' : (row.Abwesenheitsgrund || 'Fehltag'),
+            beginnZeit: row.Beginnzeit,
+            endZeit: row.Endzeit,
+            grund: row['Text/Grund'],
+            status: effectiveStatus as AbsenceStatus
+          };
+
           if (isVerspaetung) {
             if (isEntschuldigt) {
               studentStats[studentName].verspaetungen_entsch++;
-            } else if (isUnentschuldigt) {
+              detailedStats[studentName].verspaetungen_entsch.push(entry);
+            } else if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
               studentStats[studentName].verspaetungen_unentsch++;
-              detailedUnexcused[studentName].push({
-                datum: date,
-                art: 'Verspätung',
-                beginnZeit: row.Beginnzeit,
-                endZeit: row.Endzeit
-              });
+              detailedStats[studentName].verspaetungen_unentsch.push(entry);
             } else {
               studentStats[studentName].verspaetungen_offen++;
+              detailedStats[studentName].verspaetungen_offen.push(entry);
             }
           } else {
             if (isEntschuldigt) {
               studentStats[studentName].fehlzeiten_entsch++;
+              detailedStats[studentName].fehlzeiten_entsch.push(entry);
             } else if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
               studentStats[studentName].fehlzeiten_unentsch++;
-              detailedUnexcused[studentName].push({
-                datum: date,
-                art: row.Abwesenheitsgrund || 'Fehltag',
-                beginnZeit: row.Beginnzeit,
-                endZeit: row.Endzeit,
-                grund: row['Text/Grund']
-              });
+              detailedStats[studentName].fehlzeiten_unentsch.push(entry);
             } else {
               studentStats[studentName].fehlzeiten_offen++;
+              detailedStats[studentName].fehlzeiten_offen.push(entry);
             }
           }
         }
       });
 
       setResults(studentStats);
-      setDetailedData(detailedUnexcused);
+      setDetailedData(detailedStats);
       setAvailableStudents(Object.keys(studentStats).sort());
       setError('');
     } catch (err: any) {
