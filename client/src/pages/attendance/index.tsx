@@ -53,8 +53,8 @@ const AttendanceAnalyzer = () => {
 
   const calculateSchoolYearStats = useCallback((data: any[]) => {
     const schoolYear = getCurrentSchoolYear();
-    const startDate = new Date(Date.UTC(schoolYear.start, 8, 1)); // September 1st
-    const endDate = new Date(Date.UTC(schoolYear.end, 7, 31)); // August 31st
+    const startDate = new Date(schoolYear.start, 8, 1); // September 1st
+    const endDate = new Date(schoolYear.end, 7, 31); // August 31st
 
     const stats: any = {};
 
@@ -63,7 +63,7 @@ const AttendanceAnalyzer = () => {
       if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
       const [day, month, year] = row.Beginndatum.split('.');
-      const date = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
       const studentName = `${row.Langname}, ${row.Vorname}`;
 
       if (date >= startDate && date <= endDate) {
@@ -99,7 +99,7 @@ const AttendanceAnalyzer = () => {
       if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
       const [day, month, year] = row.Beginndatum.split('.');
-      const date = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
       const studentName = `${row.Langname}, ${row.Vorname}`;
       const weekNumber = getWeekNumber(date);
       const yearNumber = date.getFullYear();
@@ -142,7 +142,7 @@ const AttendanceAnalyzer = () => {
         if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
         const [day, month, year] = row.Beginndatum.split('.');
-        const date = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
         const studentName = `${row.Langname}, ${row.Vorname}`;
 
         if (date >= startDateTime && date <= endDateTime) {
@@ -238,8 +238,8 @@ const AttendanceAnalyzer = () => {
 
   React.useEffect(() => {
     if (rawData && startDate && endDate) {
-      const startDateTime = new Date(startDate + 'T00:00:00');
-      const endDateTime = new Date(endDate + 'T23:59:59');
+      const startDateTime = new Date(startDate);
+      const endDateTime = new Date(endDate);
 
       if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
         setError('Ungültiges Datum');
@@ -347,13 +347,19 @@ const AttendanceAnalyzer = () => {
                         break;
                       }
                       case 'thisMonth': {
+                        // Setze Start auf den ersten Tag des aktuellen Monats
                         start = new Date(currentYear, currentMonth, 1);
+                        // Setze Ende auf den letzten Tag des aktuellen Monats
                         end = new Date(currentYear, currentMonth + 1, 0);
                         break;
                       }
                       case 'lastMonth': {
-                        start = new Date(currentYear, currentMonth - 1, 1);
-                        end = new Date(currentYear, currentMonth, 0);
+                        // Setze Start auf den ersten Tag des vorherigen Monats
+                        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+                        const yearOfLastMonth = currentMonth === 0 ? currentYear - 1 : currentYear;
+                        start = new Date(yearOfLastMonth, lastMonth, 1);
+                        // Setze Ende auf den letzten Tag des vorherigen Monats
+                        end = new Date(yearOfLastMonth, lastMonth + 1, 0);
                         break;
                       }
                       case 'schoolYear': {
@@ -366,8 +372,8 @@ const AttendanceAnalyzer = () => {
                         return;
                     }
 
-                    setStartDate(start.toISOString().split('T')[0]);
-                    setEndDate(end.toISOString().split('T')[0]);
+                    setStartDate(start.toLocaleDateString('sv').split('T')[0]);
+                    setEndDate(end.toLocaleDateString('sv').split('T')[0]);
                   }}
                 >
                   <SelectTrigger>
