@@ -124,7 +124,7 @@ export const filterAbsenceEntries = (
   if (type === 'details') {
     return entries.filter(entry => {
       const date = new Date(entry.datum);
-      return isInDateRange(date) && isUnentschuldigt(entry.status);
+      return isInDateRange(date) && (isUnentschuldigt(entry.status) || isOffen(entry.status));
     });
   }
 
@@ -154,12 +154,14 @@ export const filterAbsenceEntries = (
   if (type === 'sj_verspaetungen' || type === 'sj_fehlzeiten') {
     const { start: schoolYearStart } = getCurrentSchoolYear();
     const yearStart = new Date(schoolYearStart, 8, 1); // 1. September
+    const today = new Date();
 
     return entries.filter(entry => {
-      if (!isUnentschuldigt(entry.status)) return false;
-
       const date = new Date(entry.datum);
-      if (date < yearStart || date > new Date()) return false;
+      if (date < yearStart || date > today) return false;
+
+      // Für Schuljahresstatistik zählen sowohl unentschuldigte als auch offene Einträge
+      if (!isUnentschuldigt(entry.status) && !isOffen(entry.status)) return false;
 
       const isVerspaetungenFilter = type === 'sj_verspaetungen';
       return isVerspaetungenFilter === isVerspaetung(entry);
@@ -172,7 +174,8 @@ export const filterAbsenceEntries = (
     const isVerspaetungenFilter = type.includes('verspaetungen');
 
     return entries.filter(entry => {
-      if (!isUnentschuldigt(entry.status)) return false;
+      // Für Wochenstatistik zählen sowohl unentschuldigte als auch offene Einträge
+      if (!isUnentschuldigt(entry.status) && !isOffen(entry.status)) return false;
 
       if (isVerspaetungenFilter !== isVerspaetung(entry)) return false;
 
