@@ -9,9 +9,6 @@ interface ReportViewProps {
 }
 
 const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: ReportViewProps) => {
-  // Ensure detailedData is not null/undefined
-  const safeDetailedData = detailedData || {};
-
   return (
     <div className="mt-6 space-y-4">
       <h3 className="text-lg font-semibold">
@@ -44,34 +41,29 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
           </thead>
           <tbody>
             {filteredStudents.map(([student, stats], index) => {
-              // Ensure we have an array of entries, even if empty
-              const studentEntries = Array.isArray(safeDetailedData[student]) 
-                ? safeDetailedData[student] 
-                : [];
+              const studentData = detailedData[student] || [];
 
-              // Handle late entries
-              const unexcusedLates = studentEntries
-                .filter((entry: AbsenceEntry) => entry && entry.art === 'Verspätung')
-                .map((entry: AbsenceEntry) => (
+              const unexcusedLates = studentData
+                .filter(entry => entry && entry.art === 'Verspätung')
+                .map(entry => (
                   `${new Date(entry.datum).toLocaleDateString('de-DE', {
                     weekday: 'long',
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
                   })} (${entry.beginnZeit} - ${entry.endZeit} Uhr)`
-                )).join('\n') || '-';
+                ));
 
-              // Handle absence entries
-              const unexcusedAbsences = studentEntries
-                .filter((entry: AbsenceEntry) => entry && entry.art !== 'Verspätung')
-                .map((entry: AbsenceEntry) => (
+              const unexcusedAbsences = studentData
+                .filter(entry => entry && entry.art !== 'Verspätung')
+                .map(entry => (
                   `${new Date(entry.datum).toLocaleDateString('de-DE', {
                     weekday: 'long',
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
                   })} - ${entry.art}${entry.grund ? ` (${entry.grund})` : ''}`
-                )).join('\n') || '-';
+                ));
 
               return (
                 <tr 
@@ -85,10 +77,10 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
                     {student}
                   </td>
                   <td className="px-6 py-4 whitespace-pre-line text-sm text-gray-500 border-b border-r border-gray-200">
-                    {unexcusedLates}
+                    {unexcusedLates.length > 0 ? unexcusedLates.join('\n') : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-pre-line text-sm text-gray-500 border-b border-gray-200">
-                    {unexcusedAbsences}
+                    {unexcusedAbsences.length > 0 ? unexcusedAbsences.join('\n') : '-'}
                   </td>
                 </tr>
               );
