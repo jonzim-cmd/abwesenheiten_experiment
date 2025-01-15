@@ -216,6 +216,9 @@ const NormalView = ({
             data={filteredStudents}
             startDate={startDate}
             endDate={endDate}
+            schoolYearStats={schoolYearStats}
+            weeklyStats={weeklyStats}
+            selectedWeeks={selectedWeeks}
           />
           <Button
             variant="outline"

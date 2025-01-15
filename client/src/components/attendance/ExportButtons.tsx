@@ -10,19 +10,65 @@ interface ExportButtonsProps {
   data: [string, StudentStats][];
   startDate: string;
   endDate: string;
+  schoolYearStats: {
+    [key: string]: {
+      verspaetungen_unentsch: number;
+      fehlzeiten_unentsch: number;
+    };
+  };
+  weeklyStats: {
+    [key: string]: {
+      verspaetungen: { total: number; weekly: number[] };
+      fehlzeiten: { total: number; weekly: number[] };
+    };
+  };
+  selectedWeeks: string;
 }
 
-const ExportButtons = ({ data, startDate, endDate }: ExportButtonsProps) => {
+const ExportButtons = ({ 
+  data, 
+  startDate, 
+  endDate, 
+  schoolYearStats,
+  weeklyStats,
+  selectedWeeks 
+}: ExportButtonsProps) => {
   const formatData = () => {
-    return data.map(([student, stats]) => ({
-      'Name (Klasse)': `${student} (${stats.klasse})`,
-      'Verspätungen (E)': stats.verspaetungen_entsch,
-      'Verspätungen (U)': stats.verspaetungen_unentsch,
-      'Verspätungen (O)': stats.verspaetungen_offen,
-      'Fehlzeiten (E)': stats.fehlzeiten_entsch,
-      'Fehlzeiten (U)': stats.fehlzeiten_unentsch,
-      'Fehlzeiten (O)': stats.fehlzeiten_offen,
-    }));
+    return data.map(([student, stats]) => {
+      const schoolYearData = schoolYearStats[student] || {
+        verspaetungen_unentsch: 0,
+        fehlzeiten_unentsch: 0
+      };
+      const weeklyData = weeklyStats[student] || {
+        verspaetungen: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) },
+        fehlzeiten: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) }
+      };
+
+      const verspaetungenAvg = (weeklyData.verspaetungen.total / parseInt(selectedWeeks)).toFixed(2);
+      const fehlzeitenAvg = (weeklyData.fehlzeiten.total / parseInt(selectedWeeks)).toFixed(2);
+
+      const verspaetungenWeekly = `${verspaetungenAvg}(${weeklyData.verspaetungen.weekly.join(',')})`;
+      const fehlzeitenWeekly = `${fehlzeitenAvg}(${weeklyData.fehlzeiten.weekly.join(',')})`;
+
+      const verspaetungenSum = `${weeklyData.verspaetungen.total}(${weeklyData.verspaetungen.weekly.join(',')})`;
+      const fehlzeitenSum = `${weeklyData.fehlzeiten.total}(${weeklyData.fehlzeiten.weekly.join(',')})`;
+
+      return {
+        'Name (Klasse)': `${student} (${stats.klasse})`,
+        'Verspätungen (E)': stats.verspaetungen_entsch,
+        'Verspätungen (U)': stats.verspaetungen_unentsch,
+        'Verspätungen (O)': stats.verspaetungen_offen,
+        'Fehlzeiten (E)': stats.fehlzeiten_entsch,
+        'Fehlzeiten (U)': stats.fehlzeiten_unentsch,
+        'Fehlzeiten (O)': stats.fehlzeiten_offen,
+        '∑SJ V': schoolYearData.verspaetungen_unentsch,
+        '∑SJ F': schoolYearData.fehlzeiten_unentsch,
+        'Øx() V': verspaetungenWeekly,
+        'Øx() F': fehlzeitenWeekly,
+        '∑x() V': verspaetungenSum,
+        '∑x() F': fehlzeitenSum
+      };
+    });
   };
 
   const exportToExcel = () => {
@@ -30,7 +76,7 @@ const ExportButtons = ({ data, startDate, endDate }: ExportButtonsProps) => {
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Anwesenheitsstatistik");
-    
+
     const filename = `Anwesenheitsstatistik_${startDate}_${endDate}.xlsx`;
     XLSX.writeFile(workbook, filename);
   };
@@ -38,7 +84,7 @@ const ExportButtons = ({ data, startDate, endDate }: ExportButtonsProps) => {
   const exportToCSV = () => {
     const formattedData = formatData();
     const csv = unparse(formattedData);
-    
+
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -67,6 +113,13 @@ const ExportButtons = ({ data, startDate, endDate }: ExportButtonsProps) => {
       },
       headStyles: {
         fillColor: [66, 66, 66],
+      },
+      columnStyles: {
+        0: { cellWidth: 40 }, // Name (Klasse)
+        9: { cellWidth: 30 }, // Øx() V
+        10: { cellWidth: 30 }, // Øx() F
+        11: { cellWidth: 30 }, // ∑x() V
+        12: { cellWidth: 30 }, // ∑x() F
       },
     });
 
