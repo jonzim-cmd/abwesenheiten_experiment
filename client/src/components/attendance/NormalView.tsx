@@ -43,7 +43,6 @@ const NormalView = ({
     type: string;
   } | null>(null);
 
-  // Get filtered detail data for a specific student
   const getFilteredDetailData = (student: string): AbsenceEntry[] => {
     if (!expandedStudent || !activeFilter || expandedStudent !== student) return [];
 
@@ -53,16 +52,19 @@ const NormalView = ({
     // Return the appropriate entries based on the filter type
     switch (activeFilter.type) {
       case 'sj_verspaetungen': {
-        // Verwende die gleiche Logik wie in calculateSchoolYearStats
+        // Schuljahresbezogene Anzeige
         const schoolYear = getCurrentSchoolYear();
-        const startDate = new Date(schoolYear.start, 8, 1); // September 1st
+        const sjStartDate = new Date(schoolYear.start, 8, 1); // 1. September
+        const endDate = new Date(schoolYear.end, 7, 31); // 31. August
 
-        // Zeige alle unentschuldigten Verspätungen im aktuellen Schuljahr
         return studentData.verspaetungen_unentsch
           .filter(entry => {
-            const [day, month, year] = entry.datum.toString().split('.');
-            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-            return date >= startDate;
+            if (typeof entry.datum === 'string') {
+              const [day, month, year] = entry.datum.split('.');
+              const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+              return date >= sjStartDate && date <= endDate;
+            }
+            return false;
           })
           .sort((a, b) => {
             const [dayA, monthA, yearA] = a.datum.toString().split('.');
@@ -74,59 +76,42 @@ const NormalView = ({
       }
 
       case 'verspaetungen_entsch':
-        return studentData.verspaetungen_entsch.filter(entry => {
-          const date = new Date(entry.datum);
-          return date >= new Date(startDate) && date <= new Date(endDate);
-        });
       case 'verspaetungen_unentsch':
-        return studentData.verspaetungen_unentsch.filter(entry => {
-          const date = new Date(entry.datum);
-          return date >= new Date(startDate) && date <= new Date(endDate);
-        });
       case 'verspaetungen_offen':
-        return studentData.verspaetungen_offen.filter(entry => {
-          const date = new Date(entry.datum);
-          return date >= new Date(startDate) && date <= new Date(endDate);
-        });
       case 'fehlzeiten_entsch':
-        return studentData.fehlzeiten_entsch.filter(entry => {
-          const date = new Date(entry.datum);
-          return date >= new Date(startDate) && date <= new Date(endDate);
-        });
       case 'fehlzeiten_unentsch':
-        return studentData.fehlzeiten_unentsch.filter(entry => {
-          const date = new Date(entry.datum);
-          return date >= new Date(startDate) && date <= new Date(endDate);
+      case 'fehlzeiten_offen': {
+        // Zeitraumbezogene Anzeige
+        const entries = studentData[activeFilter.type];
+        return entries.filter(entry => {
+          if (typeof entry.datum === 'string') {
+            const [day, month, year] = entry.datum.split('.');
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            return date >= new Date(startDate) && date <= new Date(endDate);
+          }
+          return false;
         });
-      case 'fehlzeiten_offen':
-        return studentData.fehlzeiten_offen.filter(entry => {
-          const date = new Date(entry.datum);
-          return date >= new Date(startDate) && date <= new Date(endDate);
-        });
-      case 'sj_fehlzeiten':
-        return studentData.fehlzeiten_unentsch;
+      }
+
       case 'weekly_verspaetungen':
-      case 'sum_verspaetungen': {
-        const weeks = getLastNWeeks(parseInt(selectedWeeks));
-        const studentWeeklyStats = weeklyStats[student];
-        if (!studentWeeklyStats) return [];
-
-        return studentData.verspaetungen_unentsch.filter(entry => {
-          const date = new Date(entry.datum);
-          return weeks.some(week => date >= week.startDate && date <= week.endDate);
-        });
-      }
       case 'weekly_fehlzeiten':
+      case 'sum_verspaetungen':
       case 'sum_fehlzeiten': {
+        // Wochenbezogene Anzeige
         const weeks = getLastNWeeks(parseInt(selectedWeeks));
-        const studentWeeklyStats = weeklyStats[student];
-        if (!studentWeeklyStats) return [];
+        const isVerspaetung = activeFilter.type.includes('verspaetungen');
+        const entries = isVerspaetung ? studentData.verspaetungen_unentsch : studentData.fehlzeiten_unentsch;
 
-        return studentData.fehlzeiten_unentsch.filter(entry => {
-          const date = new Date(entry.datum);
-          return weeks.some(week => date >= week.startDate && date <= week.endDate);
+        return entries.filter(entry => {
+          if (typeof entry.datum === 'string') {
+            const [day, month, year] = entry.datum.split('.');
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            return weeks.some(week => date >= week.startDate && date <= week.endDate);
+          }
+          return false;
         });
       }
+
       default:
         return [];
     }

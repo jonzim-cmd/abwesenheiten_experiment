@@ -43,8 +43,20 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     }
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('de-DE', {
+  const formatDate = (datum: Date | string) => {
+    // Wenn datum ein String im Format "DD.MM.YYYY" ist
+    if (typeof datum === 'string') {
+      const [day, month, year] = datum.split('.');
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      return date.toLocaleDateString('de-DE', {
+        weekday: 'long',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+    }
+    // Wenn datum bereits ein Date-Objekt ist
+    return datum.toLocaleDateString('de-DE', {
       weekday: 'long',
       year: 'numeric',
       month: '2-digit',
@@ -82,6 +94,11 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
                       <span className="ml-2">
                         {entry.art}
                         {entry.grund && ` - ${entry.grund}`}
+                      </span>
+                    )}
+                    {entry.status && (
+                      <span className="ml-2 text-gray-500 italic">
+                        [{entry.status}]
                       </span>
                     )}
                   </div>
