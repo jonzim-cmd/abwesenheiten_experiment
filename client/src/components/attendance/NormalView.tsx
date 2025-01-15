@@ -5,16 +5,19 @@ import StudentTableRow from './table/StudentTableRow';
 import StudentDetailsRow from './table/StudentDetailsRow';
 import { StudentStats, AbsenceEntry, getLastNWeeks, getCurrentSchoolYear } from '@/lib/attendance-utils';
 
+interface DetailedStats {
+  verspaetungen_entsch: AbsenceEntry[];
+  verspaetungen_unentsch: AbsenceEntry[];
+  verspaetungen_offen: AbsenceEntry[];
+  fehlzeiten_entsch: AbsenceEntry[];
+  fehlzeiten_unentsch: AbsenceEntry[];
+  fehlzeiten_offen: AbsenceEntry[];
+}
+
 interface NormalViewProps {
   filteredStudents: [string, StudentStats][];
-  detailedData: Record<string, {
-    verspaetungen_entsch: AbsenceEntry[];
-    verspaetungen_unentsch: AbsenceEntry[];
-    verspaetungen_offen: AbsenceEntry[];
-    fehlzeiten_entsch: AbsenceEntry[];
-    fehlzeiten_unentsch: AbsenceEntry[];
-    fehlzeiten_offen: AbsenceEntry[];
-  }>;
+  detailedData: Record<string, DetailedStats>;
+  schoolYearDetailedData: Record<string, DetailedStats>;
   startDate: string;
   endDate: string;
   schoolYearStats: Record<string, {
@@ -31,6 +34,7 @@ interface NormalViewProps {
 const NormalView = ({ 
   filteredStudents, 
   detailedData, 
+  schoolYearDetailedData,
   startDate, 
   endDate, 
   schoolYearStats, 
@@ -58,40 +62,17 @@ const NormalView = ({
     if (!expandedStudent || !activeFilter || expandedStudent !== student) return [];
 
     const studentData = detailedData[student];
-    if (!studentData) return [];
+    const studentSchoolYearData = schoolYearDetailedData[student];
+    if (!studentData || !studentSchoolYearData) return [];
 
     switch (activeFilter.type) {
       case 'sj_verspaetungen':
       case 'sj_fehlzeiten': {
-        const schoolYear = getCurrentSchoolYear();
-        const sjStartDate = new Date(schoolYear.start, 8, 1); // 1. September
-        const sjEndDate = new Date(schoolYear.end, 7, 31); // 31. August
-        const today = new Date();
+        const entries = activeFilter.type === 'sj_verspaetungen' 
+          ? [...studentSchoolYearData.verspaetungen_unentsch, ...studentSchoolYearData.verspaetungen_offen]
+          : [...studentSchoolYearData.fehlzeiten_unentsch, ...studentSchoolYearData.fehlzeiten_offen];
 
-        // Get all entries for the current school year without considering the selected date range
-        let allEntries: AbsenceEntry[] = [];
-        if (activeFilter.type === 'sj_verspaetungen') {
-          allEntries = [
-            ...studentData.verspaetungen_unentsch,
-            ...studentData.verspaetungen_offen
-          ];
-        } else {
-          allEntries = [
-            ...studentData.fehlzeiten_unentsch,
-            ...studentData.fehlzeiten_offen
-          ];
-        }
-
-        return allEntries
-          .filter(entry => {
-            const date = parseDate(entry.datum);
-            const isInSchoolYear = date >= sjStartDate && date <= sjEndDate;
-            const isUnentschuldigt = entry.status === 'nicht entsch.' || entry.status === 'nicht akzep.';
-            const isUeberfaellig = !entry.status && (today > new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
-
-            return isInSchoolYear && (isUnentschuldigt || isUeberfaellig);
-          })
-          .sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
+        return entries.sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
       }
 
       case 'verspaetungen_entsch':
