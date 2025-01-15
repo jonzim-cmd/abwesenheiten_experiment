@@ -63,10 +63,9 @@ const NormalView = ({
     switch (activeFilter.type) {
       case 'sj_verspaetungen':
       case 'sj_fehlzeiten': {
-        // Schuljahresbezogene Anzeige - unabhängig vom gewählten Zeitraum
         const schoolYear = getCurrentSchoolYear();
-        const sjStartDate = new Date(schoolYear.start, 8, 1); // 1. September
-        const sjEndDate = new Date(schoolYear.end, 7, 31); // 31. August
+        const sjStartDate = new Date(schoolYear.start, 8, 1); 
+        const sjEndDate = new Date(schoolYear.end, 7, 31); 
 
         const entries = activeFilter.type === 'sj_verspaetungen' 
           ? studentData.verspaetungen_unentsch 

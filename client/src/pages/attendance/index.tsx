@@ -86,14 +86,16 @@ const AttendanceAnalyzer = () => {
       const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
       const studentName = `${row.Langname}, ${row.Vorname}`;
 
-      if (date >= startDate && date <= endDate) {
-        if (!stats[studentName]) {
-          stats[studentName] = { 
-            verspaetungen_unentsch: 0, 
-            fehlzeiten_unentsch: 0 
-          };
-        }
+      // Initialisiere Statistiken für neuen Schüler
+      if (!stats[studentName]) {
+        stats[studentName] = { 
+          verspaetungen_unentsch: 0, 
+          fehlzeiten_unentsch: 0 
+        };
+      }
 
+      // Prüfe, ob das Datum im aktuellen Schuljahr liegt
+      if (date >= startDate && date <= endDate) {
         const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
         const isUnentschuldigt = row.Status === 'nicht entsch.' || row.Status === 'nicht akzep.';
 
