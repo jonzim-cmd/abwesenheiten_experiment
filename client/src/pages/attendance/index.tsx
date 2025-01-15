@@ -39,7 +39,6 @@ const AttendanceAnalyzer = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState('');
   const [detailedData, setDetailedData] = useState<Record<string, DetailedStats>>({});
-  // Neue separate Struktur für die Schuljahresdaten
   const [schoolYearDetailedData, setSchoolYearDetailedData] = useState<Record<string, DetailedStats>>({});
   const [filterUnexcusedLate, setFilterUnexcusedLate] = useState(false);
   const [filterUnexcusedAbsent, setFilterUnexcusedAbsent] = useState(false);
@@ -50,6 +49,7 @@ const AttendanceAnalyzer = () => {
   const [selectedWeeks, setSelectedWeeks] = useState('1');
   const [schoolYearStats, setSchoolYearStats] = useState<any>({});
   const [weeklyStats, setWeeklyStats] = useState<any>({});
+  const [weeklyDetailedData, setWeeklyDetailedData] = useState<Record<string, DetailedStats>>({});
 
   const resetAll = () => {
     setRawData(null);
@@ -59,7 +59,7 @@ const AttendanceAnalyzer = () => {
     setSearchQuery('');
     setError('');
     setDetailedData({});
-    setSchoolYearDetailedData({}); // Added to reset school year data
+    setSchoolYearDetailedData({});
     setFilterUnexcusedLate(false);
     setFilterUnexcusedAbsent(false);
     setMinUnexcusedLates('');
@@ -69,6 +69,7 @@ const AttendanceAnalyzer = () => {
     setSelectedWeeks('1');
     setSchoolYearStats({});
     setWeeklyStats({});
+    setWeeklyDetailedData({}); //Added to reset weekly detailed data
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -76,8 +77,8 @@ const AttendanceAnalyzer = () => {
 
   const calculateSchoolYearStats = useCallback((data: any[]) => {
     const schoolYear = getCurrentSchoolYear();
-    const sjStartDate = new Date(schoolYear.start, 8, 1); // 1. September
-    const sjEndDate = new Date(schoolYear.end, 7, 31); // 31. August
+    const sjStartDate = new Date(schoolYear.start, 8, 1); 
+    const sjEndDate = new Date(schoolYear.end, 7, 31); 
     const today = new Date();
 
     const stats: Record<string, { verspaetungen_unentsch: number; fehlzeiten_unentsch: number }> = {};
@@ -90,7 +91,6 @@ const AttendanceAnalyzer = () => {
       const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
       const studentName = `${row.Langname}, ${row.Vorname}`;
 
-      // Initialisiere Statistiken für neuen Schüler
       if (!stats[studentName]) {
         stats[studentName] = { 
           verspaetungen_unentsch: 0, 
@@ -98,13 +98,11 @@ const AttendanceAnalyzer = () => {
         };
       }
 
-      // Überprüfe nur, ob das Datum im Schuljahr liegt
       if (date >= sjStartDate && date <= sjEndDate) {
         const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
         const isUnentschuldigt = row.Status === 'nicht entsch.' || row.Status === 'nicht akzep.';
         const isUeberfaellig = !row.Status && (today > new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
 
-        // Zähle nur wenn unentschuldigt oder überfällig
         if (isUnentschuldigt || isUeberfaellig) {
           if (isVerspaetung) {
             stats[studentName].verspaetungen_unentsch++;
@@ -130,14 +128,13 @@ const AttendanceAnalyzer = () => {
       const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
       const studentName = `${row.Langname}, ${row.Vorname}`;
 
-      // Finde die passende Woche für das Datum
       const weekIndex = weeks.findIndex(w => {
         const startDate = w.startDate;
         const endDate = w.endDate;
         return date >= startDate && date <= endDate;
       });
 
-      if (weekIndex === -1) return; // Datum liegt außerhalb der betrachteten Wochen
+      if (weekIndex === -1) return; 
 
       if (!stats[studentName]) {
         stats[studentName] = {
@@ -169,6 +166,7 @@ const AttendanceAnalyzer = () => {
       const studentStats: any = {};
       const detailedStats: Record<string, DetailedStats> = {};
       const schoolYearDetails: Record<string, DetailedStats> = {};
+      const weeklyDetails: Record<string, DetailedStats> = {};
       const schoolYear = getCurrentSchoolYear();
       const sjStartDate = new Date(schoolYear.start, 8, 1);
       const sjEndDate = new Date(schoolYear.end, 7, 31);
@@ -181,7 +179,6 @@ const AttendanceAnalyzer = () => {
         const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
         const studentName = `${row.Langname}, ${row.Vorname}`;
 
-        // Initialize statistics and detailed data for new student
         if (!studentStats[studentName]) {
           studentStats[studentName] = {
             verspaetungen_entsch: 0,
@@ -194,7 +191,6 @@ const AttendanceAnalyzer = () => {
           };
         }
 
-        // Initialize detailed stats for new student
         if (!detailedStats[studentName]) {
           detailedStats[studentName] = {
             verspaetungen_entsch: [],
@@ -206,9 +202,19 @@ const AttendanceAnalyzer = () => {
           };
         }
 
-        // Initialize school year details for new student
         if (!schoolYearDetails[studentName]) {
           schoolYearDetails[studentName] = {
+            verspaetungen_entsch: [],
+            verspaetungen_unentsch: [],
+            verspaetungen_offen: [],
+            fehlzeiten_entsch: [],
+            fehlzeiten_unentsch: [],
+            fehlzeiten_offen: []
+          };
+        }
+
+        if (!weeklyDetails[studentName]) {
+          weeklyDetails[studentName] = {
             verspaetungen_entsch: [],
             verspaetungen_unentsch: [],
             verspaetungen_offen: [],
@@ -225,9 +231,8 @@ const AttendanceAnalyzer = () => {
         const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || effectiveStatus === 'nicht akzep.';
         const deadlineDate = new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000);
         const isOverDeadline = today > deadlineDate;
-        const isOffen = !effectiveStatus && !isOverDeadline; // Nur offen wenn kein Status UND Frist noch nicht abgelaufen
+        const isOffen = !effectiveStatus && !isOverDeadline;
 
-        // Create entry object
         const entry: AbsenceEntry = {
           datum: date,
           art: isVerspaetung ? 'Verspätung' : (row.Abwesenheitsgrund || 'Fehltag'),
@@ -237,7 +242,6 @@ const AttendanceAnalyzer = () => {
           status: effectiveStatus as AbsenceStatus
         };
 
-        // Verarbeite die Einträge für den ausgewählten Zeitraum
         if (date >= startDateTime && date <= endDateTime) {
           if (isVerspaetung) {
             if (isEntschuldigt) {
@@ -264,24 +268,25 @@ const AttendanceAnalyzer = () => {
           }
         }
 
-        // Verarbeite die Einträge für das gesamte Schuljahr
         if (date >= sjStartDate && date <= sjEndDate) {
           if (isVerspaetung) {
-            if (isEntschuldigt) {
-              schoolYearDetails[studentName].verspaetungen_entsch.push(entry);
-            } else if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
+            if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
               schoolYearDetails[studentName].verspaetungen_unentsch.push(entry);
-            } else if (isOffen) {
-              schoolYearDetails[studentName].verspaetungen_offen.push(entry);
             }
           } else {
-            if (isEntschuldigt) {
-              schoolYearDetails[studentName].fehlzeiten_entsch.push(entry);
-            } else if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
+            if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
               schoolYearDetails[studentName].fehlzeiten_unentsch.push(entry);
-            } else if (isOffen) {
-              schoolYearDetails[studentName].fehlzeiten_offen.push(entry);
             }
+          }
+        }
+
+        if (isVerspaetung) {
+          if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
+            weeklyDetails[studentName].verspaetungen_unentsch.push(entry);
+          }
+        } else {
+          if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
+            weeklyDetails[studentName].fehlzeiten_unentsch.push(entry);
           }
         }
       });
@@ -289,6 +294,7 @@ const AttendanceAnalyzer = () => {
       setResults(studentStats);
       setDetailedData(detailedStats);
       setSchoolYearDetailedData(schoolYearDetails);
+      setWeeklyDetailedData(weeklyDetails);
       setAvailableStudents(Object.keys(studentStats).sort());
       setError('');
     } catch (err: any) {
@@ -431,18 +437,14 @@ const AttendanceAnalyzer = () => {
                         break;
                       }
                       case 'thisMonth': {
-                        // Setze Start auf den ersten Tag des aktuellen Monats
                         start = new Date(currentYear, currentMonth, 1);
-                        // Setze Ende auf den letzten Tag des aktuellen Monats
                         end = new Date(currentYear, currentMonth + 1, 0);
                         break;
                       }
                       case 'lastMonth': {
-                        // Setze Start auf den ersten Tag des vorherigen Monats
                         const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
                         const yearOfLastMonth = currentMonth === 0 ? currentYear - 1 : currentYear;
                         start = new Date(yearOfLastMonth, lastMonth, 1);
-                        // Setze Ende auf den letzten Tag des vorherigen Monats
                         end = new Date(yearOfLastMonth, lastMonth + 1, 0);
                         break;
                       }
@@ -617,6 +619,7 @@ const AttendanceAnalyzer = () => {
                     schoolYearStats={schoolYearStats}
                     weeklyStats={weeklyStats}
                     selectedWeeks={selectedWeeks}
+                    weeklyDetailedData={weeklyDetailedData} // Pass the new state variable
                   />
                 )}
               </>

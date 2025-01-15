@@ -18,6 +18,7 @@ interface NormalViewProps {
   filteredStudents: [string, StudentStats][];
   detailedData: Record<string, DetailedStats>;
   schoolYearDetailedData: Record<string, DetailedStats>;
+  weeklyDetailedData: Record<string, DetailedStats>;
   startDate: string;
   endDate: string;
   schoolYearStats: Record<string, {
@@ -35,6 +36,7 @@ const NormalView = ({
   filteredStudents, 
   detailedData, 
   schoolYearDetailedData,
+  weeklyDetailedData,
   startDate, 
   endDate, 
   schoolYearStats, 
@@ -63,12 +65,12 @@ const NormalView = ({
 
     const studentData = detailedData[student];
     const studentSchoolYearData = schoolYearDetailedData[student];
-    if (!studentData || !studentSchoolYearData) return [];
+    const studentWeeklyData = weeklyDetailedData[student];
+    if (!studentData || !studentSchoolYearData || !studentWeeklyData) return [];
 
     switch (activeFilter.type) {
       case 'sj_verspaetungen':
       case 'sj_fehlzeiten': {
-        // Nur unentschuldigte Fälle für Schuljahresstatistik
         const entries = activeFilter.type === 'sj_verspaetungen' 
           ? studentSchoolYearData.verspaetungen_unentsch
           : studentSchoolYearData.fehlzeiten_unentsch;
@@ -76,54 +78,38 @@ const NormalView = ({
         return entries.sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
       }
 
-      case 'verspaetungen_entsch':
-      case 'verspaetungen_unentsch':
-      case 'verspaetungen_offen':
-      case 'fehlzeiten_entsch':
-      case 'fehlzeiten_unentsch':
-      case 'fehlzeiten_offen': {
-        const selectedType = activeFilter.type as keyof typeof studentData;
-        return studentData[selectedType];
-      }
-
       case 'weekly_verspaetungen':
       case 'sum_verspaetungen': {
         const weeks = getLastNWeeks(parseInt(selectedWeeks));
-        const studentWeeklyStats = weeklyStats[student];
-        if (!studentWeeklyStats) return [];
-
-        // Filtern der Verspätungen basierend auf den ausgewählten Wochen
-        return studentData.verspaetungen_unentsch
+        const entries = studentWeeklyData.verspaetungen_unentsch
           .filter(entry => {
             const date = parseDate(entry.datum);
-            // Prüfe ob das Datum in einer der ausgewählten Wochen liegt
             return weeks.some(week => 
               date >= week.startDate && date <= week.endDate
             );
-          })
-          .sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
+          });
+
+        return entries.sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
       }
 
       case 'weekly_fehlzeiten':
       case 'sum_fehlzeiten': {
         const weeks = getLastNWeeks(parseInt(selectedWeeks));
-        const studentWeeklyStats = weeklyStats[student];
-        if (!studentWeeklyStats) return [];
-
-        // Filtern der Fehlzeiten basierend auf den ausgewählten Wochen
-        return studentData.fehlzeiten_unentsch
+        const entries = studentWeeklyData.fehlzeiten_unentsch
           .filter(entry => {
             const date = parseDate(entry.datum);
-            // Prüfe ob das Datum in einer der ausgewählten Wochen liegt
             return weeks.some(week => 
               date >= week.startDate && date <= week.endDate
             );
-          })
-          .sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
+          });
+
+        return entries.sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
       }
 
-      default:
-        return [];
+      default: {
+        const selectedType = activeFilter.type as keyof typeof studentData;
+        return studentData[selectedType];
+      }
     }
   };
 
