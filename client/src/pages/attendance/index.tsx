@@ -69,7 +69,7 @@ const AttendanceAnalyzer = () => {
     setSelectedWeeks('1');
     setSchoolYearStats({});
     setWeeklyStats({});
-    setWeeklyDetailedData({}); //Added to reset weekly detailed data
+    setWeeklyDetailedData({}); 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -519,69 +519,76 @@ const AttendanceAnalyzer = () => {
 
             {results && (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="searchQuery">Suche nach Namen</Label>
-                    <Input
-                      id="searchQuery"
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Namen eingeben..."
-                      className="mt-1"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Filter</Label>
-                    <div className="flex gap-4">
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={filterUnexcusedLate}
-                          onChange={(e) => setFilterUnexcusedLate(e.target.checked)}
-                          className="mr-2"
+                <Card className="mb-6">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Filter für den ausgewählten Zeitraum</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="searchQuery">Suche nach Namen</Label>
+                        <Input
+                          id="searchQuery"
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Namen eingeben..."
+                          className="mt-1"
                         />
-                        Unentschuldigte Verspätungen
-                      </label>
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={filterUnexcusedAbsent}
-                          onChange={(e) => setFilterUnexcusedAbsent(e.target.checked)}
-                          className="mr-2"
-                        />
-                        Unentschuldigte Fehlzeiten
-                      </label>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Anzeigefilter</Label>
+                        <div className="flex gap-4">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={filterUnexcusedLate}
+                              onChange={(e) => setFilterUnexcusedLate(e.target.checked)}
+                              className="mr-2"
+                            />
+                            Unentschuldigte Verspätungen
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={filterUnexcusedAbsent}
+                              onChange={(e) => setFilterUnexcusedAbsent(e.target.checked)}
+                              className="mr-2"
+                            />
+                            Unentschuldigte Fehlzeiten
+                          </label>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="minLates">Minimale unentschuldigte Verspätungen</Label>
-                    <Input
-                      id="minLates"
-                      type="number"
-                      min="0"
-                      value={minUnexcusedLates}
-                      onChange={(e) => setMinUnexcusedLates(e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="minAbsences">Minimale unentschuldigte Fehlzeiten</Label>
-                    <Input
-                      id="minAbsences"
-                      type="number"
-                      min="0"
-                      value={minUnexcusedAbsences}
-                      onChange={(e) => setMinUnexcusedAbsences(e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="minLates">Minimale unentschuldigte Verspätungen</Label>
+                        <Input
+                          id="minLates"
+                          type="number"
+                          min="0"
+                          value={minUnexcusedLates}
+                          onChange={(e) => setMinUnexcusedLates(e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="minAbsences">Minimale unentschuldigte Fehlzeiten</Label>
+                        <Input
+                          id="minAbsences"
+                          type="number"
+                          min="0"
+                          value={minUnexcusedAbsences}
+                          onChange={(e) => setMinUnexcusedAbsences(e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-                <div className="flex gap-4">
+                <div className="flex gap-4 mb-6">
                   <Button
                     variant={isReportView ? "outline" : "default"}
                     onClick={() => setIsReportView(false)}
@@ -619,7 +626,7 @@ const AttendanceAnalyzer = () => {
                     schoolYearStats={schoolYearStats}
                     weeklyStats={weeklyStats}
                     selectedWeeks={selectedWeeks}
-                    weeklyDetailedData={weeklyDetailedData} // Pass the new state variable
+                    weeklyDetailedData={weeklyDetailedData} 
                   />
                 )}
               </>
