@@ -519,45 +519,44 @@ const AttendanceAnalyzer = () => {
 
             {results && (
               <>
+                <div className="mb-6">
+                  <Label htmlFor="searchQuery">Suche nach Namen</Label>
+                  <Input
+                    id="searchQuery"
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Namen eingeben..."
+                    className="mt-1"
+                  />
+                </div>
+
                 <Card className="mb-6">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg">Filter für den ausgewählten Zeitraum</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="searchQuery">Suche nach Namen</Label>
-                        <Input
-                          id="searchQuery"
-                          type="text"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          placeholder="Namen eingeben..."
-                          className="mt-1"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Anzeigefilter</Label>
-                        <div className="flex gap-4">
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={filterUnexcusedLate}
-                              onChange={(e) => setFilterUnexcusedLate(e.target.checked)}
-                              className="mr-2"
-                            />
-                            Unentschuldigte Verspätungen
-                          </label>
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={filterUnexcusedAbsent}
-                              onChange={(e) => setFilterUnexcusedAbsent(e.target.checked)}
-                              className="mr-2"
-                            />
-                            Unentschuldigte Fehlzeiten
-                          </label>
-                        </div>
+                    <div>
+                      <Label>Anzeigefilter</Label>
+                      <div className="flex gap-4 mt-1">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={filterUnexcusedLate}
+                            onChange={(e) => setFilterUnexcusedLate(e.target.checked)}
+                            className="mr-2"
+                          />
+                          Unentschuldigte Verspätungen
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={filterUnexcusedAbsent}
+                            onChange={(e) => setFilterUnexcusedAbsent(e.target.checked)}
+                            className="mr-2"
+                          />
+                          Unentschuldigte Fehlzeiten
+                        </label>
                       </div>
                     </div>
 
@@ -621,12 +620,12 @@ const AttendanceAnalyzer = () => {
                     filteredStudents={getFilteredStudents()}
                     detailedData={detailedData}
                     schoolYearDetailedData={schoolYearDetailedData}
+                    weeklyDetailedData={weeklyDetailedData}
                     startDate={startDate}
                     endDate={endDate}
                     schoolYearStats={schoolYearStats}
                     weeklyStats={weeklyStats}
                     selectedWeeks={selectedWeeks}
-                    weeklyDetailedData={weeklyDetailedData} 
                   />
                 )}
               </>
