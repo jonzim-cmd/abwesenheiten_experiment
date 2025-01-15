@@ -23,6 +23,7 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
           schoolYearStats={{}}
           weeklyStats={{}}
           selectedWeeks="1"
+          isReportView={true}
         />
       </div>
 

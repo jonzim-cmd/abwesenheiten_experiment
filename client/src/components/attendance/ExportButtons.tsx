@@ -23,6 +23,7 @@ interface ExportButtonsProps {
     };
   };
   selectedWeeks: string;
+  isReportView?: boolean;
 }
 
 const ExportButtons = ({ 
@@ -31,51 +32,71 @@ const ExportButtons = ({
   endDate, 
   schoolYearStats,
   weeklyStats,
-  selectedWeeks 
+  selectedWeeks,
+  isReportView = false
 }: ExportButtonsProps) => {
   const formatData = () => {
-    return data.map(([student, stats]) => {
-      const schoolYearData = schoolYearStats[student] || {
-        verspaetungen_unentsch: 0,
-        fehlzeiten_unentsch: 0
-      };
-      const weeklyData = weeklyStats[student] || {
-        verspaetungen: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) },
-        fehlzeiten: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) }
-      };
+    if (isReportView) {
+      // Format data for report view
+      return data.map(([student, stats], index) => {
+        // Split student name into Nachname and Vorname
+        const [nachname = "", vorname = ""] = student.split(",").map(s => s.trim());
 
-      const verspaetungenAvg = (weeklyData.verspaetungen.total / parseInt(selectedWeeks)).toFixed(2);
-      const fehlzeitenAvg = (weeklyData.fehlzeiten.total / parseInt(selectedWeeks)).toFixed(2);
+        return {
+          'Nr.': index + 1,
+          'Nachname': nachname,
+          'Vorname': vorname,
+          'Klasse': stats.klasse,
+          'Unentschuldigte Verspätungen': stats.verspaetungen_unentsch > 0 ? 
+            `${stats.verspaetungen_unentsch} Verspätung(en)` : '-',
+          'Unentschuldigte Fehlzeiten': stats.fehlzeiten_unentsch > 0 ? 
+            `${stats.fehlzeiten_unentsch} Fehlzeit(en)` : '-'
+        };
+      });
+    } else {
+      // Format data for normal view
+      return data.map(([student, stats]) => {
+        const weeklyData = weeklyStats[student] || {
+          verspaetungen: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) },
+          fehlzeiten: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) }
+        };
 
-      const verspaetungenWeekly = `${verspaetungenAvg}(${weeklyData.verspaetungen.weekly.join(',')})`;
-      const fehlzeitenWeekly = `${fehlzeitenAvg}(${weeklyData.fehlzeiten.weekly.join(',')})`;
+        const verspaetungenAvg = (weeklyData.verspaetungen.total / parseInt(selectedWeeks)).toFixed(2);
+        const fehlzeitenAvg = (weeklyData.fehlzeiten.total / parseInt(selectedWeeks)).toFixed(2);
 
-      const verspaetungenSum = `${weeklyData.verspaetungen.total}(${weeklyData.verspaetungen.weekly.join(',')})`;
-      const fehlzeitenSum = `${weeklyData.fehlzeiten.total}(${weeklyData.fehlzeiten.weekly.join(',')})`;
+        const verspaetungenWeekly = `${verspaetungenAvg}(${weeklyData.verspaetungen.weekly.join(',')})`;
+        const fehlzeitenWeekly = `${fehlzeitenAvg}(${weeklyData.fehlzeiten.weekly.join(',')})`;
 
-      // Split student name into Nachname and Vorname
-      const nameParts = student.split('\t');
-      const nachname = nameParts[0];
-      const vorname = nameParts[1];
+        const verspaetungenSum = `${weeklyData.verspaetungen.total}(${weeklyData.verspaetungen.weekly.join(',')})`;
+        const fehlzeitenSum = `${weeklyData.fehlzeiten.total}(${weeklyData.fehlzeiten.weekly.join(',')})`;
 
-      return {
-        'Nachname': nachname,
-        'Vorname': vorname,
-        'Klasse': stats.klasse,
-        'Verspätungen (E)': stats.verspaetungen_entsch,
-        'Verspätungen (U)': stats.verspaetungen_unentsch,
-        'Verspätungen (O)': stats.verspaetungen_offen,
-        'Fehlzeiten (E)': stats.fehlzeiten_entsch,
-        'Fehlzeiten (U)': stats.fehlzeiten_unentsch,
-        'Fehlzeiten (O)': stats.fehlzeiten_offen,
-        '∑SJ V': schoolYearData.verspaetungen_unentsch,
-        '∑SJ F': schoolYearData.fehlzeiten_unentsch,
-        'Øx() V': verspaetungenWeekly,
-        'Øx() F': fehlzeitenWeekly,
-        '∑x() V': verspaetungenSum,
-        '∑x() F': fehlzeitenSum
-      };
-    });
+        const schoolYearData = schoolYearStats[student] || { 
+          verspaetungen_unentsch: 0, 
+          fehlzeiten_unentsch: 0 
+        };
+
+        // Split student name into Nachname and Vorname
+        const [nachname = "", vorname = ""] = student.split(",").map(s => s.trim());
+
+        return {
+          'Nachname': nachname,
+          'Vorname': vorname,
+          'Klasse': stats.klasse,
+          'Verspätungen (E)': stats.verspaetungen_entsch,
+          'Verspätungen (U)': stats.verspaetungen_unentsch,
+          'Verspätungen (O)': stats.verspaetungen_offen,
+          'Fehlzeiten (E)': stats.fehlzeiten_entsch,
+          'Fehlzeiten (U)': stats.fehlzeiten_unentsch,
+          'Fehlzeiten (O)': stats.fehlzeiten_offen,
+          '∑SJ V': schoolYearData.verspaetungen_unentsch,
+          '∑SJ F': schoolYearData.fehlzeiten_unentsch,
+          'Øx() V': verspaetungenWeekly,
+          'Øx() F': fehlzeitenWeekly,
+          '∑x() V': verspaetungenSum,
+          '∑x() F': fehlzeitenSum
+        };
+      });
+    }
   };
 
   const exportToExcel = () => {
@@ -111,7 +132,7 @@ const ExportButtons = ({
     doc.setFontSize(16);
     doc.text('Anwesenheitsstatistik', 14, 15);
     doc.setFontSize(12);
-    doc.text(`Zeitraum: ${startDate} - ${endDate}`, 14, 25);
+    doc.text(`Zeitraum: ${new Date(startDate).toLocaleDateString('de-DE')} - ${new Date(endDate).toLocaleDateString('de-DE')}`, 14, 25);
 
     // Add table
     autoTable(doc, {
@@ -125,7 +146,14 @@ const ExportButtons = ({
       headStyles: {
         fillColor: [66, 66, 66],
       },
-      columnStyles: {
+      columnStyles: isReportView ? {
+        0: { cellWidth: 15 }, // Nr
+        1: { cellWidth: 30 }, // Nachname
+        2: { cellWidth: 30 }, // Vorname
+        3: { cellWidth: 20 }, // Klasse
+        4: { cellWidth: 40 }, // Unentschuldigte Verspätungen
+        5: { cellWidth: 40 }, // Unentschuldigte Fehlzeiten
+      } : {
         0: { cellWidth: 25 }, // Nachname
         1: { cellWidth: 25 }, // Vorname
         2: { cellWidth: 15 }, // Klasse
