@@ -129,10 +129,18 @@ const ExportButtons = ({
         0: { cellWidth: 25 }, // Nachname
         1: { cellWidth: 25 }, // Vorname
         2: { cellWidth: 15 }, // Klasse
-        11: { cellWidth: 30 }, // Øx() V
-        12: { cellWidth: 30 }, // Øx() F
-        13: { cellWidth: 30 }, // ∑x() V
-        14: { cellWidth: 30 }, // ∑x() F
+        3: { cellWidth: 18 }, // Verspätungen (E)
+        4: { cellWidth: 18 }, // Verspätungen (U)
+        5: { cellWidth: 18 }, // Verspätungen (O)
+        6: { cellWidth: 18 }, // Fehlzeiten (E)
+        7: { cellWidth: 18 }, // Fehlzeiten (U)
+        8: { cellWidth: 18 }, // Fehlzeiten (O)
+        9: { cellWidth: 15 }, // ∑SJ V
+        10: { cellWidth: 15 }, // ∑SJ F
+        11: { cellWidth: 20 }, // Øx() V
+        12: { cellWidth: 20 }, // Øx() F
+        13: { cellWidth: 20 }, // ∑x() V
+        14: { cellWidth: 20 }, // ∑x() F
       },
     });
 
