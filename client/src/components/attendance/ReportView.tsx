@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { DetailedStats } from '@/lib/attendance-utils';
+import ExportButtons from './ExportButtons';
 
 interface ReportViewProps {
   filteredStudents: [string, any][];
@@ -11,9 +12,19 @@ interface ReportViewProps {
 const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: ReportViewProps) => {
   return (
     <div className="mt-6 space-y-4">
-      <h3 className="text-lg font-semibold">
-        Unentschuldigte Verspätungen und Fehlzeiten für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
-      </h3>
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">
+          Unentschuldigte Verspätungen und Fehlzeiten für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
+        </h3>
+        <ExportButtons
+          data={filteredStudents}
+          startDate={startDate}
+          endDate={endDate}
+          schoolYearStats={{}}
+          weeklyStats={{}}
+          selectedWeeks="1"
+        />
+      </div>
 
       <div className="overflow-x-auto">
         <table className="w-full table-fixed">
@@ -76,7 +87,7 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
                     {index + 1}
                   </td>
                   <td className="px-6 py-4 whitespace-normal text-sm font-medium text-gray-900 border-b border-r border-gray-200">
-                    {student}
+                    {student} ({stats.klasse})
                   </td>
                   <td className="px-6 py-4 whitespace-pre-line text-sm text-gray-500 border-b border-r border-gray-200">
                     {formattedLates.length > 0 ? formattedLates.join('\n') : '-'}
