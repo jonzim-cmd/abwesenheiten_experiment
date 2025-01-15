@@ -1,0 +1,157 @@
+import React from 'react';
+import { StudentStats, AbsenceEntry } from '@/lib/attendance-utils';
+import StudentDetailsRow from './StudentDetailsRow';
+
+interface StatisticsTableProps {
+  filteredStudents: [string, StudentStats][];
+  detailedData: Record<string, {
+    verspaetungen_entsch: AbsenceEntry[];
+    verspaetungen_unentsch: AbsenceEntry[];
+    verspaetungen_offen: AbsenceEntry[];
+    fehlzeiten_entsch: AbsenceEntry[];
+    fehlzeiten_unentsch: AbsenceEntry[];
+    fehlzeiten_offen: AbsenceEntry[];
+  }>;
+  schoolYearStats: Record<string, {
+    verspaetungen_unentsch: number;
+    fehlzeiten_unentsch: number;
+  }>;
+  weeklyStats: Record<string, {
+    verspaetungen: { total: number; weekly: number[] };
+    fehlzeiten: { total: number; weekly: number[] };
+  }>;
+  selectedWeeks: string;
+  expandedStudent: string | null;
+  activeFilter: { student: string; type: string } | null;
+  onShowFilteredDetails: (student: string, type: string, weekData?: number[]) => void;
+}
+
+const StatisticsTable = ({
+  filteredStudents,
+  detailedData,
+  schoolYearStats,
+  weeklyStats,
+  selectedWeeks,
+  expandedStudent,
+  activeFilter,
+  onShowFilteredDetails
+}: StatisticsTableProps) => {
+  return (
+    <div className="overflow-x-auto border rounded-lg">
+      <table className="min-w-full border-collapse bg-white">
+        <thead>
+          <tr className="bg-gray-50 border-b border-gray-200">
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+              Name (Klasse)
+            </th>
+            <th colSpan={2} className="text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+              Schuljahr
+            </th>
+            <th colSpan={2} className="text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+              ∅/Woche
+            </th>
+            <th colSpan={2} className="text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Summe
+            </th>
+          </tr>
+          <tr className="bg-gray-50 border-b border-gray-200">
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r"></th>
+            <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 tracking-wider border-r">∑SJ V</th>
+            <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 tracking-wider border-r">∑SJ F</th>
+            <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 tracking-wider border-r">V</th>
+            <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 tracking-wider border-r">F</th>
+            <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 tracking-wider border-r">V</th>
+            <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 tracking-wider">F</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredStudents.map(([student, stats], index) => {
+            const rowColor = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+            const schoolYearData = schoolYearStats[student] || {
+              verspaetungen_unentsch: 0,
+              fehlzeiten_unentsch: 0
+            };
+            const weeklyData = weeklyStats[student] || {
+              verspaetungen: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) },
+              fehlzeiten: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) }
+            };
+            const verspaetungenAvg = (weeklyData.verspaetungen.total / parseInt(selectedWeeks)).toFixed(2);
+            const fehlzeitenAvg = (weeklyData.fehlzeiten.total / parseInt(selectedWeeks)).toFixed(2);
+            const showDetails = expandedStudent === student && 
+              ['sj_verspaetungen', 'sj_fehlzeiten', 'weekly_verspaetungen', 'weekly_fehlzeiten', 
+               'sum_verspaetungen', 'sum_fehlzeiten'].includes(activeFilter?.type || '');
+
+            return (
+              <React.Fragment key={student}>
+                <tr className={rowColor}>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900 border-r">
+                    {student} ({stats.klasse})
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center border-r">
+                    <span 
+                      className="cursor-pointer hover:underline"
+                      onClick={() => onShowFilteredDetails(student, 'sj_verspaetungen')}
+                    >
+                      {schoolYearData.verspaetungen_unentsch}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center border-r">
+                    <span 
+                      className="cursor-pointer hover:underline"
+                      onClick={() => onShowFilteredDetails(student, 'sj_fehlzeiten')}
+                    >
+                      {schoolYearData.fehlzeiten_unentsch}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center border-r">
+                    <span 
+                      className="cursor-pointer hover:underline"
+                      onClick={() => onShowFilteredDetails(student, 'weekly_verspaetungen', weeklyData.verspaetungen.weekly)}
+                    >
+                      {verspaetungenAvg}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center border-r">
+                    <span 
+                      className="cursor-pointer hover:underline"
+                      onClick={() => onShowFilteredDetails(student, 'weekly_fehlzeiten', weeklyData.fehlzeiten.weekly)}
+                    >
+                      {fehlzeitenAvg}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center border-r">
+                    <span 
+                      className="cursor-pointer hover:underline"
+                      onClick={() => onShowFilteredDetails(student, 'sum_verspaetungen', weeklyData.verspaetungen.weekly)}
+                    >
+                      {weeklyData.verspaetungen.total}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center">
+                    <span 
+                      className="cursor-pointer hover:underline"
+                      onClick={() => onShowFilteredDetails(student, 'sum_fehlzeiten', weeklyData.fehlzeiten.weekly)}
+                    >
+                      {weeklyData.fehlzeiten.total}
+                    </span>
+                  </td>
+                </tr>
+                {showDetails && (
+                  <StudentDetailsRow
+                    student={student}
+                    detailedData={detailedData[student][activeFilter!.type.replace('weekly_', '').replace('sum_', '')]}
+                    rowColor={rowColor}
+                    isVisible={true}
+                    filterType={activeFilter?.type}
+                  />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default StatisticsTable;
