@@ -24,6 +24,7 @@ interface ExportButtonsProps {
   };
   selectedWeeks: string;
   isReportView?: boolean;
+  detailedData?: Record<string, any>;
 }
 
 const ExportButtons = ({ 
@@ -33,12 +34,46 @@ const ExportButtons = ({
   schoolYearStats,
   weeklyStats,
   selectedWeeks,
-  isReportView = false
+  isReportView = false,
+  detailedData = {}
 }: ExportButtonsProps) => {
+  const formatDate = (datum: Date | string) => {
+    if (typeof datum === 'string') {
+      const [day, month, year] = datum.split('.');
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      return date.toLocaleDateString('de-DE', {
+        weekday: 'long',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+    }
+    return datum.toLocaleDateString('de-DE', {
+      weekday: 'long',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
+
   const formatData = () => {
     if (isReportView) {
       // Format data for report view
       return data.map(([student, stats], index) => {
+        const studentData = detailedData[student];
+        const lateEntries = studentData?.verspaetungen_unentsch || [];
+        const absenceEntries = studentData?.fehlzeiten_unentsch || [];
+
+        // Format late entries
+        const formattedLates = lateEntries.map((entry: any) => 
+          `${formatDate(entry.datum)} (${entry.beginnZeit} - ${entry.endZeit} Uhr)`
+        ).join('\n');
+
+        // Format absence entries
+        const formattedAbsences = absenceEntries.map((entry: any) => 
+          `${formatDate(entry.datum)} - ${entry.art}${entry.grund ? ` (${entry.grund})` : ''}`
+        ).join('\n');
+
         // Split student name into Nachname and Vorname
         const [nachname = "", vorname = ""] = student.split(",").map(s => s.trim());
 
@@ -47,10 +82,8 @@ const ExportButtons = ({
           'Nachname': nachname,
           'Vorname': vorname,
           'Klasse': stats.klasse,
-          'Unentschuldigte Verspätungen': stats.verspaetungen_unentsch > 0 ? 
-            `${stats.verspaetungen_unentsch} Verspätung(en)` : '-',
-          'Unentschuldigte Fehlzeiten': stats.fehlzeiten_unentsch > 0 ? 
-            `${stats.fehlzeiten_unentsch} Fehlzeit(en)` : '-'
+          'Unentschuldigte Verspätungen': formattedLates || '-',
+          'Unentschuldigte Fehlzeiten': formattedAbsences || '-'
         };
       });
     } else {
@@ -105,13 +138,23 @@ const ExportButtons = ({
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Anwesenheitsstatistik");
 
+    // Adjust column widths for better readability
+    const colWidths = isReportView ? 
+      [10, 30, 30, 15, 60, 60] : // Report view column widths
+      [25, 25, 15, 15, 15, 15, 15, 15, 15, 15, 15, 20, 20, 20, 20]; // Normal view column widths
+
+    worksheet['!cols'] = colWidths.map(width => ({ width }));
+
     const filename = `Anwesenheitsstatistik_${startDate}_${endDate}.xlsx`;
     XLSX.writeFile(workbook, filename);
   };
 
   const exportToCSV = () => {
     const formattedData = formatData();
-    const csv = unparse(formattedData);
+    const csv = unparse(formattedData, {
+      quotes: true, // Force quotes around all fields
+      newline: '\n', // Use Unix-style line endings
+    });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
