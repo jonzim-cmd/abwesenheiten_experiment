@@ -68,7 +68,7 @@ const NormalView = ({
         const sjEndDate = new Date(schoolYear.end, 7, 31); // 31. August
         const today = new Date();
 
-        // Combine all entries
+        // Get all entries for the current school year without considering the selected date range
         let allEntries: AbsenceEntry[] = [];
         if (activeFilter.type === 'sj_verspaetungen') {
           allEntries = [
@@ -95,17 +95,14 @@ const NormalView = ({
       }
 
       case 'verspaetungen_entsch':
-        return studentData.verspaetungen_entsch;
       case 'verspaetungen_unentsch':
-        return studentData.verspaetungen_unentsch;
       case 'verspaetungen_offen':
-        return studentData.verspaetungen_offen;
       case 'fehlzeiten_entsch':
-        return studentData.fehlzeiten_entsch;
       case 'fehlzeiten_unentsch':
-        return studentData.fehlzeiten_unentsch;
-      case 'fehlzeiten_offen':
-        return studentData.fehlzeiten_offen;
+      case 'fehlzeiten_offen': {
+        const selectedType = activeFilter.type as keyof typeof studentData;
+        return studentData[selectedType];
+      }
 
       case 'weekly_verspaetungen':
       case 'sum_verspaetungen': {
