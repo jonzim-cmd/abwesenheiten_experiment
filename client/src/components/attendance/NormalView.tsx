@@ -43,29 +43,41 @@ const NormalView = ({
     type: string;
   } | null>(null);
 
+  const parseDate = (dateStr: string | Date): Date => {
+    if (dateStr instanceof Date) return dateStr;
+    if (typeof dateStr === 'string') {
+      const [day, month, year] = dateStr.split('.');
+      if (day && month && year) {
+        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      }
+    }
+    return new Date();
+  };
+
   const getFilteredDetailData = (student: string): AbsenceEntry[] => {
     if (!expandedStudent || !activeFilter || expandedStudent !== student) return [];
 
     const studentData = detailedData[student];
     if (!studentData) return [];
 
-    // Return the appropriate entries based on the filter type
     switch (activeFilter.type) {
-      case 'sj_verspaetungen': {
+      case 'sj_verspaetungen':
+      case 'sj_fehlzeiten': {
         // Schuljahresbezogene Anzeige - unabhängig vom gewählten Zeitraum
         const schoolYear = getCurrentSchoolYear();
         const sjStartDate = new Date(schoolYear.start, 8, 1); // 1. September
-        const endDate = new Date(schoolYear.end, 7, 31); // 31. August
+        const sjEndDate = new Date(schoolYear.end, 7, 31); // 31. August
 
-        return studentData.verspaetungen_unentsch
+        const entries = activeFilter.type === 'sj_verspaetungen' 
+          ? studentData.verspaetungen_unentsch 
+          : studentData.fehlzeiten_unentsch;
+
+        return entries
           .filter(entry => {
-            if (entry.datum) {
-              const date = new Date(entry.datum);
-              return date >= sjStartDate && date <= endDate;
-            }
-            return false;
+            const date = parseDate(entry.datum);
+            return date >= sjStartDate && date <= sjEndDate;
           })
-          .sort((a, b) => new Date(b.datum).getTime() - new Date(a.datum).getTime());
+          .sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
       }
 
       case 'verspaetungen_entsch':
@@ -80,8 +92,6 @@ const NormalView = ({
         return studentData.fehlzeiten_unentsch;
       case 'fehlzeiten_offen':
         return studentData.fehlzeiten_offen;
-      case 'sj_fehlzeiten':
-        return studentData.fehlzeiten_unentsch;
 
       case 'weekly_verspaetungen':
       case 'sum_verspaetungen': {
@@ -90,7 +100,7 @@ const NormalView = ({
         if (!studentWeeklyStats) return [];
 
         return studentData.verspaetungen_unentsch.filter(entry => {
-          const date = new Date(entry.datum);
+          const date = parseDate(entry.datum);
           const weekIndex = weeks.findIndex(week => 
             date >= week.startDate && date <= week.endDate
           );
@@ -104,7 +114,7 @@ const NormalView = ({
         if (!studentWeeklyStats) return [];
 
         return studentData.fehlzeiten_unentsch.filter(entry => {
-          const date = new Date(entry.datum);
+          const date = parseDate(entry.datum);
           const weekIndex = weeks.findIndex(week => 
             date >= week.startDate && date <= week.endDate
           );
