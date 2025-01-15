@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import StudentTableHeader from './table/StudentTableHeader';
 import StudentTableRow from './table/StudentTableRow';
 import StudentDetailsRow from './table/StudentDetailsRow';
-import { StudentStats, AbsenceEntry } from '@/lib/attendance-utils';
+import { StudentStats, AbsenceEntry, getLastNWeeks } from '@/lib/attendance-utils';
 
 interface NormalViewProps {
   filteredStudents: [string, StudentStats][];
@@ -50,6 +50,11 @@ const NormalView = ({
     const studentData = detailedData[student];
     if (!studentData) return [];
 
+    const weeks = getLastNWeeks(parseInt(selectedWeeks));
+    const isInWeekRange = (date: Date) => {
+      return weeks.some(week => date >= week.startDate && date <= week.endDate);
+    };
+
     // Return the appropriate entries based on the filter type
     switch (activeFilter.type) {
       case 'details':
@@ -62,6 +67,7 @@ const NormalView = ({
           ...studentData.fehlzeiten_unentsch,
           ...studentData.fehlzeiten_offen
         ].sort((a, b) => new Date(b.datum).getTime() - new Date(a.datum).getTime());
+
       case 'verspaetungen_entsch':
         return studentData.verspaetungen_entsch;
       case 'verspaetungen_unentsch':
@@ -78,6 +84,34 @@ const NormalView = ({
         return studentData.verspaetungen_unentsch;
       case 'sj_fehlzeiten':
         return studentData.fehlzeiten_unentsch;
+
+      // Statistik-Spalten basierend auf den letzten N Wochen
+      case 'weekly_verspaetungen':
+      case 'sum_verspaetungen': {
+        const studentWeeklyStats = weeklyStats[student];
+        if (!studentWeeklyStats) return [];
+
+        return studentData.verspaetungen_unentsch.filter(entry => {
+          const date = new Date(entry.datum);
+          const weekIndex = weeks.findIndex(week => 
+            date >= week.startDate && date <= week.endDate
+          );
+          return weekIndex !== -1 && studentWeeklyStats.verspaetungen.weekly[weekIndex] > 0;
+        });
+      }
+      case 'weekly_fehlzeiten':
+      case 'sum_fehlzeiten': {
+        const studentWeeklyStats = weeklyStats[student];
+        if (!studentWeeklyStats) return [];
+
+        return studentData.fehlzeiten_unentsch.filter(entry => {
+          const date = new Date(entry.datum);
+          const weekIndex = weeks.findIndex(week => 
+            date >= week.startDate && date <= week.endDate
+          );
+          return weekIndex !== -1 && studentWeeklyStats.fehlzeiten.weekly[weekIndex] > 0;
+        });
+      }
       default:
         return [];
     }
