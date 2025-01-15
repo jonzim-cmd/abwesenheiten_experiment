@@ -43,11 +43,9 @@ const NormalView = ({
   weeklyStats,
   selectedWeeks 
 }: NormalViewProps) => {
-  const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<{
-    student: string;
-    type: string;
-  } | null>(null);
+  const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
+  const [activeFilters, setActiveFilters] = useState<Map<string, string>>(new Map());
+  const [isAllExpanded, setIsAllExpanded] = useState(false);
 
   const parseDate = (dateStr: string | Date): Date => {
     if (dateStr instanceof Date) return dateStr;
@@ -61,21 +59,22 @@ const NormalView = ({
   };
 
   const getFilteredDetailData = (student: string): AbsenceEntry[] => {
-    if (!expandedStudent || !activeFilter || expandedStudent !== student) return [];
+    if (!expandedStudents.has(student) || !activeFilters.has(student)) return [];
 
     const studentData = detailedData[student];
     const studentSchoolYearData = schoolYearDetailedData[student];
     const studentWeeklyData = weeklyDetailedData[student];
     if (!studentData || !studentSchoolYearData || !studentWeeklyData) return [];
 
-    switch (activeFilter.type) {
+    const filterType = activeFilters.get(student);
+
+    switch (filterType) {
       case 'details': {
         const unexcusedEntries = [
           ...studentData.verspaetungen_unentsch,
           ...studentData.fehlzeiten_unentsch
         ];
 
-        // Füge auch die überfälligen offenen Einträge hinzu
         const today = new Date();
         const addOverdueEntries = (entries: AbsenceEntry[]) => {
           return entries.filter(entry => {
@@ -96,7 +95,7 @@ const NormalView = ({
 
       case 'sj_verspaetungen':
       case 'sj_fehlzeiten': {
-        const entries = activeFilter.type === 'sj_verspaetungen' 
+        const entries = filterType === 'sj_verspaetungen' 
           ? studentSchoolYearData.verspaetungen_unentsch
           : studentSchoolYearData.fehlzeiten_unentsch;
 
@@ -132,29 +131,79 @@ const NormalView = ({
       }
 
       default: {
-        const selectedType = activeFilter.type as keyof DetailedStats;
+        const selectedType = filterType as keyof DetailedStats;
         return studentData[selectedType];
       }
     }
   };
 
   const toggleDetails = (student: string) => {
-    if (expandedStudent === student && activeFilter?.type === 'details') {
-      setExpandedStudent(null);
-      setActiveFilter(null);
-    } else {
-      setExpandedStudent(student);
-      setActiveFilter({ student, type: 'details' });
-    }
+    setExpandedStudents(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(student)) {
+        newSet.delete(student);
+        setActiveFilters(prevFilters => {
+          const newFilters = new Map(prevFilters);
+          newFilters.delete(student);
+          return newFilters;
+        });
+      } else {
+        newSet.add(student);
+        setActiveFilters(prevFilters => {
+          const newFilters = new Map(prevFilters);
+          newFilters.set(student, 'details');
+          return newFilters;
+        });
+      }
+      return newSet;
+    });
   };
 
   const showFilteredDetails = (student: string, type: string) => {
-    if (expandedStudent === student && activeFilter?.type === type) {
-      setExpandedStudent(null);
-      setActiveFilter(null);
+    setExpandedStudents(prev => {
+      const newSet = new Set(prev);
+      if (prev.has(student) && activeFilters.get(student) === type) {
+        newSet.delete(student);
+        setActiveFilters(prevFilters => {
+          const newFilters = new Map(prevFilters);
+          newFilters.delete(student);
+          return newFilters;
+        });
+      } else {
+        newSet.add(student);
+        setActiveFilters(prevFilters => {
+          const newFilters = new Map(prevFilters);
+          newFilters.set(student, type);
+          return newFilters;
+        });
+      }
+      return newSet;
+    });
+  };
+
+  const toggleAllDetails = () => {
+    setIsAllExpanded(prev => !prev);
+    if (!isAllExpanded) {
+      // Expand all students with relevant cases
+      const newExpandedStudents = new Set<string>();
+      const newActiveFilters = new Map<string, string>();
+
+      filteredStudents.forEach(([student, stats]) => {
+        if (stats.verspaetungen_unentsch > 0 || 
+            stats.fehlzeiten_unentsch > 0 ||
+            stats.verspaetungen_offen > 0 ||
+            stats.fehlzeiten_offen > 0) {
+          newExpandedStudents.add(student);
+          newActiveFilters.set(student, 'details');
+        }
+      });
+
+      setExpandedStudents(newExpandedStudents);
+      setActiveFilters(newActiveFilters);
     } else {
-      setExpandedStudent(student);
-      setActiveFilter({ student, type });
+      // Collapse all
+      setExpandedStudents(new Set());
+      setActiveFilters(new Map());
     }
   };
 
@@ -167,12 +216,9 @@ const NormalView = ({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => {
-            setExpandedStudent(null);
-            setActiveFilter(null);
-          }}
+          onClick={toggleAllDetails}
         >
-          Alle Details einklappen
+          {isAllExpanded ? 'Alle Details einklappen' : 'Alle Details ausklappen'}
         </Button>
       </div>
       <div className="overflow-x-auto">
@@ -202,13 +248,13 @@ const NormalView = ({
                     onToggleDetails={() => toggleDetails(student)}
                     onShowFilteredDetails={showFilteredDetails}
                   />
-                  {expandedStudent === student && (
+                  {expandedStudents.has(student) && (
                     <StudentDetailsRow
                       student={student}
                       detailedData={getFilteredDetailData(student)}
                       rowColor={rowColor}
                       isVisible={true}
-                      filterType={activeFilter?.type}
+                      filterType={activeFilters.get(student)}
                     />
                   )}
                 </React.Fragment>
