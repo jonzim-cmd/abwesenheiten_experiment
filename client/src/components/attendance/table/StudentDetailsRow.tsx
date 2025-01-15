@@ -64,6 +64,16 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     });
   };
 
+  const getStatusColor = (status: string) => {
+    if (status === 'entsch.' || status === 'Attest' || status === 'Attest Amtsarzt') {
+      return 'text-green-600';
+    }
+    if (status === 'nicht entsch.' || status === 'nicht akzep.') {
+      return 'text-red-600';
+    }
+    return 'text-yellow-600';
+  };
+
   return (
     <tr 
       id={`details-${student}`}
@@ -76,33 +86,33 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
           <div className="pl-4">
             {detailedData.length > 0 ? (
               <div className="space-y-1">
-                {detailedData.map((entry, i) => (
-                  <div 
-                    key={i}
-                    className={`
-                      ${entry.art === 'Verspätung' ? 'text-orange-600' : 'text-red-600'}
-                      hover:bg-gray-50 p-1 rounded
-                    `}
-                  >
-                    <span className="font-medium">{formatDate(entry.datum)}</span>
-                    {entry.art === 'Verspätung' ? (
-                      <span className="ml-2">
-                        {entry.beginnZeit} - {entry.endZeit} Uhr
-                        {entry.grund && ` (${entry.grund})`}
-                      </span>
-                    ) : (
-                      <span className="ml-2">
-                        {entry.art}
-                        {entry.grund && ` - ${entry.grund}`}
-                      </span>
-                    )}
-                    {entry.status && (
-                      <span className="ml-2 text-gray-500 italic">
-                        [{entry.status}]
-                      </span>
-                    )}
-                  </div>
-                ))}
+                {detailedData.map((entry, i) => {
+                  const statusColor = getStatusColor(entry.status || '');
+                  return (
+                    <div 
+                      key={i}
+                      className={`${statusColor} hover:bg-gray-50 p-1 rounded`}
+                    >
+                      <span className="font-medium">{formatDate(entry.datum)}</span>
+                      {entry.art === 'Verspätung' ? (
+                        <span className="ml-2">
+                          {entry.beginnZeit} - {entry.endZeit} Uhr
+                          {entry.grund && ` (${entry.grund})`}
+                        </span>
+                      ) : (
+                        <span className="ml-2">
+                          {entry.art}
+                          {entry.grund && ` - ${entry.grund}`}
+                        </span>
+                      )}
+                      {entry.status && (
+                        <span className={`ml-2 italic`}>
+                          [{entry.status}]
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-gray-500 italic">Keine Einträge für den ausgewählten Zeitraum gefunden</div>
