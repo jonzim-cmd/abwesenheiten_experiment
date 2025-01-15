@@ -90,7 +90,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
   };
 
   const renderDetailSection = (entries: AbsenceEntry[], title: string) => {
-    if (entries.length === 0) return null;
+    if (!entries || entries.length === 0) return null;
 
     return (
       <div className="mb-4">
@@ -144,6 +144,10 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
   };
 
   const renderDetailsContent = () => {
+    if (!detailedData) return (
+      <div className="text-gray-500 italic">Keine Daten verfügbar</div>
+    );
+
     if (filterType === 'details') {
       const unexcusedLates = detailedData.filter(entry => entry.art === 'Verspätung' && isUnexcused(entry));
       const unexcusedAbsences = detailedData.filter(entry => entry.art !== 'Verspätung' && isUnexcused(entry));
@@ -152,7 +156,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
         <>
           {renderDetailSection(unexcusedLates, 'Unentschuldigte Verspätungen')}
           {renderDetailSection(unexcusedAbsences, 'Unentschuldigte Fehlzeiten')}
-          {unexcusedLates.length === 0 && unexcusedAbsences.length === 0 && (
+          {(!unexcusedLates?.length && !unexcusedAbsences?.length) && (
             <div className="text-gray-500 italic">Keine unentschuldigten Einträge für den ausgewählten Zeitraum gefunden</div>
           )}
         </>
