@@ -1,0 +1,888 @@
+import React, { useState, useRef, useCallback } from 'react';
+import Papa from 'papaparse';
+import _ from 'lodash';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+// Helper functions
+const getWeekNumber = (d) => {
+  const date = new Date(d);
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + 4 - (date.getDay() || 7));
+  const yearStart = new Date(date.getFullYear(), 0, 1);
+  return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+};
+
+const getLastNWeeks = (n) => {
+  const today = new Date();
+  const currentWeek = getWeekNumber(today);
+  const currentYear = today.getFullYear();
+  
+  const weeks = [];
+  let weekCounter = n;
+  let currentWeekNum = currentWeek;
+  let year = currentYear;
+  
+  while (weekCounter > 0) {
+    if (currentWeekNum < 1) {
+      year--;
+      currentWeekNum = getWeekNumber(new Date(year, 11, 31));
+    }
+    weeks.unshift({ week: currentWeekNum, year });
+    currentWeekNum--;
+    weekCounter--;
+  }
+  
+  return weeks;
+};
+
+const getCurrentSchoolYear = () => {
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const septemberFirst = new Date(currentYear, 8, 1);
+  
+  return today >= septemberFirst
+    ? { start: currentYear, end: currentYear + 1 }
+    : { start: currentYear - 1, end: currentYear };
+};
+
+// Report View Component
+const ReportView = ({ filteredStudents, detailedData, startDate, endDate }) => {
+  return (
+    <div className="mt-6 space-y-4">
+      <h3 className="text-lg font-semibold">
+        Unentschuldigte Verspätungen und Fehlzeiten für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
+      </h3>
+      
+      <div className="overflow-x-auto">
+        <table className="w-full table-fixed">
+          <thead>
+            <tr>
+              <th className="w-16 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200">
+                Nr.
+              </th>
+              <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200">
+                Name
+              </th>
+              <th className="w-1/3 px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200">
+                <div>Unentschuldigte Verspätungen</div>
+                <div className="text-[10px] font-normal normal-case mt-1 text-gray-400">
+                  bezieht sich auf ausgewählten Zeitraum
+                </div>
+              </th>
+              <th className="w-1/3 px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                <div>Unentschuldigte Fehlzeiten</div>
+                <div className="text-[10px] font-normal normal-case mt-1 text-gray-400">
+                  bezieht sich auf ausgewählten Zeitraum
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredStudents.map(([student, stats], index) => {
+              const unexcusedLates = detailedData[student]
+                ?.filter(entry => entry.art === 'Verspätung')
+                .map(entry => (
+                  `${new Date(entry.datum).toLocaleDateString('de-DE', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                  })} (${entry.beginnZeit} - ${entry.endZeit} Uhr)`
+                )).join('\n') || '-';
+
+              const unexcusedAbsences = detailedData[student]
+                ?.filter(entry => entry.art !== 'Verspätung')
+                .map(entry => (
+                  `${new Date(entry.datum).toLocaleDateString('de-DE', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                  })} - ${entry.art}${entry.grund ? ` (${entry.grund})` : ''}`
+                )).join('\n') || '-';
+
+              return (
+                <tr 
+                  key={student} 
+                  className={index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}
+                >
+                  <td className="px-6 py-4 whitespace-normal text-sm font-medium text-gray-500 border-b border-r border-gray-200 text-center">
+                    {index + 1}
+                  </td>
+                  <td className="px-6 py-4 whitespace-normal text-sm font-medium text-gray-900 border-b border-r border-gray-200">
+                    {student}
+                  </td>
+                  <td className="px-6 py-4 whitespace-pre-line text-sm text-gray-500 border-b border-r border-gray-200">
+                    {unexcusedLates}
+                  </td>
+                  <td className="px-6 py-4 whitespace-pre-line text-sm text-gray-500 border-b border-gray-200">
+                    {unexcusedAbsences}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// Normal View Component
+const NormalView = ({ filteredStudents, detailedData, startDate, endDate, schoolYearStats, weeklyStats, selectedWeeks }) => {
+  const [areAllDetailsVisible, setAreAllDetailsVisible] = useState(false);
+
+  const toggleAllDetails = () => {
+    setAreAllDetailsVisible(!areAllDetailsVisible);
+    filteredStudents.forEach(([student]) => {
+      const row = document.getElementById(`details-${student}`);
+      if (row) {
+        row.style.display = !areAllDetailsVisible ? 'table-row' : 'none';
+      }
+    });
+  };
+
+  return (
+    <div className="mt-6">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">
+          Ergebnisse für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
+        </h3>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={toggleAllDetails}
+        >
+          {areAllDetailsVisible ? 'Alle Details einklappen' : 'Alle Details ausklappen'}
+        </Button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full border-collapse bg-white">
+          <thead>
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200">
+                Name (Klasse)
+              </th>
+              <th colSpan="3" className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200">
+                Verspätungen
+                <div className="text-[10px] font-normal normal-case mt-1 text-gray-400">
+                  bezieht sich auf ausgewählten Zeitraum
+                </div>
+              </th>
+              <th colSpan="3" className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200">
+                Fehlzeiten
+                <div className="text-[10px] font-normal normal-case mt-1 text-gray-400">
+                  bezieht sich auf ausgewählten Zeitraum
+                </div>
+              </th>
+              <th colSpan="6" className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200">
+                Statistik
+                <div className="text-[10px] font-normal normal-case mt-1 text-gray-400">
+                  ∑SJ = Summe gesamtes Schuljahr; x = Anzahl der Wochen, die zurückgeschaut werden;<br/>
+                  Øx() = Durchschnitt der letzten x Wochen; ∑x() = Summe der letzten x Wochen;<br/>
+                  Jeweils in Klammer = Anzahl jeder Woche beginnend mit der am weitesten zurückliegenden vollständig abgeschlossenen Woche
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                Details
+              </th>
+            </tr>
+            <tr>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-gray-200"></th>
+              <th className="px-4 py-2 text-center text-xs font-medium text-green-600 border-b border-r border-gray-200">E</th>
+              <th className="px-4 py-2 text-center text-xs font-medium text-red-600 border-b border-r border-gray-200">U</th>
+              <th className="px-4 py-2 text-center text-xs font-medium text-yellow-600 border-b border-r border-gray-200">O</th>
+              <th className="px-4 py-2 text-center text-xs font-medium text-green-600 border-b border-r border-gray-200">E</th>
+              <th className="px-4 py-2 text-center text-xs font-medium text-red-600 border-b border-r border-gray-200">U</th>
+              <th className="px-4 py-2 text-center text-xs font-medium text-yellow-600 border-b border-r border-gray-200">O</th>
+              <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200">∑SJ V</th>
+              <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200">∑SJ F</th>
+              <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200">Øx() V</th>
+              <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200">Øx() F</th>
+              <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200">∑x() V</th>
+              <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200">∑x() F</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-gray-200"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredStudents.map(([student, stats], index) => {
+              const rowColor = index % 2 === 0 ? 'bg-white' : 'bg-gray-100';
+              const schoolYearData = schoolYearStats[student] || { 
+                verspaetungen_unentsch: 0, 
+                fehlzeiten_unentsch: 0 
+              };
+              const weeklyData = weeklyStats[student] || { 
+                verspaetungen: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) },
+                fehlzeiten: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) }
+              };
+
+              const verspaetungenAvg = (weeklyData.verspaetungen.total / parseInt(selectedWeeks)).toFixed(2);
+              const fehlzeitenAvg = (weeklyData.fehlzeiten.total / parseInt(selectedWeeks)).toFixed(2);
+              
+              const verspaetungenWeekly = `${verspaetungenAvg}(${weeklyData.verspaetungen.weekly.join(',')})`;
+              const fehlzeitenWeekly = `${fehlzeitenAvg}(${weeklyData.fehlzeiten.weekly.join(',')})`;
+              
+              const verspaetungenSum = `${weeklyData.verspaetungen.total}(${weeklyData.verspaetungen.weekly.join(',')})`;
+              const fehlzeitenSum = `${weeklyData.fehlzeiten.total}(${weeklyData.fehlzeiten.weekly.join(',')})`;
+
+              return (
+                <React.Fragment key={student}>
+                  <tr className={rowColor}>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200">
+                      {student} ({stats.klasse})
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center text-green-600 border-r border-gray-200">
+                      {stats.verspaetungen_entsch}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center text-red-600 border-r border-gray-200">
+                      {stats.verspaetungen_unentsch}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center text-yellow-600 border-r border-gray-200">
+                      {stats.verspaetungen_offen}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center text-green-600 border-r border-gray-200">
+                      {stats.fehlzeiten_entsch}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center text-red-600 border-r border-gray-200">
+                      {stats.fehlzeiten_unentsch}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center text-yellow-600 border-r border-gray-200">
+                      {stats.fehlzeiten_offen}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
+                      {schoolYearData.verspaetungen_unentsch}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
+                      {schoolYearData.fehlzeiten_unentsch}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
+                      {verspaetungenWeekly}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
+                      {fehlzeitenWeekly}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
+                      {verspaetungenSum}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
+                      {fehlzeitenSum}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const row = document.getElementById(`details-${student}`);
+                          if (row) {
+                            row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+                          }
+                        }}
+                      >
+                        Details
+                      </Button>
+                    </td>
+                  </tr>
+                  <tr id={`details-${student}`} style={{ display: 'none' }} className={rowColor}>
+                    <td colSpan="14" className="px-4 py-2 text-sm">
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Unentschuldigte Verspätungen:</h4>
+                        <div className="pl-4">
+                          {detailedData[student]
+                            ?.filter(entry => entry.art === 'Verspätung')
+                            .map((entry, i) => (
+                              <div key={i} className="text-red-600">
+                                {new Date(entry.datum).toLocaleDateString('de-DE', {
+                                  weekday: 'long',
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit'
+                                })} ({entry.beginnZeit} - {entry.endZeit} Uhr)
+                              </div>
+                            )) || 'Keine'}
+                        </div>
+                        <h4 className="font-medium mt-4">Unentschuldigte Fehlzeiten:</h4>
+                        <div className="pl-4">
+                          {detailedData[student]
+                            ?.filter(entry => entry.art !== 'Verspätung')
+                            .map((entry, i) => (
+                              <div key={i} className="text-red-600">
+                                {new Date(entry.datum).toLocaleDateString('de-DE', {
+                                  weekday: 'long',
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit'
+                                })} - {entry.art}
+                                {entry.grund && ` (${entry.grund})`}
+                              </div>
+                            )) || 'Keine'}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const AttendanceAnalyzer = () => {
+  const fileInputRef = useRef();
+  const [rawData, setRawData] = useState(null);
+  const [results, setResults] = useState(null);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState('');
+  const [detailedData, setDetailedData] = useState({});
+  const [filterUnexcusedLate, setFilterUnexcusedLate] = useState(false);
+  const [filterUnexcusedAbsent, setFilterUnexcusedAbsent] = useState(false);
+  const [minUnexcusedLates, setMinUnexcusedLates] = useState('');
+  const [minUnexcusedAbsences, setMinUnexcusedAbsences] = useState('');
+  const [isReportView, setIsReportView] = useState(false);
+  const [availableStudents, setAvailableStudents] = useState([]);
+  const [selectedWeeks, setSelectedWeeks] = useState('1');
+  const [schoolYearStats, setSchoolYearStats] = useState({});
+  const [weeklyStats, setWeeklyStats] = useState({});
+
+  const resetAll = () => {
+    setRawData(null);
+    setResults(null);
+    setStartDate('');
+    setEndDate('');
+    setSearchQuery('');
+    setError('');
+    setDetailedData({});
+    setFilterUnexcusedLate(false);
+    setFilterUnexcusedAbsent(false);
+    setMinUnexcusedLates('');
+    setMinUnexcusedAbsences('');
+    setIsReportView(false);
+    setAvailableStudents([]);
+    setSelectedWeeks('1');
+    setSchoolYearStats({});
+    setWeeklyStats({});
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const calculateSchoolYearStats = useCallback((data) => {
+    const schoolYear = getCurrentSchoolYear();
+    const startDate = new Date(Date.UTC(schoolYear.start, 8, 1)); // September 1st
+    const endDate = new Date(Date.UTC(schoolYear.end, 7, 31)); // August 31st
+    
+    const stats = {};
+    
+    data.forEach(row => {
+      if (!row.Beginndatum || !row.Langname || !row.Vorname) return;
+      if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
+
+      const [day, month, year] = row.Beginndatum.split('.');
+      const date = new Date(Date.UTC(year, month - 1, parseInt(day)));
+      const studentName = `${row.Langname}, ${row.Vorname}`;
+      
+      if (date >= startDate && date <= endDate) {
+        if (!stats[studentName]) {
+          stats[studentName] = { 
+            verspaetungen_unentsch: 0, 
+            fehlzeiten_unentsch: 0 
+          };
+        }
+        
+        const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
+        const isUnentschuldigt = row.Status === 'nicht entsch.' || row.Status === 'nicht akzep.';
+        
+        if (isUnentschuldigt) {
+          if (isVerspaetung) {
+            stats[studentName].verspaetungen_unentsch++;
+          } else {
+            stats[studentName].fehlzeiten_unentsch++;
+          }
+        }
+      }
+    });
+    
+    setSchoolYearStats(stats);
+  }, []);
+
+  const calculateWeeklyStats = useCallback((data) => {
+    const weeks = getLastNWeeks(parseInt(selectedWeeks));
+    const stats = {};
+    
+    data.forEach(row => {
+      if (!row.Beginndatum || !row.Langname || !row.Vorname) return;
+      if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
+
+      const [day, month, year] = row.Beginndatum.split('.');
+      const date = new Date(Date.UTC(year, month - 1, parseInt(day)));
+      const studentName = `${row.Langname}, ${row.Vorname}`;
+      const weekNumber = getWeekNumber(date);
+      const yearNumber = date.getFullYear();
+      
+      const weekIndex = weeks.findIndex(w => w.week === weekNumber && w.year === yearNumber);
+      if (weekIndex === -1) return;
+      
+      if (!stats[studentName]) {
+        stats[studentName] = {
+          verspaetungen: { total: 0, weekly: Array(weeks.length).fill(0) },
+          fehlzeiten: { total: 0, weekly: Array(weeks.length).fill(0) }
+        };
+      }
+      
+      const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
+      const isUnentschuldigt = row.Status === 'nicht entsch.' || row.Status === 'nicht akzep.';
+      
+      if (isUnentschuldigt) {
+        if (isVerspaetung) {
+          stats[studentName].verspaetungen.weekly[weekIndex]++;
+          stats[studentName].verspaetungen.total++;
+        } else {
+          stats[studentName].fehlzeiten.weekly[weekIndex]++;
+          stats[studentName].fehlzeiten.total++;
+        }
+      }
+    });
+    
+    setWeeklyStats(stats);
+  }, [selectedWeeks]);
+
+  const processData = useCallback((data, startDateTime, endDateTime) => {
+    try {
+      const today = new Date();
+      const studentStats = {};
+      const detailedUnexcused = {};
+
+      data.forEach(row => {
+        if (!row.Beginndatum || !row.Langname || !row.Vorname) return;
+        if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
+
+        const [day, month, year] = row.Beginndatum.split('.');
+        const date = new Date(Date.UTC(year, month - 1, parseInt(day)));
+        const studentName = `${row.Langname}, ${row.Vorname}`;
+
+        if (date >= startDateTime && date <= endDateTime) {
+          if (!studentStats[studentName]) {
+            studentStats[studentName] = {
+              verspaetungen_entsch: 0,
+              verspaetungen_unentsch: 0,
+              verspaetungen_offen: 0,
+              fehlzeiten_entsch: 0,
+              fehlzeiten_unentsch: 0,
+              fehlzeiten_offen: 0,
+              klasse: row.Klasse
+            };
+          }
+
+          if (!detailedUnexcused[studentName]) {
+            detailedUnexcused[studentName] = [];
+          }
+
+          const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
+          let effectiveStatus = row.Status ? row.Status.trim() : '';
+          const isAttest = effectiveStatus === 'Attest' || effectiveStatus === 'Attest Amtsarzt';
+          const isEntschuldigt = effectiveStatus === 'entsch.' || isAttest;
+          const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || effectiveStatus === 'nicht akzep.';
+          const deadlineDate = new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000);
+          const isOverDeadline = today > deadlineDate;
+
+          if (isVerspaetung) {
+            if (isEntschuldigt) {
+              studentStats[studentName].verspaetungen_entsch++;
+            } else if (isUnentschuldigt) {
+              studentStats[studentName].verspaetungen_unentsch++;
+              detailedUnexcused[studentName].push({
+                datum: date,
+                art: 'Verspätung',
+                beginnZeit: row.Beginnzeit,
+                endZeit: row.Endzeit
+              });
+            } else {
+              studentStats[studentName].verspaetungen_offen++;
+            }
+          } else {
+            if (isEntschuldigt) {
+              studentStats[studentName].fehlzeiten_entsch++;
+            } else if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
+              studentStats[studentName].fehlzeiten_unentsch++;
+              detailedUnexcused[studentName].push({
+                datum: date,
+                art: row.Abwesenheitsgrund || 'Fehltag',
+                beginnZeit: row.Beginnzeit,
+                endZeit: row.Endzeit,
+                grund: row['Text/Grund']
+              });
+            } else {
+              studentStats[studentName].fehlzeiten_offen++;
+            }
+          }
+        }
+      });
+
+      setResults(studentStats);
+      setDetailedData(detailedUnexcused);
+      setAvailableStudents(Object.keys(studentStats).sort());
+      setError('');
+    } catch (err) {
+      setError('Fehler bei der Datenverarbeitung: ' + err.message);
+    }
+  }, []);
+
+  const processFile = async (file) => {
+    try {
+      if (!startDate || !endDate) {
+        setError('Bitte wählen Sie erst den Zeitraum aus.');
+        return;
+      }
+
+      const text = await file.text();
+      
+      Papa.parse(text, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          setRawData(results.data);
+        },
+        error: (error) => {
+          setError('Fehler beim Verarbeiten der CSV-Datei: ' + error.message);
+        }
+      });
+    } catch (err) {
+      setError('Fehler beim Lesen der Datei: ' + err.message);
+    }
+  };
+
+  React.useEffect(() => {
+    if (rawData && startDate && endDate) {
+      const startDateTime = new Date(startDate + 'T00:00:00');
+      const endDateTime = new Date(endDate + 'T23:59:59');
+
+      if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+        setError('Ungültiges Datum');
+        return;
+      }
+
+      if (startDateTime > endDateTime) {
+        setError('Das Startdatum muss vor dem Enddatum liegen');
+        return;
+      }
+
+      processData(rawData, startDateTime, endDateTime);
+    }
+  }, [startDate, endDate, rawData, processData]);
+
+  React.useEffect(() => {
+    if (rawData) {
+      calculateSchoolYearStats(rawData);
+      calculateWeeklyStats(rawData);
+    }
+  }, [rawData, selectedWeeks, calculateSchoolYearStats, calculateWeeklyStats]);
+
+  const getFilteredStudents = () => {
+    if (!results) return [];
+    
+    return Object.entries(results)
+      .filter(([student, stats]) => {
+        const matchesSearch = student.toLowerCase().includes(searchQuery.toLowerCase());
+        const hasUnexcusedLate = filterUnexcusedLate ? stats.verspaetungen_unentsch > 0 : true;
+        const hasUnexcusedAbsent = filterUnexcusedAbsent ? stats.fehlzeiten_unentsch > 0 : true;
+        const meetsMinUnexcusedLates = minUnexcusedLates === '' || stats.verspaetungen_unentsch >= parseInt(minUnexcusedLates);
+        const meetsMinUnexcusedAbsences = minUnexcusedAbsences === '' || stats.fehlzeiten_unentsch >= parseInt(minUnexcusedAbsences);
+        
+        if (!filterUnexcusedLate && !filterUnexcusedAbsent) {
+          return matchesSearch && meetsMinUnexcusedLates && meetsMinUnexcusedAbsences;
+        }
+        
+        if (filterUnexcusedLate && filterUnexcusedAbsent) {
+          return matchesSearch && (hasUnexcusedLate || hasUnexcusedAbsent) && meetsMinUnexcusedLates && meetsMinUnexcusedAbsences;
+        }
+        
+        return matchesSearch && (hasUnexcusedLate && hasUnexcusedAbsent) && meetsMinUnexcusedLates && meetsMinUnexcusedAbsences;
+      })
+      .sort(([a], [b]) => a.localeCompare(b));
+  };
+
+  return (
+    <Card className="w-full bg-white">
+      <CardHeader className="border-b">
+        <CardTitle>Anwesenheitsanalyse</CardTitle>
+      </CardHeader>
+      <CardContent className="p-6">
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="startDate">Zeitraum von</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="endDate">bis</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Schnellauswahl</Label>
+              <select 
+                className="w-full p-2 mt-1 border rounded-md bg-white"
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const now = new Date();
+                  let start, end;
+
+                  switch (value) {
+                    case 'thisWeek': {
+                      const currentDay = now.getDay();
+                      const diff = currentDay === 0 ? 6 : currentDay - 1;
+                      start = new Date(now);
+                      start.setDate(now.getDate() - diff);
+                      end = new Date(start);
+                      end.setDate(start.getDate() + 6);
+                      break;
+                    }
+                    case 'lastWeek': {
+                      const currentDay = now.getDay();
+                      const diff = currentDay === 0 ? 6 : currentDay - 1;
+                      start = new Date(now);
+                      start.setDate(now.getDate() - diff - 7);
+                      end = new Date(start);
+                      end.setDate(start.getDate() + 6);
+                      break;
+                    }
+                    case 'thisMonth': {
+                      const today = new Date();
+                      start = new Date(Date.UTC(today.getFullYear(), today.getMonth(), 1));
+                      end = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 0));
+                      console.log('This month dates:', {
+                        start: start.toISOString(),
+                        end: end.toISOString(),
+                        today: today.toISOString()
+                      });
+                      break;
+                    }
+                    case 'lastMonth': {
+                      const today = new Date();
+                      const lastMonth = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
+                      const year = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+                      start = new Date(Date.UTC(year, lastMonth, 1));
+                      end = new Date(Date.UTC(year, lastMonth + 1, 0));
+                      console.log('Last month dates:', {
+                        start: start.toISOString(),
+                        end: end.toISOString(),
+                        today: today.toISOString()
+                      });
+                      break;
+                    }
+                    case 'schoolYear': {
+                      const schoolYear = getCurrentSchoolYear();
+                      start = new Date(schoolYear.start, 8, 1); // 1. September
+                      end = new Date(schoolYear.end, 7, 31); // 31. August
+                      break;
+                    }
+                    default:
+                      return;
+                  }
+
+                  setStartDate(start.toLocaleDateString('de-DE', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                  }).split('.').reverse().join('-'));
+                  setEndDate(end.toLocaleDateString('de-DE', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                  }).split('.').reverse().join('-'));
+                }}
+              >
+                <option value="custom">Benutzerdefiniert</option>
+                <option value="thisWeek">Diese Woche</option>
+                <option value="lastWeek">Letzte Woche</option>
+                <option value="thisMonth">Dieser Monat</option>
+                <option value="lastMonth">Letzter Monat</option>
+                <option value="schoolYear">Gesamtes Schuljahr</option>
+              </select>
+            </div>
+
+            <div>
+              <Label htmlFor="weekSelect">Für Statistik: Anzahl vollständige Wochen zurück</Label>
+              <Select
+                value={selectedWeeks}
+                onValueChange={setSelectedWeeks}
+              >
+                <SelectTrigger id="weekSelect">
+                  <SelectValue placeholder="Wählen Sie die Anzahl der Wochen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 Woche</SelectItem>
+                  <SelectItem value="2">2 Wochen</SelectItem>
+                  <SelectItem value="3">3 Wochen</SelectItem>
+                  <SelectItem value="4">4 Wochen</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="file">CSV-Datei hochladen</Label>
+            <Input
+              id="file"
+              type="file"
+              accept=".csv"
+              onChange={(e) => {
+                if (e.target.files?.[0]) {
+                  processFile(e.target.files[0]);
+                }
+              }}
+              className="mt-1"
+              ref={fileInputRef}
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              onClick={resetAll}
+              variant="destructive"
+            >
+              Alles zurücksetzen
+            </Button>
+            
+            {results && (
+              <Button
+                onClick={() => setIsReportView(!isReportView)}
+                variant="outline"
+              >
+                {isReportView ? "Normale Ansicht" : "Report Ansicht"}
+              </Button>
+            )}
+          </div>
+
+          {error && (
+            <div className="text-red-500 p-4 bg-red-50 rounded-md">
+              {error}
+            </div>
+          )}
+
+          {results && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="search">Suche nach Namen</Label>
+                <Input
+                  id="search"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Namen eingeben..."
+                  className="mt-1"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Filter</Label>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="filterLate"
+                      checked={filterUnexcusedLate}
+                      onChange={(e) => setFilterUnexcusedLate(e.target.checked)}
+                      className="h-4 w-4"
+                    />
+                    <label htmlFor="filterLate" className="text-sm">
+                      Nur Personen mit unentschuldigten Verspätungen anzeigen
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="filterAbsent"
+                      checked={filterUnexcusedAbsent}
+                      onChange={(e) => setFilterUnexcusedAbsent(e.target.checked)}
+                      className="h-4 w-4"
+                    />
+                    <label htmlFor="filterAbsent" className="text-sm">
+                      Nur Personen mit unentschuldigten Fehlzeiten anzeigen
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="minUnexcusedLates">
+                    Mindestanzahl unentschuldigter Verspätungen
+                  </Label>
+                  <Input
+                    id="minUnexcusedLates"
+                    type="number"
+                    min="0"
+                    value={minUnexcusedLates}
+                    onChange={(e) => setMinUnexcusedLates(e.target.value)}
+                    placeholder="Mindestanzahl eingeben"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="minUnexcusedAbsences">
+                    Mindestanzahl unentschuldigter Fehlzeiten
+                  </Label>
+                  <Input
+                    id="minUnexcusedAbsences"
+                    type="number"
+                    min="0"
+                    value={minUnexcusedAbsences}
+                    onChange={(e) => setMinUnexcusedAbsences(e.target.value)}
+                    placeholder="Mindestanzahl eingeben"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {results && (
+            isReportView ? (
+              <ReportView 
+                filteredStudents={getFilteredStudents()} 
+                detailedData={detailedData}
+                startDate={startDate}
+                endDate={endDate}
+              />
+            ) : (
+              <NormalView 
+                filteredStudents={getFilteredStudents()}
+                detailedData={detailedData}
+                startDate={startDate}
+                endDate={endDate}
+                schoolYearStats={schoolYearStats}
+                weeklyStats={weeklyStats}
+                selectedWeeks={selectedWeeks}
+              />
+            )
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default AttendanceAnalyzer;
