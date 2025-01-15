@@ -41,7 +41,7 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
           </thead>
           <tbody>
             {filteredStudents.map(([student, stats], index) => {
-              const studentData = Array.isArray(detailedData[student]) ? detailedData[student] : [];
+              const studentData = detailedData[student] || [];
 
               const unexcusedLates = studentData
                 .filter((entry: AbsenceEntry) => entry.art === 'Verspätung')
