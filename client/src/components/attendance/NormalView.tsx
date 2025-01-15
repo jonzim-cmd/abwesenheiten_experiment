@@ -184,15 +184,12 @@ const NormalView = ({
   const toggleAllDetails = () => {
     setIsAllExpanded(prev => !prev);
     if (!isAllExpanded) {
-      // Expand all students with relevant cases
+      // Expand all students with unexcused cases only
       const newExpandedStudents = new Set<string>();
       const newActiveFilters = new Map<string, string>();
 
       filteredStudents.forEach(([student, stats]) => {
-        if (stats.verspaetungen_unentsch > 0 || 
-            stats.fehlzeiten_unentsch > 0 ||
-            stats.verspaetungen_offen > 0 ||
-            stats.fehlzeiten_offen > 0) {
+        if (stats.verspaetungen_unentsch > 0 || stats.fehlzeiten_unentsch > 0) {
           newExpandedStudents.add(student);
           newActiveFilters.set(student, 'details');
         }
