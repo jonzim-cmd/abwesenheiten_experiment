@@ -225,6 +225,7 @@ const AttendanceAnalyzer = () => {
         const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || effectiveStatus === 'nicht akzep.';
         const deadlineDate = new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000);
         const isOverDeadline = today > deadlineDate;
+        const isOffen = !effectiveStatus && !isOverDeadline; // Nur offen wenn kein Status UND Frist noch nicht abgelaufen
 
         // Create entry object
         const entry: AbsenceEntry = {
@@ -245,7 +246,7 @@ const AttendanceAnalyzer = () => {
             } else if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
               studentStats[studentName].verspaetungen_unentsch++;
               detailedStats[studentName].verspaetungen_unentsch.push(entry);
-            } else {
+            } else if (isOffen) {
               studentStats[studentName].verspaetungen_offen++;
               detailedStats[studentName].verspaetungen_offen.push(entry);
             }
@@ -256,7 +257,7 @@ const AttendanceAnalyzer = () => {
             } else if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
               studentStats[studentName].fehlzeiten_unentsch++;
               detailedStats[studentName].fehlzeiten_unentsch.push(entry);
-            } else {
+            } else if (isOffen) {
               studentStats[studentName].fehlzeiten_offen++;
               detailedStats[studentName].fehlzeiten_offen.push(entry);
             }
@@ -270,7 +271,7 @@ const AttendanceAnalyzer = () => {
               schoolYearDetails[studentName].verspaetungen_entsch.push(entry);
             } else if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
               schoolYearDetails[studentName].verspaetungen_unentsch.push(entry);
-            } else {
+            } else if (isOffen) {
               schoolYearDetails[studentName].verspaetungen_offen.push(entry);
             }
           } else {
@@ -278,7 +279,7 @@ const AttendanceAnalyzer = () => {
               schoolYearDetails[studentName].fehlzeiten_entsch.push(entry);
             } else if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
               schoolYearDetails[studentName].fehlzeiten_unentsch.push(entry);
-            } else {
+            } else if (isOffen) {
               schoolYearDetails[studentName].fehlzeiten_offen.push(entry);
             }
           }

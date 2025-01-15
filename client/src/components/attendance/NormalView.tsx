@@ -68,9 +68,10 @@ const NormalView = ({
     switch (activeFilter.type) {
       case 'sj_verspaetungen':
       case 'sj_fehlzeiten': {
+        // Nur unentschuldigte Fälle für Schuljahresstatistik
         const entries = activeFilter.type === 'sj_verspaetungen' 
-          ? [...studentSchoolYearData.verspaetungen_unentsch, ...studentSchoolYearData.verspaetungen_offen]
-          : [...studentSchoolYearData.fehlzeiten_unentsch, ...studentSchoolYearData.fehlzeiten_offen];
+          ? studentSchoolYearData.verspaetungen_unentsch
+          : studentSchoolYearData.fehlzeiten_unentsch;
 
         return entries.sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
       }
