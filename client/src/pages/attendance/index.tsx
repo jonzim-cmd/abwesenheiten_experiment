@@ -39,6 +39,7 @@ const AttendanceAnalyzer = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState('');
   const [detailedData, setDetailedData] = useState<Record<string, DetailedStats>>({});
+  const [schoolYearDetailedData, setSchoolYearDetailedData] = useState<Record<string, DetailedStats>>({});
   const [filterUnexcusedLate, setFilterUnexcusedLate] = useState(false);
   const [filterUnexcusedAbsent, setFilterUnexcusedAbsent] = useState(false);
   const [minUnexcusedLates, setMinUnexcusedLates] = useState('');
@@ -57,6 +58,7 @@ const AttendanceAnalyzer = () => {
     setSearchQuery('');
     setError('');
     setDetailedData({});
+    setSchoolYearDetailedData({});
     setFilterUnexcusedLate(false);
     setFilterUnexcusedAbsent(false);
     setMinUnexcusedLates('');
@@ -165,6 +167,10 @@ const AttendanceAnalyzer = () => {
       const today = new Date();
       const studentStats: any = {};
       const detailedStats: Record<string, DetailedStats> = {};
+      const schoolYearDetailedStats: Record<string, DetailedStats> = {};
+      const schoolYear = getCurrentSchoolYear();
+      const sjStartDate = new Date(schoolYear.start, 8, 1);
+      const sjEndDate = new Date(schoolYear.end, 7, 31);
 
       data.forEach(row => {
         if (!row.Beginndatum || !row.Langname || !row.Vorname) return;
@@ -174,8 +180,8 @@ const AttendanceAnalyzer = () => {
         const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
         const studentName = `${row.Langname}, ${row.Vorname}`;
 
+        // Initialize statistics for selected time period
         if (date >= startDateTime && date <= endDateTime) {
-          // Initialize statistics for new student
           if (!studentStats[studentName]) {
             studentStats[studentName] = {
               verspaetungen_entsch: 0,
@@ -188,7 +194,6 @@ const AttendanceAnalyzer = () => {
             };
           }
 
-          // Initialize detailed stats for new student
           if (!detailedStats[studentName]) {
             detailedStats[studentName] = {
               verspaetungen_entsch: [],
@@ -199,25 +204,41 @@ const AttendanceAnalyzer = () => {
               fehlzeiten_offen: []
             };
           }
+        }
 
-          const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
-          let effectiveStatus = row.Status ? row.Status.trim() : '';
-          const isAttest = effectiveStatus === 'Attest' || effectiveStatus === 'Attest Amtsarzt';
-          const isEntschuldigt = effectiveStatus === 'entsch.' || isAttest;
-          const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || effectiveStatus === 'nicht akzep.';
-          const deadlineDate = new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000);
-          const isOverDeadline = today > deadlineDate;
+        // Initialize statistics for school year
+        if (date >= sjStartDate && date <= sjEndDate) {
+          if (!schoolYearDetailedStats[studentName]) {
+            schoolYearDetailedStats[studentName] = {
+              verspaetungen_entsch: [],
+              verspaetungen_unentsch: [],
+              verspaetungen_offen: [],
+              fehlzeiten_entsch: [],
+              fehlzeiten_unentsch: [],
+              fehlzeiten_offen: []
+            };
+          }
+        }
 
-          // Create entry object
-          const entry: AbsenceEntry = {
-            datum: date,
-            art: isVerspaetung ? 'Verspätung' : (row.Abwesenheitsgrund || 'Fehltag'),
-            beginnZeit: row.Beginnzeit,
-            endZeit: row.Endzeit,
-            grund: row['Text/Grund'],
-            status: effectiveStatus as AbsenceStatus
-          };
+        const entry: AbsenceEntry = {
+          datum: date,
+          art: row.Abwesenheitsgrund === 'Verspätung' ? 'Verspätung' : (row.Abwesenheitsgrund || 'Fehltag'),
+          beginnZeit: row.Beginnzeit,
+          endZeit: row.Endzeit,
+          grund: row['Text/Grund'],
+          status: row.Status ? row.Status.trim() as AbsenceStatus : ''
+        };
 
+        const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
+        const effectiveStatus = row.Status ? row.Status.trim() : '';
+        const isAttest = effectiveStatus === 'Attest' || effectiveStatus === 'Attest Amtsarzt';
+        const isEntschuldigt = effectiveStatus === 'entsch.' || isAttest;
+        const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || effectiveStatus === 'nicht akzep.';
+        const deadlineDate = new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const isOverDeadline = today > deadlineDate;
+
+        // Process data for selected time period
+        if (date >= startDateTime && date <= endDateTime) {
           if (isVerspaetung) {
             if (isEntschuldigt) {
               studentStats[studentName].verspaetungen_entsch++;
@@ -242,10 +263,32 @@ const AttendanceAnalyzer = () => {
             }
           }
         }
+
+        // Process data for school year
+        if (date >= sjStartDate && date <= sjEndDate) {
+          if (isVerspaetung) {
+            if (isEntschuldigt) {
+              schoolYearDetailedStats[studentName].verspaetungen_entsch.push(entry);
+            } else if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
+              schoolYearDetailedStats[studentName].verspaetungen_unentsch.push(entry);
+            } else {
+              schoolYearDetailedStats[studentName].verspaetungen_offen.push(entry);
+            }
+          } else {
+            if (isEntschuldigt) {
+              schoolYearDetailedStats[studentName].fehlzeiten_entsch.push(entry);
+            } else if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
+              schoolYearDetailedStats[studentName].fehlzeiten_unentsch.push(entry);
+            } else {
+              schoolYearDetailedStats[studentName].fehlzeiten_offen.push(entry);
+            }
+          }
+        }
       });
 
       setResults(studentStats);
-      setDetailedData(detailedStats);
+      setDetailedData(detailedData);
+      setSchoolYearDetailedData(schoolYearDetailedStats);
       setAvailableStudents(Object.keys(studentStats).sort());
       setError('');
     } catch (err: any) {
@@ -568,6 +611,7 @@ const AttendanceAnalyzer = () => {
                   <NormalView
                     filteredStudents={getFilteredStudents()}
                     detailedData={detailedData}
+                    schoolYearDetailedData={schoolYearDetailedData}
                     startDate={startDate}
                     endDate={endDate}
                     schoolYearStats={schoolYearStats}

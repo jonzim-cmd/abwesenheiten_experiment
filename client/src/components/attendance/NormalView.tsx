@@ -15,6 +15,14 @@ interface NormalViewProps {
     fehlzeiten_unentsch: AbsenceEntry[];
     fehlzeiten_offen: AbsenceEntry[];
   }>;
+  schoolYearDetailedData: Record<string, {
+    verspaetungen_entsch: AbsenceEntry[];
+    verspaetungen_unentsch: AbsenceEntry[];
+    verspaetungen_offen: AbsenceEntry[];
+    fehlzeiten_entsch: AbsenceEntry[];
+    fehlzeiten_unentsch: AbsenceEntry[];
+    fehlzeiten_offen: AbsenceEntry[];
+  }>;
   startDate: string;
   endDate: string;
   schoolYearStats: Record<string, {
@@ -31,6 +39,7 @@ interface NormalViewProps {
 const NormalView = ({ 
   filteredStudents, 
   detailedData, 
+  schoolYearDetailedData,
   startDate, 
   endDate, 
   schoolYearStats, 
@@ -57,43 +66,32 @@ const NormalView = ({
   const getFilteredDetailData = (student: string): AbsenceEntry[] => {
     if (!expandedStudent || !activeFilter || expandedStudent !== student) return [];
 
+    // For school year statistics, use schoolYearDetailedData
+    if (activeFilter.type === 'sj_verspaetungen') {
+      const studentData = schoolYearDetailedData[student];
+      if (!studentData) return [];
+
+      return [
+        ...studentData.verspaetungen_unentsch,
+        ...studentData.verspaetungen_offen
+      ].sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
+    }
+
+    if (activeFilter.type === 'sj_fehlzeiten') {
+      const studentData = schoolYearDetailedData[student];
+      if (!studentData) return [];
+
+      return [
+        ...studentData.fehlzeiten_unentsch,
+        ...studentData.fehlzeiten_offen
+      ].sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
+    }
+
+    // For regular period statistics, use detailedData
     const studentData = detailedData[student];
     if (!studentData) return [];
 
     switch (activeFilter.type) {
-      case 'sj_verspaetungen':
-      case 'sj_fehlzeiten': {
-        const schoolYear = getCurrentSchoolYear();
-        const sjStartDate = new Date(schoolYear.start, 8, 1); // 1. September
-        const sjEndDate = new Date(schoolYear.end, 7, 31); // 31. August
-        const today = new Date();
-
-        // Get all entries for the current school year without considering the selected date range
-        let allEntries: AbsenceEntry[] = [];
-        if (activeFilter.type === 'sj_verspaetungen') {
-          allEntries = [
-            ...studentData.verspaetungen_unentsch,
-            ...studentData.verspaetungen_offen
-          ];
-        } else {
-          allEntries = [
-            ...studentData.fehlzeiten_unentsch,
-            ...studentData.fehlzeiten_offen
-          ];
-        }
-
-        return allEntries
-          .filter(entry => {
-            const date = parseDate(entry.datum);
-            const isInSchoolYear = date >= sjStartDate && date <= sjEndDate;
-            const isUnentschuldigt = entry.status === 'nicht entsch.' || entry.status === 'nicht akzep.';
-            const isUeberfaellig = !entry.status && (today > new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
-
-            return isInSchoolYear && (isUnentschuldigt || isUeberfaellig);
-          })
-          .sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
-      }
-
       case 'verspaetungen_entsch':
       case 'verspaetungen_unentsch':
       case 'verspaetungen_offen':
@@ -112,7 +110,7 @@ const NormalView = ({
 
         return studentData.verspaetungen_unentsch.filter(entry => {
           const date = parseDate(entry.datum);
-          const weekIndex = weeks.findIndex(week => 
+          const weekIndex = weeks.findIndex(week =>
             date >= week.startDate && date <= week.endDate
           );
           return weekIndex !== -1 && studentWeeklyStats.verspaetungen.weekly[weekIndex] > 0;
@@ -126,7 +124,7 @@ const NormalView = ({
 
         return studentData.fehlzeiten_unentsch.filter(entry => {
           const date = parseDate(entry.datum);
-          const weekIndex = weeks.findIndex(week => 
+          const weekIndex = weeks.findIndex(week =>
             date >= week.startDate && date <= week.endDate
           );
           return weekIndex !== -1 && studentWeeklyStats.fehlzeiten.weekly[weekIndex] > 0;
