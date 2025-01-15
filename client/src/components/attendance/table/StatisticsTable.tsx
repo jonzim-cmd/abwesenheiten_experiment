@@ -1,5 +1,5 @@
 import React from 'react';
-import { StudentStats, AbsenceEntry } from '@/lib/attendance-utils';
+import { StudentStats, AbsenceEntry, getCurrentSchoolYear } from '@/lib/attendance-utils';
 import StudentDetailsRow from './StudentDetailsRow';
 
 interface StatisticsTableProps {
@@ -39,9 +39,34 @@ const StatisticsTable = ({
   const getDetailedData = (student: string, type: string): AbsenceEntry[] => {
     if (!detailedData[student]) return [];
 
+    const studentData = detailedData[student];
+    const schoolYear = getCurrentSchoolYear();
+    const sjStartDate = new Date(schoolYear.start, 8, 1); // 1. September
+    const sjEndDate = new Date(schoolYear.end, 7, 31); // 31. August
+
+    if (type === 'sj_verspaetungen') {
+      return studentData.verspaetungen_unentsch.filter(entry => {
+        if (typeof entry.datum === 'string') {
+          const [day, month, year] = entry.datum.split('.');
+          const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+          return date >= sjStartDate && date <= sjEndDate;
+        }
+        return false;
+      });
+    } else if (type === 'sj_fehlzeiten') {
+      return studentData.fehlzeiten_unentsch.filter(entry => {
+        if (typeof entry.datum === 'string') {
+          const [day, month, year] = entry.datum.split('.');
+          const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+          return date >= sjStartDate && date <= sjEndDate;
+        }
+        return false;
+      });
+    }
+
     const baseType = type.replace('weekly_', '').replace('sum_', '');
     if (baseType === 'verspaetungen' || baseType === 'fehlzeiten') {
-      return detailedData[student][`${baseType}_unentsch`] || [];
+      return studentData[`${baseType}_unentsch`] || [];
     }
     return [];
   };
@@ -51,6 +76,9 @@ const StatisticsTable = ({
       <table className="min-w-full border-collapse bg-white">
         <thead>
           <tr className="bg-gray-50 border-b border-gray-200">
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r invisible">
+              Platzhalter
+            </th>
             <th colSpan={2} className="text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
               Schuljahr
             </th>
@@ -62,6 +90,9 @@ const StatisticsTable = ({
             </th>
           </tr>
           <tr className="bg-gray-50 border-b border-gray-200">
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r invisible">
+              Platzhalter
+            </th>
             <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 tracking-wider border-r">∑SJ V</th>
             <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 tracking-wider border-r">∑SJ F</th>
             <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 tracking-wider border-r">V</th>
@@ -90,6 +121,9 @@ const StatisticsTable = ({
             return (
               <React.Fragment key={student}>
                 <tr className={rowColor}>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900 border-r invisible">
+                    Platzhalter
+                  </td>
                   <td className="px-4 py-3 text-sm text-center border-r">
                     <span 
                       className="cursor-pointer hover:underline"
