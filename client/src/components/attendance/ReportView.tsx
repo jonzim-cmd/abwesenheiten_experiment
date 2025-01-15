@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
+import { AbsenceEntry } from '@/lib/attendance-utils';
 
 interface ReportViewProps {
   filteredStudents: [string, any][];
-  detailedData: Record<string, any>;
+  detailedData: Record<string, AbsenceEntry[]>;
   startDate: string;
   endDate: string;
 }
@@ -13,7 +14,7 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
       <h3 className="text-lg font-semibold">
         Unentschuldigte Verspätungen und Fehlzeiten für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
       </h3>
-      
+
       <div className="overflow-x-auto">
         <table className="w-full table-fixed">
           <thead>
@@ -41,8 +42,8 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
           <tbody>
             {filteredStudents.map(([student, stats], index) => {
               const unexcusedLates = detailedData[student]
-                ?.filter(entry => entry.art === 'Verspätung')
-                .map(entry => (
+                ?.filter((entry: AbsenceEntry) => entry.art === 'Verspätung')
+                .map((entry: AbsenceEntry) => (
                   `${new Date(entry.datum).toLocaleDateString('de-DE', {
                     weekday: 'long',
                     year: 'numeric',
@@ -52,8 +53,8 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
                 )).join('\n') || '-';
 
               const unexcusedAbsences = detailedData[student]
-                ?.filter(entry => entry.art !== 'Verspätung')
-                .map(entry => (
+                ?.filter((entry: AbsenceEntry) => entry.art !== 'Verspätung')
+                .map((entry: AbsenceEntry) => (
                   `${new Date(entry.datum).toLocaleDateString('de-DE', {
                     weekday: 'long',
                     year: 'numeric',

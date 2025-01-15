@@ -64,17 +64,32 @@ const NormalView = ({
       case 'sj_verspaetungen':
       case 'sj_fehlzeiten': {
         const schoolYear = getCurrentSchoolYear();
-        const sjStartDate = new Date(schoolYear.start, 8, 1); 
-        const sjEndDate = new Date(schoolYear.end, 7, 31); 
+        const sjStartDate = new Date(schoolYear.start, 8, 1); // 1. September
+        const sjEndDate = new Date(schoolYear.end, 7, 31); // 31. August
+        const today = new Date();
 
-        const entries = activeFilter.type === 'sj_verspaetungen' 
-          ? studentData.verspaetungen_unentsch 
-          : studentData.fehlzeiten_unentsch;
+        // Combine all entries
+        let allEntries: AbsenceEntry[] = [];
+        if (activeFilter.type === 'sj_verspaetungen') {
+          allEntries = [
+            ...studentData.verspaetungen_unentsch,
+            ...studentData.verspaetungen_offen
+          ];
+        } else {
+          allEntries = [
+            ...studentData.fehlzeiten_unentsch,
+            ...studentData.fehlzeiten_offen
+          ];
+        }
 
-        return entries
+        return allEntries
           .filter(entry => {
             const date = parseDate(entry.datum);
-            return date >= sjStartDate && date <= sjEndDate;
+            const isInSchoolYear = date >= sjStartDate && date <= sjEndDate;
+            const isUnentschuldigt = entry.status === 'nicht entsch.' || entry.status === 'nicht akzep.';
+            const isUeberfaellig = !entry.status && (today > new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
+
+            return isInSchoolYear && (isUnentschuldigt || isUeberfaellig);
           })
           .sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
       }
