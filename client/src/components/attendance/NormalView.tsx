@@ -69,6 +69,31 @@ const NormalView = ({
     if (!studentData || !studentSchoolYearData || !studentWeeklyData) return [];
 
     switch (activeFilter.type) {
+      case 'details': {
+        const unexcusedEntries = [
+          ...studentData.verspaetungen_unentsch,
+          ...studentData.fehlzeiten_unentsch
+        ];
+
+        // Füge auch die überfälligen offenen Einträge hinzu
+        const today = new Date();
+        const addOverdueEntries = (entries: AbsenceEntry[]) => {
+          return entries.filter(entry => {
+            const entryDate = parseDate(entry.datum);
+            const deadlineDate = new Date(entryDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+            return today > deadlineDate;
+          });
+        };
+
+        const overdueEntries = [
+          ...addOverdueEntries(studentData.verspaetungen_offen),
+          ...addOverdueEntries(studentData.fehlzeiten_offen)
+        ];
+
+        return [...unexcusedEntries, ...overdueEntries]
+          .sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
+      }
+
       case 'sj_verspaetungen':
       case 'sj_fehlzeiten': {
         const entries = activeFilter.type === 'sj_verspaetungen' 
@@ -107,7 +132,7 @@ const NormalView = ({
       }
 
       default: {
-        const selectedType = activeFilter.type as keyof typeof studentData;
+        const selectedType = activeFilter.type as keyof DetailedStats;
         return studentData[selectedType];
       }
     }
