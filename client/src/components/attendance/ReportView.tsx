@@ -41,29 +41,38 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
           </thead>
           <tbody>
             {filteredStudents.map(([student, stats], index) => {
-              const studentData = detailedData[student] || [];
+              // Ensure we have valid arrays for both late entries and absences
+              const lateEntries = Array.isArray(detailedData[student]) 
+                ? detailedData[student].filter((entry: AbsenceEntry | null) => 
+                    entry && entry.art === 'Verspätung'
+                  )
+                : [];
 
-              const unexcusedLates = studentData
-                .filter(entry => entry && entry.art === 'Verspätung')
-                .map(entry => (
-                  `${new Date(entry.datum).toLocaleDateString('de-DE', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                  })} (${entry.beginnZeit} - ${entry.endZeit} Uhr)`
-                ));
+              const absenceEntries = Array.isArray(detailedData[student])
+                ? detailedData[student].filter((entry: AbsenceEntry | null) => 
+                    entry && entry.art !== 'Verspätung'
+                  )
+                : [];
 
-              const unexcusedAbsences = studentData
-                .filter(entry => entry && entry.art !== 'Verspätung')
-                .map(entry => (
-                  `${new Date(entry.datum).toLocaleDateString('de-DE', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                  })} - ${entry.art}${entry.grund ? ` (${entry.grund})` : ''}`
-                ));
+              // Format late entries
+              const formattedLates = lateEntries.map((entry: AbsenceEntry) => 
+                `${new Date(entry.datum).toLocaleDateString('de-DE', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit'
+                })} (${entry.beginnZeit} - ${entry.endZeit} Uhr)`
+              );
+
+              // Format absence entries
+              const formattedAbsences = absenceEntries.map((entry: AbsenceEntry) => 
+                `${new Date(entry.datum).toLocaleDateString('de-DE', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit'
+                })} - ${entry.art}${entry.grund ? ` (${entry.grund})` : ''}`
+              );
 
               return (
                 <tr 
@@ -77,10 +86,10 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
                     {student}
                   </td>
                   <td className="px-6 py-4 whitespace-pre-line text-sm text-gray-500 border-b border-r border-gray-200">
-                    {unexcusedLates.length > 0 ? unexcusedLates.join('\n') : '-'}
+                    {formattedLates.length > 0 ? formattedLates.join('\n') : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-pre-line text-sm text-gray-500 border-b border-gray-200">
-                    {unexcusedAbsences.length > 0 ? unexcusedAbsences.join('\n') : '-'}
+                    {formattedAbsences.length > 0 ? formattedAbsences.join('\n') : '-'}
                   </td>
                 </tr>
               );
