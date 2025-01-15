@@ -92,28 +92,36 @@ const NormalView = ({
         const studentWeeklyStats = weeklyStats[student];
         if (!studentWeeklyStats) return [];
 
-        return studentData.verspaetungen_unentsch.filter(entry => {
-          const date = parseDate(entry.datum);
-          const weekIndex = weeks.findIndex(week => 
-            date >= week.startDate && date <= week.endDate
-          );
-          return weekIndex !== -1 && studentWeeklyStats.verspaetungen.weekly[weekIndex] > 0;
-        });
+        // Filtern der Verspätungen basierend auf den ausgewählten Wochen
+        return studentData.verspaetungen_unentsch
+          .filter(entry => {
+            const date = parseDate(entry.datum);
+            // Prüfe ob das Datum in einer der ausgewählten Wochen liegt
+            return weeks.some(week => 
+              date >= week.startDate && date <= week.endDate
+            );
+          })
+          .sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
       }
+
       case 'weekly_fehlzeiten':
       case 'sum_fehlzeiten': {
         const weeks = getLastNWeeks(parseInt(selectedWeeks));
         const studentWeeklyStats = weeklyStats[student];
         if (!studentWeeklyStats) return [];
 
-        return studentData.fehlzeiten_unentsch.filter(entry => {
-          const date = parseDate(entry.datum);
-          const weekIndex = weeks.findIndex(week => 
-            date >= week.startDate && date <= week.endDate
-          );
-          return weekIndex !== -1 && studentWeeklyStats.fehlzeiten.weekly[weekIndex] > 0;
-        });
+        // Filtern der Fehlzeiten basierend auf den ausgewählten Wochen
+        return studentData.fehlzeiten_unentsch
+          .filter(entry => {
+            const date = parseDate(entry.datum);
+            // Prüfe ob das Datum in einer der ausgewählten Wochen liegt
+            return weeks.some(week => 
+              date >= week.startDate && date <= week.endDate
+            );
+          })
+          .sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
       }
+
       default:
         return [];
     }
