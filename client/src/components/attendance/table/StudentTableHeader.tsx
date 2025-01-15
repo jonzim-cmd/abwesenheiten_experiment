@@ -30,7 +30,7 @@ const StudentTableHeader = () => {
         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
           Details
           <div className="text-[10px] font-normal normal-case mt-1 text-gray-400">
-            zeigt unentschuldigte und überfällige Verspätungen und Fehlzeiten für den ausgewählten Zeitraum
+            zeigt unentschuldigte Verspätungen und Fehlzeiten für den ausgewählten Zeitraum
           </div>
         </th>
       </tr>
