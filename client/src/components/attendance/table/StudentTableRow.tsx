@@ -38,6 +38,11 @@ const StudentTableRow = ({
   const verspaetungenSum = `${weeklyData.verspaetungen.total}(${weeklyData.verspaetungen.weekly.join(',')})`;
   const fehlzeitenSum = `${weeklyData.fehlzeiten.total}(${weeklyData.fehlzeiten.weekly.join(',')})`;
 
+  const hasRelevantCases = stats.verspaetungen_unentsch > 0 || 
+                          stats.fehlzeiten_unentsch > 0 ||
+                          stats.verspaetungen_offen > 0 ||
+                          stats.fehlzeiten_offen > 0;
+
   const createClickableCell = (value: number, type: string, className: string = "") => (
     <span 
       className={`cursor-pointer hover:underline ${className}`}
@@ -98,13 +103,15 @@ const StudentTableRow = ({
         {createClickableWeeklyCell(fehlzeitenSum, weeklyData.fehlzeiten.weekly, 'sum_fehlzeiten')}
       </td>
       <td className="px-4 py-3 text-sm text-center">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onToggleDetails}
-        >
-          Details
-        </Button>
+        {hasRelevantCases && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggleDetails}
+          >
+            Details
+          </Button>
+        )}
       </td>
     </tr>
   );
