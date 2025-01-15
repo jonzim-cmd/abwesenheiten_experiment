@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { AbsenceEntry } from '@/lib/attendance-utils';
+import { DetailedStats } from '@/lib/attendance-utils';
 
 interface ReportViewProps {
   filteredStudents: [string, any][];
-  detailedData: Record<string, AbsenceEntry[]>;
+  detailedData: Record<string, DetailedStats>;
   startDate: string;
   endDate: string;
 }
@@ -41,21 +41,14 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
           </thead>
           <tbody>
             {filteredStudents.map(([student, stats], index) => {
-              // Ensure we have valid arrays for both late entries and absences
-              const lateEntries = Array.isArray(detailedData[student]) 
-                ? detailedData[student].filter((entry: AbsenceEntry | null) => 
-                    entry && entry.art === 'Verspätung'
-                  )
-                : [];
+              const studentData = detailedData[student];
 
-              const absenceEntries = Array.isArray(detailedData[student])
-                ? detailedData[student].filter((entry: AbsenceEntry | null) => 
-                    entry && entry.art !== 'Verspätung'
-                  )
-                : [];
+              // Get unexcused late entries and absences
+              const lateEntries = studentData?.verspaetungen_unentsch || [];
+              const absenceEntries = studentData?.fehlzeiten_unentsch || [];
 
               // Format late entries
-              const formattedLates = lateEntries.map((entry: AbsenceEntry) => 
+              const formattedLates = lateEntries.map(entry => 
                 `${new Date(entry.datum).toLocaleDateString('de-DE', {
                   weekday: 'long',
                   year: 'numeric',
@@ -65,7 +58,7 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
               );
 
               // Format absence entries
-              const formattedAbsences = absenceEntries.map((entry: AbsenceEntry) => 
+              const formattedAbsences = absenceEntries.map(entry => 
                 `${new Date(entry.datum).toLocaleDateString('de-DE', {
                   weekday: 'long',
                   year: 'numeric',
