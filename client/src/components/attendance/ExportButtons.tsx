@@ -54,9 +54,9 @@ const ExportButtons = ({
       const fehlzeitenSum = `${weeklyData.fehlzeiten.total}(${weeklyData.fehlzeiten.weekly.join(',')})`;
 
       // Split student name into Nachname and Vorname
-      const nameParts = student.split(' ');
+      const nameParts = student.split('\t');
       const nachname = nameParts[0];
-      const vorname = nameParts.slice(1).join(' ');
+      const vorname = nameParts[1];
 
       return {
         'Nachname': nachname,
