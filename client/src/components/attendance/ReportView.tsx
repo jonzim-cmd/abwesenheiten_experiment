@@ -41,8 +41,10 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
           </thead>
           <tbody>
             {filteredStudents.map(([student, stats], index) => {
-              const unexcusedLates = detailedData[student]
-                ?.filter((entry: AbsenceEntry) => entry.art === 'Verspätung')
+              const studentData = Array.isArray(detailedData[student]) ? detailedData[student] : [];
+
+              const unexcusedLates = studentData
+                .filter((entry: AbsenceEntry) => entry.art === 'Verspätung')
                 .map((entry: AbsenceEntry) => (
                   `${new Date(entry.datum).toLocaleDateString('de-DE', {
                     weekday: 'long',
@@ -52,8 +54,8 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
                   })} (${entry.beginnZeit} - ${entry.endZeit} Uhr)`
                 )).join('\n') || '-';
 
-              const unexcusedAbsences = detailedData[student]
-                ?.filter((entry: AbsenceEntry) => entry.art !== 'Verspätung')
+              const unexcusedAbsences = studentData
+                .filter((entry: AbsenceEntry) => entry.art !== 'Verspätung')
                 .map((entry: AbsenceEntry) => (
                   `${new Date(entry.datum).toLocaleDateString('de-DE', {
                     weekday: 'long',
