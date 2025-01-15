@@ -9,6 +9,9 @@ interface ReportViewProps {
 }
 
 const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: ReportViewProps) => {
+  // Ensure detailedData is not null/undefined
+  const safeDetailedData = detailedData || {};
+
   return (
     <div className="mt-6 space-y-4">
       <h3 className="text-lg font-semibold">
@@ -41,10 +44,14 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
           </thead>
           <tbody>
             {filteredStudents.map(([student, stats], index) => {
-              const studentData = detailedData[student] || [];
+              // Ensure we have an array of entries, even if empty
+              const studentEntries = Array.isArray(safeDetailedData[student]) 
+                ? safeDetailedData[student] 
+                : [];
 
-              const unexcusedLates = studentData
-                .filter((entry: AbsenceEntry) => entry.art === 'Verspätung')
+              // Handle late entries
+              const unexcusedLates = studentEntries
+                .filter((entry: AbsenceEntry) => entry && entry.art === 'Verspätung')
                 .map((entry: AbsenceEntry) => (
                   `${new Date(entry.datum).toLocaleDateString('de-DE', {
                     weekday: 'long',
@@ -54,8 +61,9 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
                   })} (${entry.beginnZeit} - ${entry.endZeit} Uhr)`
                 )).join('\n') || '-';
 
-              const unexcusedAbsences = studentData
-                .filter((entry: AbsenceEntry) => entry.art !== 'Verspätung')
+              // Handle absence entries
+              const unexcusedAbsences = studentEntries
+                .filter((entry: AbsenceEntry) => entry && entry.art !== 'Verspätung')
                 .map((entry: AbsenceEntry) => (
                   `${new Date(entry.datum).toLocaleDateString('de-DE', {
                     weekday: 'long',
