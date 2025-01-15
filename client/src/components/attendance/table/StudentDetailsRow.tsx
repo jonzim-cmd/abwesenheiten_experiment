@@ -13,7 +13,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
   const getFilterTitle = () => {
     switch (filterType) {
       case 'details':
-        return 'Detaillierte Übersicht der Abwesenheiten';
+        return 'Detaillierte Übersicht der unentschuldigten Abwesenheiten';
       case 'verspaetungen_entsch':
         return 'Entschuldigte Verspätungen im ausgewählten Zeitraum';
       case 'verspaetungen_unentsch':
@@ -44,7 +44,6 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
   };
 
   const formatDate = (datum: Date | string) => {
-    // Wenn datum ein String im Format "DD.MM.YYYY" ist
     if (typeof datum === 'string') {
       const [day, month, year] = datum.split('.');
       const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -55,7 +54,6 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
         day: '2-digit'
       });
     }
-    // Wenn datum bereits ein Date-Objekt ist
     return datum.toLocaleDateString('de-DE', {
       weekday: 'long',
       year: 'numeric',
@@ -65,17 +63,12 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
   };
 
   const getStatusColor = (status: string, datum: Date | string) => {
-    // Für entschuldigte Abwesenheiten (grün)
     if (status === 'entsch.' || status === 'Attest' || status === 'Attest Amtsarzt') {
       return 'text-green-600';
     }
-
-    // Für unentschuldigte Abwesenheiten (rot)
     if (status === 'nicht entsch.' || status === 'nicht akzep.') {
       return 'text-red-600';
     }
-
-    // Für leeren Status prüfen wir die 7-Tage-Frist
     if (!status || status.trim() === '') {
       const today = new Date();
       let abwesenheitsDatum: Date;
@@ -89,14 +82,120 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
 
       const deadlineDate = new Date(abwesenheitsDatum.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-      // Nach der Frist -> unentschuldigt (rot)
       if (today > deadlineDate) {
         return 'text-red-600';
       }
     }
-
-    // Standardfall: offen/in Bearbeitung (gelb)
     return 'text-yellow-600';
+  };
+
+  const renderDetailSection = (entries: AbsenceEntry[], title: string) => {
+    if (entries.length === 0) return null;
+
+    return (
+      <div className="mb-4">
+        <h5 className="font-medium text-gray-700 mb-2">{title}</h5>
+        <div className="space-y-1 pl-4">
+          {entries.map((entry, i) => {
+            const statusColor = getStatusColor(entry.status || '', entry.datum);
+            return (
+              <div 
+                key={i}
+                className={`${statusColor} hover:bg-gray-50 p-1 rounded`}
+              >
+                <span className="font-medium">{formatDate(entry.datum)}</span>
+                {entry.art === 'Verspätung' ? (
+                  <span className="ml-2">
+                    {entry.beginnZeit} - {entry.endZeit} Uhr
+                    {entry.grund && ` (${entry.grund})`}
+                  </span>
+                ) : (
+                  <span className="ml-2">
+                    {entry.art}
+                    {entry.grund && ` - ${entry.grund}`}
+                  </span>
+                )}
+                {entry.status && (
+                  <span className="ml-2 italic">
+                    [{entry.status}]
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const isUnexcused = (entry: AbsenceEntry) => {
+    const status = entry.status || '';
+    const isUnentschuldigt = status === 'nicht entsch.' || status === 'nicht akzep.';
+
+    if (!status.trim()) {
+      const today = new Date();
+      const dateParts = (typeof entry.datum === 'string' ? entry.datum : entry.datum.toLocaleDateString('de-DE')).split('.');
+      const entryDate = new Date(parseInt(dateParts[2]), parseInt(dateParts[1]) - 1, parseInt(dateParts[0]));
+      const deadlineDate = new Date(entryDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+      return today > deadlineDate;
+    }
+
+    return isUnentschuldigt;
+  };
+
+  const renderDetailsContent = () => {
+    if (filterType === 'details') {
+      const unexcusedLates = detailedData.filter(entry => entry.art === 'Verspätung' && isUnexcused(entry));
+      const unexcusedAbsences = detailedData.filter(entry => entry.art !== 'Verspätung' && isUnexcused(entry));
+
+      return (
+        <>
+          {renderDetailSection(unexcusedLates, 'Unentschuldigte Verspätungen')}
+          {renderDetailSection(unexcusedAbsences, 'Unentschuldigte Fehlzeiten')}
+          {unexcusedLates.length === 0 && unexcusedAbsences.length === 0 && (
+            <div className="text-gray-500 italic">Keine unentschuldigten Einträge für den ausgewählten Zeitraum gefunden</div>
+          )}
+        </>
+      );
+    }
+
+    return (
+      <div className="space-y-1">
+        {detailedData.length > 0 ? (
+          <div className="space-y-1">
+            {detailedData.map((entry, i) => {
+              const statusColor = getStatusColor(entry.status || '', entry.datum);
+              return (
+                <div 
+                  key={i}
+                  className={`${statusColor} hover:bg-gray-50 p-1 rounded`}
+                >
+                  <span className="font-medium">{formatDate(entry.datum)}</span>
+                  {entry.art === 'Verspätung' ? (
+                    <span className="ml-2">
+                      {entry.beginnZeit} - {entry.endZeit} Uhr
+                      {entry.grund && ` (${entry.grund})`}
+                    </span>
+                  ) : (
+                    <span className="ml-2">
+                      {entry.art}
+                      {entry.grund && ` - ${entry.grund}`}
+                    </span>
+                  )}
+                  {entry.status && (
+                    <span className="ml-2 italic">
+                      [{entry.status}]
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-gray-500 italic">Keine Einträge für den ausgewählten Zeitraum gefunden</div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -109,39 +208,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
         <div className="space-y-2">
           <h4 className="font-medium text-gray-900">{getFilterTitle()}</h4>
           <div className="pl-4">
-            {detailedData.length > 0 ? (
-              <div className="space-y-1">
-                {detailedData.map((entry, i) => {
-                  const statusColor = getStatusColor(entry.status || '', entry.datum);
-                  return (
-                    <div 
-                      key={i}
-                      className={`${statusColor} hover:bg-gray-50 p-1 rounded`}
-                    >
-                      <span className="font-medium">{formatDate(entry.datum)}</span>
-                      {entry.art === 'Verspätung' ? (
-                        <span className="ml-2">
-                          {entry.beginnZeit} - {entry.endZeit} Uhr
-                          {entry.grund && ` (${entry.grund})`}
-                        </span>
-                      ) : (
-                        <span className="ml-2">
-                          {entry.art}
-                          {entry.grund && ` - ${entry.grund}`}
-                        </span>
-                      )}
-                      {entry.status && (
-                        <span className={`ml-2 italic`}>
-                          [{entry.status}]
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-gray-500 italic">Keine Einträge für den ausgewählten Zeitraum gefunden</div>
-            )}
+            {renderDetailsContent()}
           </div>
         </div>
       </td>
