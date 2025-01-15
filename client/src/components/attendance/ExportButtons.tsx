@@ -171,49 +171,66 @@ const ExportButtons = ({
       format: 'a4'
     });
 
+    // Set minimum margins (in mm)
+    const margin = {
+      left: 15,
+      right: 15,
+      top: 20,
+      bottom: 20
+    };
+
+    // Calculate available width for content
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    const contentWidth = pageWidth - margin.left - margin.right;
+
     // Add title
     doc.setFontSize(16);
-    doc.text('Anwesenheitsstatistik', 14, 15);
+    doc.text('Anwesenheitsstatistik', margin.left, margin.top);
     doc.setFontSize(12);
-    doc.text(`Zeitraum: ${new Date(startDate).toLocaleDateString('de-DE')} - ${new Date(endDate).toLocaleDateString('de-DE')}`, 14, 25);
+    doc.text(`Zeitraum: ${new Date(startDate).toLocaleDateString('de-DE')} - ${new Date(endDate).toLocaleDateString('de-DE')}`, margin.left, margin.top + 10);
 
     // Add table
     autoTable(doc, {
       head: [Object.keys(formattedData[0])],
       body: formattedData.map(Object.values),
-      startY: 35,
+      startY: margin.top + 20,
+      margin: margin,
       styles: {
         fontSize: 8,
         cellPadding: 1.5,
         overflow: 'linebreak',
-        cellWidth: 'wrap'
+        cellWidth: 'wrap',
+        minCellHeight: 3
       },
       headStyles: {
         fillColor: [66, 66, 66],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
       },
       columnStyles: isReportView ? {
         0: { cellWidth: 8 }, // Nr
         1: { cellWidth: 25 }, // Nachname
         2: { cellWidth: 25 }, // Vorname
         3: { cellWidth: 12 }, // Klasse
-        4: { cellWidth: 65 }, // Unentschuldigte Verspätungen
-        5: { cellWidth: 65 }, // Unentschuldigte Fehlzeiten
+        4: { cellWidth: 55 }, // Unentschuldigte Verspätungen
+        5: { cellWidth: 55 }, // Unentschuldigte Fehlzeiten
       } : {
-        0: { cellWidth: 25 }, // Nachname
-        1: { cellWidth: 25 }, // Vorname
-        2: { cellWidth: 15 }, // Klasse
-        3: { cellWidth: 18 }, // Verspätungen (E)
-        4: { cellWidth: 18 }, // Verspätungen (U)
-        5: { cellWidth: 18 }, // Verspätungen (O)
-        6: { cellWidth: 18 }, // Fehlzeiten (E)
-        7: { cellWidth: 18 }, // Fehlzeiten (U)
-        8: { cellWidth: 18 }, // Fehlzeiten (O)
-        9: { cellWidth: 15 }, // ∑SJ V
-        10: { cellWidth: 15 }, // ∑SJ F
-        11: { cellWidth: 20 }, // Øx() V
-        12: { cellWidth: 20 }, // Øx() F
-        13: { cellWidth: 20 }, // ∑x() V
-        14: { cellWidth: 20 }, // ∑x() F
+        0: { cellWidth: 20 }, // Nachname
+        1: { cellWidth: 20 }, // Vorname
+        2: { cellWidth: 12 }, // Klasse
+        3: { cellWidth: 15 }, // Verspätungen (E)
+        4: { cellWidth: 15 }, // Verspätungen (U)
+        5: { cellWidth: 15 }, // Verspätungen (O)
+        6: { cellWidth: 15 }, // Fehlzeiten (E)
+        7: { cellWidth: 15 }, // Fehlzeiten (U)
+        8: { cellWidth: 15 }, // Fehlzeiten (O)
+        9: { cellWidth: 12 }, // ∑SJ V
+        10: { cellWidth: 12 }, // ∑SJ F
+        11: { cellWidth: 18 }, // Øx() V
+        12: { cellWidth: 18 }, // Øx() F
+        13: { cellWidth: 18 }, // ∑x() V
+        14: { cellWidth: 18 }, // ∑x() F
       },
     });
 
