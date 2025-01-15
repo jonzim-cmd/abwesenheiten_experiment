@@ -29,7 +29,7 @@ const AttendanceTable = ({
   onShowFilteredDetails
 }: AttendanceTableProps) => {
   return (
-    <div className="overflow-x-auto border rounded-lg">
+    <div className="overflow-x-auto border rounded-l-lg rounded-r-none">
       <table className="min-w-full border-collapse bg-white">
         <thead>
           <tr className="bg-gray-50 border-b border-gray-200">
@@ -115,13 +115,13 @@ const AttendanceTable = ({
                     </span>
                   </td>
                 </tr>
-                {showDetails && (
+                {showDetails && activeFilter?.type && (
                   <StudentDetailsRow
                     student={student}
-                    detailedData={detailedData[student][activeFilter!.type]}
+                    detailedData={detailedData[student][activeFilter.type]}
                     rowColor={rowColor}
                     isVisible={true}
-                    filterType={activeFilter?.type}
+                    filterType={activeFilter.type}
                   />
                 )}
               </React.Fragment>

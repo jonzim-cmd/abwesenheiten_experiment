@@ -36,14 +36,21 @@ const StatisticsTable = ({
   activeFilter,
   onShowFilteredDetails
 }: StatisticsTableProps) => {
+  const getDetailedData = (student: string, type: string): AbsenceEntry[] => {
+    if (!detailedData[student]) return [];
+
+    const baseType = type.replace('weekly_', '').replace('sum_', '');
+    if (baseType === 'verspaetungen' || baseType === 'fehlzeiten') {
+      return detailedData[student][`${baseType}_unentsch`] || [];
+    }
+    return [];
+  };
+
   return (
-    <div className="overflow-x-auto border rounded-lg">
+    <div className="overflow-x-auto border-l-0 rounded-r-lg">
       <table className="min-w-full border-collapse bg-white">
         <thead>
           <tr className="bg-gray-50 border-b border-gray-200">
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
-              Name (Klasse)
-            </th>
             <th colSpan={2} className="text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
               Schuljahr
             </th>
@@ -55,7 +62,6 @@ const StatisticsTable = ({
             </th>
           </tr>
           <tr className="bg-gray-50 border-b border-gray-200">
-            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r"></th>
             <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 tracking-wider border-r">∑SJ V</th>
             <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 tracking-wider border-r">∑SJ F</th>
             <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 tracking-wider border-r">V</th>
@@ -84,9 +90,6 @@ const StatisticsTable = ({
             return (
               <React.Fragment key={student}>
                 <tr className={rowColor}>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900 border-r">
-                    {student} ({stats.klasse})
-                  </td>
                   <td className="px-4 py-3 text-sm text-center border-r">
                     <span 
                       className="cursor-pointer hover:underline"
@@ -139,7 +142,7 @@ const StatisticsTable = ({
                 {showDetails && (
                   <StudentDetailsRow
                     student={student}
-                    detailedData={detailedData[student][activeFilter!.type.replace('weekly_', '').replace('sum_', '')]}
+                    detailedData={getDetailedData(student, activeFilter!.type)}
                     rowColor={rowColor}
                     isVisible={true}
                     filterType={activeFilter?.type}

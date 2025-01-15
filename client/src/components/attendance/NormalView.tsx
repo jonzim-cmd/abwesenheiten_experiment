@@ -72,7 +72,7 @@ const NormalView = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2"> {/* Added grid for two columns */}
+      <div className="flex flex-row space-x-0">
         <AttendanceTable
           filteredStudents={filteredStudents}
           detailedData={detailedData}
