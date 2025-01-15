@@ -56,15 +56,21 @@ const NormalView = ({
         // Verwende die gleiche Logik wie in calculateSchoolYearStats
         const schoolYear = getCurrentSchoolYear();
         const startDate = new Date(schoolYear.start, 8, 1); // September 1st
-        const today = new Date();
 
         // Zeige alle unentschuldigten Verspätungen im aktuellen Schuljahr
         return studentData.verspaetungen_unentsch
           .filter(entry => {
-            const date = new Date(entry.datum);
-            return date >= startDate && date <= today;
+            const [day, month, year] = entry.datum.toString().split('.');
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            return date >= startDate;
           })
-          .sort((a, b) => new Date(b.datum).getTime() - new Date(a.datum).getTime());
+          .sort((a, b) => {
+            const [dayA, monthA, yearA] = a.datum.toString().split('.');
+            const [dayB, monthB, yearB] = b.datum.toString().split('.');
+            const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1, parseInt(dayA));
+            const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1, parseInt(dayB));
+            return dateB.getTime() - dateA.getTime();
+          });
       }
 
       case 'verspaetungen_entsch':
