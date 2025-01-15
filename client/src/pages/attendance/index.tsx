@@ -73,10 +73,11 @@ const AttendanceAnalyzer = () => {
 
   const calculateSchoolYearStats = useCallback((data: any[]) => {
     const schoolYear = getCurrentSchoolYear();
-    const startDate = new Date(schoolYear.start, 8, 1); // September 1st
-    const endDate = new Date(schoolYear.end, 7, 31); // August 31st
+    const sjStartDate = new Date(schoolYear.start, 8, 1); // 1. September
+    const sjEndDate = new Date(schoolYear.end, 7, 31); // 31. August
+    const today = new Date();
 
-    const stats: any = {};
+    const stats: Record<string, { verspaetungen_unentsch: number; fehlzeiten_unentsch: number }> = {};
 
     data.forEach(row => {
       if (!row.Beginndatum || !row.Langname || !row.Vorname) return;
@@ -94,12 +95,14 @@ const AttendanceAnalyzer = () => {
         };
       }
 
-      // Prüfe, ob das Datum im aktuellen Schuljahr liegt
-      if (date >= startDate && date <= endDate) {
+      // Überprüfe nur, ob das Datum im Schuljahr liegt
+      if (date >= sjStartDate && date <= sjEndDate) {
         const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
         const isUnentschuldigt = row.Status === 'nicht entsch.' || row.Status === 'nicht akzep.';
+        const isUeberfaellig = !row.Status && (today > new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
 
-        if (isUnentschuldigt) {
+        // Zähle nur wenn unentschuldigt oder überfällig
+        if (isUnentschuldigt || isUeberfaellig) {
           if (isVerspaetung) {
             stats[studentName].verspaetungen_unentsch++;
           } else {
