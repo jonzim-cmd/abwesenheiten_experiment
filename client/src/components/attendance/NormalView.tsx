@@ -55,14 +55,18 @@ const NormalView = ({
       case 'sj_verspaetungen': {
         // Verwende die gleiche Logik wie in calculateSchoolYearStats
         const schoolYear = getCurrentSchoolYear();
-        const startDate = new Date(schoolYear.start, 8, 1); // 1. September
+        const startDate = new Date(schoolYear.start, 8, 1); // September 1st
         const today = new Date();
 
-        return studentData.verspaetungen_unentsch.filter(entry => {
-          const date = new Date(entry.datum);
-          return date >= startDate && date <= today;
-        });
+        // Zeige alle unentschuldigten Verspätungen im aktuellen Schuljahr
+        return studentData.verspaetungen_unentsch
+          .filter(entry => {
+            const date = new Date(entry.datum);
+            return date >= startDate && date <= today;
+          })
+          .sort((a, b) => new Date(b.datum).getTime() - new Date(a.datum).getTime());
       }
+
       case 'verspaetungen_entsch':
         return studentData.verspaetungen_entsch.filter(entry => {
           const date = new Date(entry.datum);
@@ -122,7 +126,6 @@ const NormalView = ({
     }
   };
 
-  // Toggle details for a student when clicking the details button
   const toggleDetails = (student: string) => {
     if (expandedStudent === student && activeFilter?.type === 'details') {
       setExpandedStudent(null);
@@ -133,7 +136,6 @@ const NormalView = ({
     }
   };
 
-  // Show filtered details based on the selected type
   const showFilteredDetails = (student: string, type: string) => {
     if (expandedStudent === student && activeFilter?.type === type) {
       setExpandedStudent(null);
