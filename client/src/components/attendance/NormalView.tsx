@@ -4,6 +4,7 @@ import StudentTableHeader from './table/StudentTableHeader';
 import StudentTableRow from './table/StudentTableRow';
 import StudentDetailsRow from './table/StudentDetailsRow';
 import { StudentStats, AbsenceEntry, getLastNWeeks, getCurrentSchoolYear } from '@/lib/attendance-utils';
+import ExportButtons from './ExportButtons';
 
 interface DetailedStats {
   verspaetungen_entsch: AbsenceEntry[];
@@ -210,13 +211,20 @@ const NormalView = ({
         <h3 className="text-lg font-semibold">
           Ergebnisse für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
         </h3>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={toggleAllDetails}
-        >
-          {isAllExpanded ? 'Alle Details einklappen' : 'Alle Details ausklappen'}
-        </Button>
+        <div className="flex gap-4">
+          <ExportButtons
+            data={filteredStudents}
+            startDate={startDate}
+            endDate={endDate}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleAllDetails}
+          >
+            {isAllExpanded ? 'Alle Details einklappen' : 'Alle Details ausklappen'}
+          </Button>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse bg-white">
