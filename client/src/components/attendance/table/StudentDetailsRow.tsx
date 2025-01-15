@@ -64,13 +64,38 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     });
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string, datum: Date | string) => {
+    // Für entschuldigte Abwesenheiten (grün)
     if (status === 'entsch.' || status === 'Attest' || status === 'Attest Amtsarzt') {
       return 'text-green-600';
     }
+
+    // Für unentschuldigte Abwesenheiten (rot)
     if (status === 'nicht entsch.' || status === 'nicht akzep.') {
       return 'text-red-600';
     }
+
+    // Für leeren Status prüfen wir die 7-Tage-Frist
+    if (!status || status.trim() === '') {
+      const today = new Date();
+      let abwesenheitsDatum: Date;
+
+      if (typeof datum === 'string') {
+        const [day, month, year] = datum.split('.');
+        abwesenheitsDatum = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      } else {
+        abwesenheitsDatum = new Date(datum);
+      }
+
+      const deadlineDate = new Date(abwesenheitsDatum.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      // Nach der Frist -> unentschuldigt (rot)
+      if (today > deadlineDate) {
+        return 'text-red-600';
+      }
+    }
+
+    // Standardfall: offen/in Bearbeitung (gelb)
     return 'text-yellow-600';
   };
 
@@ -87,7 +112,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
             {detailedData.length > 0 ? (
               <div className="space-y-1">
                 {detailedData.map((entry, i) => {
-                  const statusColor = getStatusColor(entry.status || '');
+                  const statusColor = getStatusColor(entry.status || '', entry.datum);
                   return (
                     <div 
                       key={i}
