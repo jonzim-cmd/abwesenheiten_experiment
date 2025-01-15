@@ -166,7 +166,7 @@ const ExportButtons = ({
   const exportToPDF = () => {
     const formattedData = formatData();
     const doc = new jsPDF({
-      orientation: 'landscape',
+      orientation: isReportView ? 'portrait' : 'landscape',
       unit: 'mm',
       format: 'a4'
     });
@@ -185,17 +185,19 @@ const ExportButtons = ({
       styles: {
         fontSize: 8,
         cellPadding: 1.5,
+        overflow: 'linebreak',
+        cellWidth: 'wrap'
       },
       headStyles: {
         fillColor: [66, 66, 66],
       },
       columnStyles: isReportView ? {
-        0: { cellWidth: 15 }, // Nr
-        1: { cellWidth: 30 }, // Nachname
-        2: { cellWidth: 30 }, // Vorname
-        3: { cellWidth: 20 }, // Klasse
-        4: { cellWidth: 40 }, // Unentschuldigte Verspätungen
-        5: { cellWidth: 40 }, // Unentschuldigte Fehlzeiten
+        0: { cellWidth: 8 }, // Nr
+        1: { cellWidth: 25 }, // Nachname
+        2: { cellWidth: 25 }, // Vorname
+        3: { cellWidth: 12 }, // Klasse
+        4: { cellWidth: 65 }, // Unentschuldigte Verspätungen
+        5: { cellWidth: 65 }, // Unentschuldigte Fehlzeiten
       } : {
         0: { cellWidth: 25 }, // Nachname
         1: { cellWidth: 25 }, // Vorname
