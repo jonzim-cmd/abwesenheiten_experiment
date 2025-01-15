@@ -53,8 +53,15 @@ const ExportButtons = ({
       const verspaetungenSum = `${weeklyData.verspaetungen.total}(${weeklyData.verspaetungen.weekly.join(',')})`;
       const fehlzeitenSum = `${weeklyData.fehlzeiten.total}(${weeklyData.fehlzeiten.weekly.join(',')})`;
 
+      // Split student name into Nachname and Vorname
+      const nameParts = student.split(' ');
+      const nachname = nameParts[0];
+      const vorname = nameParts.slice(1).join(' ');
+
       return {
-        'Name (Klasse)': `${student} (${stats.klasse})`,
+        'Nachname': nachname,
+        'Vorname': vorname,
+        'Klasse': stats.klasse,
         'Verspätungen (E)': stats.verspaetungen_entsch,
         'Verspätungen (U)': stats.verspaetungen_unentsch,
         'Verspätungen (O)': stats.verspaetungen_offen,
@@ -94,7 +101,11 @@ const ExportButtons = ({
 
   const exportToPDF = () => {
     const formattedData = formatData();
-    const doc = new jsPDF();
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
 
     // Add title
     doc.setFontSize(16);
@@ -115,11 +126,13 @@ const ExportButtons = ({
         fillColor: [66, 66, 66],
       },
       columnStyles: {
-        0: { cellWidth: 40 }, // Name (Klasse)
-        9: { cellWidth: 30 }, // Øx() V
-        10: { cellWidth: 30 }, // Øx() F
-        11: { cellWidth: 30 }, // ∑x() V
-        12: { cellWidth: 30 }, // ∑x() F
+        0: { cellWidth: 25 }, // Nachname
+        1: { cellWidth: 25 }, // Vorname
+        2: { cellWidth: 15 }, // Klasse
+        11: { cellWidth: 30 }, // Øx() V
+        12: { cellWidth: 30 }, // Øx() F
+        13: { cellWidth: 30 }, // ∑x() V
+        14: { cellWidth: 30 }, // ∑x() F
       },
     });
 
