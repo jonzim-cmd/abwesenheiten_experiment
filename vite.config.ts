@@ -1,23 +1,12 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import themePlugin from "@replit/vite-plugin-shadcn-theme-json";
-import path, { dirname } from "path";
-import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
-import { fileURLToPath } from "url";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), runtimeErrorOverlay(), themePlugin()],
-  resolve: {
-    alias: {
-      "@db": path.resolve(__dirname, "db"),
-      "@": path.resolve(__dirname, "client", "src"),
-    },
-  },
-  root: path.resolve(__dirname, "client"),
+  plugins: [react()],
+  base: '/abwesenheiten/', // Wichtig: Slash am Anfang und Ende!
   build: {
-    outDir: path.resolve(__dirname, "dist/public"),
-    emptyOutDir: true,
-  },
+    outDir: 'dist',
+    assetsDir: 'assets',
+  }
 });
