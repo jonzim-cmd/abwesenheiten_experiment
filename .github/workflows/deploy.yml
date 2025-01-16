@@ -31,13 +31,7 @@ jobs:
           # Build die Anwendung
           npm run build
           
-          # Erstelle die korrekte Verzeichnisstruktur
-          mkdir -p dist
-          
-          # Kopiere den Build-Output direkt ins dist Verzeichnis
-          mv dist/public/* dist/
-          
-          # Erstelle und korrigiere die HTML-Dateien
+          # Fix asset paths
           node <<'EOF'
           const fs = require('fs');
           const files = ['dist/index.html', 'dist/404.html'];
@@ -46,14 +40,14 @@ jobs:
             if (fs.existsSync(file)) {
               let html = fs.readFileSync(file, 'utf8');
               html = html.replace(/<base href="[^"]*"/, '<base href="/abwesenheiten/"')
-                     .replace(/src="\/(?!\/)/g, 'src="/abwesenheiten/')
-                     .replace(/href="\/(?!\/)/g, 'href="/abwesenheiten/');
+                    .replace(/src="\/(?!\/)/g, 'src="/abwesenheiten/')
+                    .replace(/href="\/(?!\/)/g, 'href="/abwesenheiten/');
               fs.writeFileSync(file, html);
             }
           });
           EOF
           
-          # Kopiere index.html als 404.html
+          # Copy index.html as 404.html
           cp dist/index.html dist/404.html
         env:
           VITE_BASE_URL: /abwesenheiten/
@@ -64,7 +58,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload the root dist directory
           path: 'dist'
       - name: Deploy to GitHub Pages
         id: deployment
