@@ -185,7 +185,6 @@ const NormalView = ({
   const toggleAllDetails = () => {
     setIsAllExpanded(prev => !prev);
     if (!isAllExpanded) {
-      // Expand all students with unexcused cases only
       const newExpandedStudents = new Set<string>();
       const newActiveFilters = new Map<string, string>();
 
@@ -199,14 +198,13 @@ const NormalView = ({
       setExpandedStudents(newExpandedStudents);
       setActiveFilters(newActiveFilters);
     } else {
-      // Collapse all
       setExpandedStudents(new Set());
       setActiveFilters(new Map());
     }
   };
 
   return (
-    <div className="mt-6">
+    <div className="mt-6 space-y-6">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">
           Ergebnisse für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
@@ -229,47 +227,49 @@ const NormalView = ({
           </Button>
         </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full border-collapse bg-white">
-          <StudentTableHeader />
-          <tbody>
-            {filteredStudents.map(([student, stats], index) => {
-              const rowColor = index % 2 === 0 ? 'bg-white' : 'bg-gray-100';
-              const schoolYearData = schoolYearStats[student] || { 
-                verspaetungen_unentsch: 0, 
-                fehlzeiten_unentsch: 0 
-              };
-              const weeklyData = weeklyStats[student] || { 
-                verspaetungen: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) },
-                fehlzeiten: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) }
-              };
+      <div className="relative h-[500px]">
+        <div className="absolute inset-0 overflow-x-auto overflow-y-auto">
+          <table className="min-w-full border-collapse bg-white">
+            <StudentTableHeader />
+            <tbody>
+              {filteredStudents.map(([student, stats], index) => {
+                const rowColor = index % 2 === 0 ? 'bg-white' : 'bg-gray-100';
+                const schoolYearData = schoolYearStats[student] || { 
+                  verspaetungen_unentsch: 0, 
+                  fehlzeiten_unentsch: 0 
+                };
+                const weeklyData = weeklyStats[student] || { 
+                  verspaetungen: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) },
+                  fehlzeiten: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) }
+                };
 
-              return (
-                <React.Fragment key={student}>
-                  <StudentTableRow
-                    student={student}
-                    stats={stats}
-                    schoolYearData={schoolYearData}
-                    weeklyData={weeklyData}
-                    selectedWeeks={selectedWeeks}
-                    rowColor={rowColor}
-                    onToggleDetails={() => toggleDetails(student)}
-                    onShowFilteredDetails={showFilteredDetails}
-                  />
-                  {expandedStudents.has(student) && (
-                    <StudentDetailsRow
+                return (
+                  <React.Fragment key={student}>
+                    <StudentTableRow
                       student={student}
-                      detailedData={getFilteredDetailData(student)}
+                      stats={stats}
+                      schoolYearData={schoolYearData}
+                      weeklyData={weeklyData}
+                      selectedWeeks={selectedWeeks}
                       rowColor={rowColor}
-                      isVisible={true}
-                      filterType={activeFilters.get(student)}
+                      onToggleDetails={() => toggleDetails(student)}
+                      onShowFilteredDetails={showFilteredDetails}
                     />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
+                    {expandedStudents.has(student) && (
+                      <StudentDetailsRow
+                        student={student}
+                        detailedData={getFilteredDetailData(student)}
+                        rowColor={rowColor}
+                        isVisible={true}
+                        filterType={activeFilters.get(student)}
+                      />
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
