@@ -6,7 +6,7 @@ import NotFound from "@/pages/not-found";
 import AttendanceAnalyzer from "@/pages/attendance";
 
 // Get base URL from environment variable, default to '/' if not set
-const base = import.meta.env.VITE_BASE_URL || '/';
+const base = import.meta.env.BASE_URL || '/';
 
 function Router() {
   return (
