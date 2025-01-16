@@ -28,11 +28,16 @@ jobs:
         run: npm ci
       - name: Build
         run: |
-          # Build the application
+          # Build die Anwendung
           npm run build
-          # Create output directory if it doesn't exist
-          mkdir -p dist/public
-          # Fix asset paths and base URL
+          
+          # Erstelle die korrekte Verzeichnisstruktur
+          mkdir -p dist
+          
+          # Kopiere den Build-Output direkt ins dist Verzeichnis
+          mv dist/public/* dist/
+          
+          # Erstelle und korrigiere die HTML-Dateien
           node <<'EOF'
           const fs = require('fs');
           const files = ['dist/index.html', 'dist/404.html'];
@@ -40,17 +45,15 @@ jobs:
           files.forEach(file => {
             if (fs.existsSync(file)) {
               let html = fs.readFileSync(file, 'utf8');
-              // Fix base href and asset paths
               html = html.replace(/<base href="[^"]*"/, '<base href="/abwesenheiten/"')
-                       .replace(/src="\/(?!\/)/g, 'src="/abwesenheiten/')
-                       .replace(/href="\/(?!\/)/g, 'href="/abwesenheiten/');
+                     .replace(/src="\/(?!\/)/g, 'src="/abwesenheiten/')
+                     .replace(/href="\/(?!\/)/g, 'href="/abwesenheiten/');
               fs.writeFileSync(file, html);
             }
           });
           EOF
-          # Copy static assets
-          cp -r dist/public/* dist/
-          # Copy index.html as 404.html for client-side routing
+          
+          # Kopiere index.html als 404.html
           cp dist/index.html dist/404.html
         env:
           VITE_BASE_URL: /abwesenheiten/
