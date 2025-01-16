@@ -46,6 +46,8 @@ jobs:
         env:
           VITE_BASE_URL: /abwesenheiten
           BASE: /abwesenheiten
+          # Explicitly set public URL for assets
+          PUBLIC_URL: /abwesenheiten
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
