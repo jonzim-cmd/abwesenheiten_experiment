@@ -35,11 +35,14 @@ jobs:
 
       - name: Build
         run: |
+          # Build the application
           npm run build
-          # Ensure the public directory exists
+          # Create output directory if it doesn't exist
           mkdir -p dist/public
+          # Copy static assets
+          cp -r dist/public/* dist/
           # Copy index.html as 404.html for client-side routing
-          cp dist/public/index.html dist/public/404.html
+          cp dist/index.html dist/404.html
         env:
           VITE_BASE_URL: /abwesenheiten
           BASE: /abwesenheiten
@@ -50,8 +53,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Make sure we're uploading the correct directory
-          path: 'dist/public'
+          # Upload the root dist directory
+          path: 'dist'
 
       - name: Deploy to GitHub Pages
         id: deployment
