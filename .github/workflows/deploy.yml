@@ -39,9 +39,11 @@ jobs:
           files.forEach(file => {
             if (fs.existsSync(file)) {
               let html = fs.readFileSync(file, 'utf8');
+              // Fix: Nur einmal den Base-Path setzen
               html = html.replace(/<base href="[^"]*"/, '<base href="/abwesenheiten/"')
-                    .replace(/src="\/(?!\/)/g, 'src="/abwesenheiten/')
-                    .replace(/href="\/(?!\/)/g, 'href="/abwesenheiten/');
+                    // Absolute Pfade direkt mit einem /abwesenheiten/ versehen
+                    .replace(/src="\/(?!abwesenheiten\/)/g, 'src="/abwesenheiten/')
+                    .replace(/href="\/(?!abwesenheiten\/)/g, 'href="/abwesenheiten/');
               fs.writeFileSync(file, html);
             }
           });
