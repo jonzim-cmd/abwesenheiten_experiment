@@ -1,0 +1,288 @@
+2025-01-16T06:27:55.1111174Z Current runner version: '2.321.0'
+2025-01-16T06:27:55.1133894Z ##[group]Operating System
+2025-01-16T06:27:55.1134685Z Ubuntu
+2025-01-16T06:27:55.1135180Z 24.04.1
+2025-01-16T06:27:55.1135743Z LTS
+2025-01-16T06:27:55.1136261Z ##[endgroup]
+2025-01-16T06:27:55.1136765Z ##[group]Runner Image
+2025-01-16T06:27:55.1137898Z Image: ubuntu-24.04
+2025-01-16T06:27:55.1138678Z Version: 20250105.1.0
+2025-01-16T06:27:55.1139702Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20250105.1/images/ubuntu/Ubuntu2404-Readme.md
+2025-01-16T06:27:55.1141161Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20250105.1
+2025-01-16T06:27:55.1142066Z ##[endgroup]
+2025-01-16T06:27:55.1142736Z ##[group]Runner Image Provisioner
+2025-01-16T06:27:55.1143394Z 2.0.414.1
+2025-01-16T06:27:55.1143874Z ##[endgroup]
+2025-01-16T06:27:55.1144988Z ##[group]GITHUB_TOKEN Permissions
+2025-01-16T06:27:55.1146786Z Contents: read
+2025-01-16T06:27:55.1147352Z Metadata: read
+2025-01-16T06:27:55.1148113Z Pages: write
+2025-01-16T06:27:55.1148690Z ##[endgroup]
+2025-01-16T06:27:55.1151506Z Secret source: Actions
+2025-01-16T06:27:55.1152443Z Prepare workflow directory
+2025-01-16T06:27:55.1459437Z Prepare all required actions
+2025-01-16T06:27:55.1495943Z Getting action download info
+2025-01-16T06:27:55.3375688Z Download action repository 'actions/checkout@v4' (SHA:11bd71901bbe5b1630ceea73d27597364c9af683)
+2025-01-16T06:27:55.4598751Z Download action repository 'actions/setup-node@v4' (SHA:39370e3970a6d050c480ffad4ff0ed4d3fdee5af)
+2025-01-16T06:27:55.5617044Z Download action repository 'actions/configure-pages@v4' (SHA:1f0c5cde4bc74cd7e1254d0cb4de8d49e9068c7d)
+2025-01-16T06:27:55.9171619Z Download action repository 'actions/upload-pages-artifact@v3' (SHA:56afc609e74202658d3ffba0e8f6dda462b719fa)
+2025-01-16T06:27:56.1220962Z Download action repository 'actions/deploy-pages@v4' (SHA:d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e)
+2025-01-16T06:27:56.6011593Z Getting action download info
+2025-01-16T06:27:56.7084336Z Download action repository 'actions/upload-artifact@v4' (SHA:65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08)
+2025-01-16T06:27:57.1399166Z Complete job name: deploy
+2025-01-16T06:27:57.2208917Z ##[group]Run actions/checkout@v4
+2025-01-16T06:27:57.2210197Z with:
+2025-01-16T06:27:57.2210985Z   repository: jonzim-cmd/abwesenheiten
+2025-01-16T06:27:57.2212393Z   token: ***
+2025-01-16T06:27:57.2213166Z   ssh-strict: true
+2025-01-16T06:27:57.2213959Z   ssh-user: git
+2025-01-16T06:27:57.2214773Z   persist-credentials: true
+2025-01-16T06:27:57.2215671Z   clean: true
+2025-01-16T06:27:57.2216477Z   sparse-checkout-cone-mode: true
+2025-01-16T06:27:57.2217451Z   fetch-depth: 1
+2025-01-16T06:27:57.2218261Z   fetch-tags: false
+2025-01-16T06:27:57.2219078Z   show-progress: true
+2025-01-16T06:27:57.2219890Z   lfs: false
+2025-01-16T06:27:57.2220638Z   submodules: false
+2025-01-16T06:27:57.2221458Z   set-safe-directory: true
+2025-01-16T06:27:57.2222859Z ##[endgroup]
+2025-01-16T06:27:57.4951027Z Syncing repository: jonzim-cmd/abwesenheiten
+2025-01-16T06:27:57.4954088Z ##[group]Getting Git version info
+2025-01-16T06:27:57.4955533Z Working directory is '/home/runner/work/abwesenheiten/abwesenheiten'
+2025-01-16T06:27:57.4957492Z [command]/usr/bin/git version
+2025-01-16T06:27:57.5061640Z git version 2.47.1
+2025-01-16T06:27:57.5092899Z ##[endgroup]
+2025-01-16T06:27:57.5107237Z Temporarily overriding HOME='/home/runner/work/_temp/83dfd556-43bc-415d-8394-cc11f690e91c' before making global git config changes
+2025-01-16T06:27:57.5110803Z Adding repository directory to the temporary git global config as a safe directory
+2025-01-16T06:27:57.5118901Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/abwesenheiten/abwesenheiten
+2025-01-16T06:27:57.5154320Z Deleting the contents of '/home/runner/work/abwesenheiten/abwesenheiten'
+2025-01-16T06:27:57.5158082Z ##[group]Initializing the repository
+2025-01-16T06:27:57.5161924Z [command]/usr/bin/git init /home/runner/work/abwesenheiten/abwesenheiten
+2025-01-16T06:27:57.5272107Z hint: Using 'master' as the name for the initial branch. This default branch name
+2025-01-16T06:27:57.5274584Z hint: is subject to change. To configure the initial branch name to use in all
+2025-01-16T06:27:57.5276460Z hint: of your new repositories, which will suppress this warning, call:
+2025-01-16T06:27:57.5277793Z hint:
+2025-01-16T06:27:57.5278715Z hint: 	git config --global init.defaultBranch <name>
+2025-01-16T06:27:57.5279854Z hint:
+2025-01-16T06:27:57.5281020Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2025-01-16T06:27:57.5283483Z hint: 'development'. The just-created branch can be renamed via this command:
+2025-01-16T06:27:57.5285890Z hint:
+2025-01-16T06:27:57.5287293Z hint: 	git branch -m <name>
+2025-01-16T06:27:57.5289891Z Initialized empty Git repository in /home/runner/work/abwesenheiten/abwesenheiten/.git/
+2025-01-16T06:27:57.5297810Z [command]/usr/bin/git remote add origin https://github.com/jonzim-cmd/abwesenheiten
+2025-01-16T06:27:57.5343876Z ##[endgroup]
+2025-01-16T06:27:57.5346303Z ##[group]Disabling automatic garbage collection
+2025-01-16T06:27:57.5348468Z [command]/usr/bin/git config --local gc.auto 0
+2025-01-16T06:27:57.5378265Z ##[endgroup]
+2025-01-16T06:27:57.5380497Z ##[group]Setting up auth
+2025-01-16T06:27:57.5385985Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-01-16T06:27:57.5418205Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-01-16T06:27:57.5802841Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-01-16T06:27:57.5834436Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-01-16T06:27:57.6064523Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-01-16T06:27:57.6108269Z ##[endgroup]
+2025-01-16T06:27:57.6109638Z ##[group]Fetching the repository
+2025-01-16T06:27:57.6118696Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +24633a2dff4f016cc32fde6524a100bb41f1d209:refs/remotes/origin/main
+2025-01-16T06:27:57.9559294Z From https://github.com/jonzim-cmd/abwesenheiten
+2025-01-16T06:27:57.9561117Z  * [new ref]         24633a2dff4f016cc32fde6524a100bb41f1d209 -> origin/main
+2025-01-16T06:27:57.9588075Z ##[endgroup]
+2025-01-16T06:27:57.9590415Z ##[group]Determining the checkout info
+2025-01-16T06:27:57.9593097Z ##[endgroup]
+2025-01-16T06:27:57.9596013Z [command]/usr/bin/git sparse-checkout disable
+2025-01-16T06:27:57.9640933Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2025-01-16T06:27:57.9669860Z ##[group]Checking out the ref
+2025-01-16T06:27:57.9673288Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2025-01-16T06:27:57.9829404Z Switched to a new branch 'main'
+2025-01-16T06:27:57.9832687Z branch 'main' set up to track 'origin/main'.
+2025-01-16T06:27:57.9840656Z ##[endgroup]
+2025-01-16T06:27:57.9878901Z [command]/usr/bin/git log -1 --format=%H
+2025-01-16T06:27:57.9902937Z 24633a2dff4f016cc32fde6524a100bb41f1d209
+2025-01-16T06:27:58.0179645Z ##[group]Run actions/setup-node@v4
+2025-01-16T06:27:58.0180605Z with:
+2025-01-16T06:27:58.0181275Z   node-version: 20
+2025-01-16T06:27:58.0182004Z   cache: npm
+2025-01-16T06:27:58.0182987Z   always-auth: false
+2025-01-16T06:27:58.0183789Z   check-latest: false
+2025-01-16T06:27:58.0184792Z   token: ***
+2025-01-16T06:27:58.0185492Z ##[endgroup]
+2025-01-16T06:27:58.1899640Z Found in cache @ /opt/hostedtoolcache/node/20.18.1/x64
+2025-01-16T06:27:58.1905931Z ##[group]Environment details
+2025-01-16T06:28:02.0032477Z node: v20.18.1
+2025-01-16T06:28:02.0033072Z npm: 10.8.2
+2025-01-16T06:28:02.0033383Z yarn: 1.22.22
+2025-01-16T06:28:02.0034588Z ##[endgroup]
+2025-01-16T06:28:02.0056118Z [command]/opt/hostedtoolcache/node/20.18.1/x64/bin/npm config get cache
+2025-01-16T06:28:02.4165087Z /home/runner/.npm
+2025-01-16T06:28:03.4171378Z Cache Size: ~81 MB (85345613 B)
+2025-01-16T06:28:03.4231965Z [command]/usr/bin/tar -xf /home/runner/work/_temp/a454cde5-74bc-4013-a53f-f57c3237cb5c/cache.tzst -P -C /home/runner/work/abwesenheiten/abwesenheiten --use-compress-program unzstd
+2025-01-16T06:28:03.6181118Z Cache restored successfully
+2025-01-16T06:28:03.6361760Z Cache restored from key: node-cache-Linux-x64-npm-28bb1cfbd2a4ec4c4520d9855c7d2a64d01fa22d99fd6e9a2872d00c996f987d
+2025-01-16T06:28:03.6952084Z Received 85345613 of 85345613 (100.0%), 81.5 MBs/sec
+2025-01-16T06:28:03.7109815Z ##[group]Run npm ci
+2025-01-16T06:28:03.7110097Z [36;1mnpm ci[0m
+2025-01-16T06:28:03.7141903Z shell: /usr/bin/bash -e {0}
+2025-01-16T06:28:03.7142164Z ##[endgroup]
+2025-01-16T06:28:08.2487801Z npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+2025-01-16T06:28:08.3459636Z npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+2025-01-16T06:28:11.8879290Z 
+2025-01-16T06:28:11.8880009Z added 517 packages, and audited 518 packages in 8s
+2025-01-16T06:28:11.8880465Z 
+2025-01-16T06:28:11.8881874Z 61 packages are looking for funding
+2025-01-16T06:28:11.8884270Z   run `npm fund` for details
+2025-01-16T06:28:11.8912083Z 
+2025-01-16T06:28:11.8913779Z 1 high severity vulnerability
+2025-01-16T06:28:11.8914259Z 
+2025-01-16T06:28:11.8915678Z Some issues need review, and may require choosing
+2025-01-16T06:28:11.8916395Z a different dependency.
+2025-01-16T06:28:11.8918456Z 
+2025-01-16T06:28:11.8918660Z Run `npm audit` for details.
+2025-01-16T06:28:11.9413234Z ##[group]Run # Build the application
+2025-01-16T06:28:11.9413606Z [36;1m# Build the application[0m
+2025-01-16T06:28:11.9413867Z [36;1mnpm run build[0m
+2025-01-16T06:28:11.9414142Z [36;1m# Create output directory if it doesn't exist[0m
+2025-01-16T06:28:11.9414463Z [36;1mmkdir -p dist/public[0m
+2025-01-16T06:28:11.9414735Z [36;1m# Copy static assets[0m
+2025-01-16T06:28:11.9415015Z [36;1mcp -r dist/public/* dist/[0m
+2025-01-16T06:28:11.9415340Z [36;1m# Copy index.html as 404.html for client-side routing[0m
+2025-01-16T06:28:11.9415667Z [36;1mcp dist/index.html dist/404.html[0m
+2025-01-16T06:28:11.9442475Z shell: /usr/bin/bash -e {0}
+2025-01-16T06:28:11.9442737Z env:
+2025-01-16T06:28:11.9442931Z   VITE_BASE_URL: /abwesenheiten
+2025-01-16T06:28:11.9443179Z   BASE: /abwesenheiten
+2025-01-16T06:28:11.9443407Z   PUBLIC_URL: /abwesenheiten
+2025-01-16T06:28:11.9443648Z ##[endgroup]
+2025-01-16T06:28:12.0619549Z 
+2025-01-16T06:28:12.0619915Z > rest-express@1.0.0 build
+2025-01-16T06:28:12.0621163Z > vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+2025-01-16T06:28:12.0621901Z 
+2025-01-16T06:28:12.8377212Z [36mvite v5.4.10 [32mbuilding for production...[36m[39m
+2025-01-16T06:28:12.9009155Z transforming...
+2025-01-16T06:28:19.0914267Z [32m✓[39m 2088 modules transformed.
+2025-01-16T06:28:19.3802791Z rendering chunks...
+2025-01-16T06:28:19.6377255Z computing gzip size...
+2025-01-16T06:28:19.6667952Z [2m../dist/public/[22m[32mindex.html                          [39m[1m[2m    1.64 kB[22m[1m[22m[2m │ gzip:   0.66 kB[22m
+2025-01-16T06:28:19.6669852Z [2m../dist/public/[22m[2massets/[22m[35mindex-CPJKYsYq.css           [39m[1m[2m   57.20 kB[22m[1m[22m[2m │ gzip:  10.15 kB[22m
+2025-01-16T06:28:19.6671710Z [2m../dist/public/[22m[2massets/[22m[36mpurify.es-C_uT9hQ1.js        [39m[1m[2m   21.98 kB[22m[1m[22m[2m │ gzip:   8.74 kB[22m
+2025-01-16T06:28:19.6673914Z [2m../dist/public/[22m[2massets/[22m[36mindex.es-BeyDabs8.js         [39m[1m[2m  149.85 kB[22m[1m[22m[2m │ gzip:  51.24 kB[22m
+2025-01-16T06:28:19.6675812Z [2m../dist/public/[22m[2massets/[22m[36mhtml2canvas.esm-CBrSDip1.js  [39m[1m[2m  201.42 kB[22m[1m[22m[2m │ gzip:  48.03 kB[22m
+2025-01-16T06:28:19.6677579Z [2m../dist/public/[22m[2massets/[22m[36mindex-C7-nlb3O.js            [39m[1m[33m1,041.19 kB[39m[22m[2m │ gzip: 340.60 kB[22m
+2025-01-16T06:28:19.6678773Z [33m
+2025-01-16T06:28:19.6679376Z (!) Some chunks are larger than 500 kB after minification. Consider:
+2025-01-16T06:28:19.6680135Z - Using dynamic import() to code-split the application
+2025-01-16T06:28:19.6681399Z - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+2025-01-16T06:28:19.6682878Z - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+2025-01-16T06:28:19.6683610Z [32m✓ built in 6.80s[39m
+2025-01-16T06:28:19.7275374Z 
+2025-01-16T06:28:19.7275899Z   dist/index.js  5.4kb
+2025-01-16T06:28:19.7276168Z 
+2025-01-16T06:28:19.7276595Z ⚡ Done in 3ms
+2025-01-16T06:28:19.7461241Z ##[group]Run actions/configure-pages@v4
+2025-01-16T06:28:19.7461515Z with:
+2025-01-16T06:28:19.7461807Z   token: ***
+2025-01-16T06:28:19.7461992Z   enablement: false
+2025-01-16T06:28:19.7462432Z ##[endgroup]
+2025-01-16T06:28:20.0101114Z ##[group]Run actions/upload-pages-artifact@v3
+2025-01-16T06:28:20.0101417Z with:
+2025-01-16T06:28:20.0101606Z   path: dist
+2025-01-16T06:28:20.0101793Z   name: github-pages
+2025-01-16T06:28:20.0101994Z   retention-days: 1
+2025-01-16T06:28:20.0102164Z env:
+2025-01-16T06:28:20.0102564Z   GITHUB_PAGES: true
+2025-01-16T06:28:20.0102751Z ##[endgroup]
+2025-01-16T06:28:20.0170785Z ##[group]Run echo ::group::Archive artifact
+2025-01-16T06:28:20.0171077Z [36;1mecho ::group::Archive artifact[0m
+2025-01-16T06:28:20.0171317Z [36;1mtar \[0m
+2025-01-16T06:28:20.0171531Z [36;1m  --dereference --hard-dereference \[0m
+2025-01-16T06:28:20.0171804Z [36;1m  --directory "$INPUT_PATH" \[0m
+2025-01-16T06:28:20.0172058Z [36;1m  -cvf "$RUNNER_TEMP/artifact.tar" \[0m
+2025-01-16T06:28:20.0172566Z [36;1m  --exclude=.git \[0m
+2025-01-16T06:28:20.0172788Z [36;1m  --exclude=.github \[0m
+2025-01-16T06:28:20.0173001Z [36;1m  .[0m
+2025-01-16T06:28:20.0173180Z [36;1mecho ::endgroup::[0m
+2025-01-16T06:28:20.0210879Z shell: /usr/bin/sh -e {0}
+2025-01-16T06:28:20.0211097Z env:
+2025-01-16T06:28:20.0211262Z   GITHUB_PAGES: true
+2025-01-16T06:28:20.0211464Z   INPUT_PATH: dist
+2025-01-16T06:28:20.0211641Z ##[endgroup]
+2025-01-16T06:28:20.0261567Z ##[group]Archive artifact
+2025-01-16T06:28:20.0275909Z ./
+2025-01-16T06:28:20.0276305Z ./index.js
+2025-01-16T06:28:20.0276599Z ./assets/
+2025-01-16T06:28:20.0276948Z ./assets/index-C7-nlb3O.js
+2025-01-16T06:28:20.0287347Z ./assets/index-CPJKYsYq.css
+2025-01-16T06:28:20.0287905Z ./assets/index.es-BeyDabs8.js
+2025-01-16T06:28:20.0289698Z ./assets/purify.es-C_uT9hQ1.js
+2025-01-16T06:28:20.0290223Z ./assets/html2canvas.esm-CBrSDip1.js
+2025-01-16T06:28:20.0292567Z ./404.html
+2025-01-16T06:28:20.0292764Z ./public/
+2025-01-16T06:28:20.0293215Z ./public/assets/
+2025-01-16T06:28:20.0293643Z ./public/assets/index-C7-nlb3O.js
+2025-01-16T06:28:20.0303631Z ./public/assets/index-CPJKYsYq.css
+2025-01-16T06:28:20.0304220Z ./public/assets/index.es-BeyDabs8.js
+2025-01-16T06:28:20.0306042Z ./public/assets/purify.es-C_uT9hQ1.js
+2025-01-16T06:28:20.0306601Z ./public/assets/html2canvas.esm-CBrSDip1.js
+2025-01-16T06:28:20.0308566Z ./public/index.html
+2025-01-16T06:28:20.0308883Z ./index.html
+2025-01-16T06:28:20.0311326Z ##[endgroup]
+2025-01-16T06:28:20.0373047Z ##[group]Run actions/upload-artifact@v4
+2025-01-16T06:28:20.0373292Z with:
+2025-01-16T06:28:20.0373464Z   name: github-pages
+2025-01-16T06:28:20.0373687Z   path: /home/runner/work/_temp/artifact.tar
+2025-01-16T06:28:20.0373932Z   retention-days: 1
+2025-01-16T06:28:20.0374124Z   if-no-files-found: error
+2025-01-16T06:28:20.0374341Z   compression-level: 6
+2025-01-16T06:28:20.0374538Z   overwrite: false
+2025-01-16T06:28:20.0374728Z   include-hidden-files: false
+2025-01-16T06:28:20.0374929Z env:
+2025-01-16T06:28:20.0375093Z   GITHUB_PAGES: true
+2025-01-16T06:28:20.0375273Z ##[endgroup]
+2025-01-16T06:28:20.2662779Z With the provided path, there will be 1 file uploaded
+2025-01-16T06:28:20.2669305Z Artifact name is valid!
+2025-01-16T06:28:20.2670816Z Root directory input is valid!
+2025-01-16T06:28:20.3949429Z Beginning upload of artifact content to blob storage
+2025-01-16T06:28:20.7059063Z Uploaded bytes 920899
+2025-01-16T06:28:20.7370223Z Finished uploading artifact content to blob storage!
+2025-01-16T06:28:20.7373502Z SHA256 hash of uploaded artifact zip is 6facbebf78efb738ed7da20853a0289dd9c2b8addd90932c20456425ec2a35b4
+2025-01-16T06:28:20.7375452Z Finalizing artifact upload
+2025-01-16T06:28:20.8124121Z Artifact github-pages.zip successfully finalized. Artifact ID 2439006499
+2025-01-16T06:28:20.8125789Z Artifact github-pages has been successfully uploaded! Final size is 920899 bytes. Artifact ID is 2439006499
+2025-01-16T06:28:20.8132877Z Artifact download URL: https://github.com/jonzim-cmd/abwesenheiten/actions/runs/12803354952/artifacts/2439006499
+2025-01-16T06:28:20.8304967Z ##[group]Run actions/deploy-pages@v4
+2025-01-16T06:28:20.8305234Z with:
+2025-01-16T06:28:20.8305525Z   token: ***
+2025-01-16T06:28:20.8305706Z   timeout: 600000
+2025-01-16T06:28:20.8305903Z   error_count: 10
+2025-01-16T06:28:20.8306089Z   reporting_interval: 5000
+2025-01-16T06:28:20.8306303Z   artifact_name: github-pages
+2025-01-16T06:28:20.8306522Z   preview: false
+2025-01-16T06:28:20.8306705Z env:
+2025-01-16T06:28:20.8306864Z   GITHUB_PAGES: true
+2025-01-16T06:28:20.8307065Z ##[endgroup]
+2025-01-16T06:28:21.2292658Z Fetching artifact metadata for "github-pages" in this workflow run
+2025-01-16T06:28:21.3240981Z Found 1 artifact(s)
+2025-01-16T06:28:21.3255132Z Creating Pages deployment with payload:
+2025-01-16T06:28:21.3255616Z {
+2025-01-16T06:28:21.3255909Z 	"artifact_id": 2439006499,
+2025-01-16T06:28:21.3256524Z 	"pages_build_version": "24633a2dff4f016cc32fde6524a100bb41f1d209",
+2025-01-16T06:28:21.3323036Z 	"oidc_token": "***"
+2025-01-16T06:28:21.3323444Z }
+2025-01-16T06:28:21.5877349Z Created deployment for 24633a2dff4f016cc32fde6524a100bb41f1d209, ID: 24633a2dff4f016cc32fde6524a100bb41f1d209
+2025-01-16T06:28:26.5898625Z Getting Pages deployment status...
+2025-01-16T06:28:26.6940891Z Reported success!
+2025-01-16T06:28:26.7114074Z Post job cleanup.
+2025-01-16T06:28:26.8580769Z Cache hit occurred on the primary key node-cache-Linux-x64-npm-28bb1cfbd2a4ec4c4520d9855c7d2a64d01fa22d99fd6e9a2872d00c996f987d, not saving cache.
+2025-01-16T06:28:26.8689280Z Post job cleanup.
+2025-01-16T06:28:26.9626906Z [command]/usr/bin/git version
+2025-01-16T06:28:26.9665417Z git version 2.47.1
+2025-01-16T06:28:26.9708968Z Temporarily overriding HOME='/home/runner/work/_temp/10d49319-3d38-4e1a-ad0d-e1921f416f1c' before making global git config changes
+2025-01-16T06:28:26.9710431Z Adding repository directory to the temporary git global config as a safe directory
+2025-01-16T06:28:26.9716179Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/abwesenheiten/abwesenheiten
+2025-01-16T06:28:26.9757554Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-01-16T06:28:26.9789922Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-01-16T06:28:27.0023790Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-01-16T06:28:27.0044271Z http.https://github.com/.extraheader
+2025-01-16T06:28:27.0056446Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-01-16T06:28:27.0087636Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-01-16T06:28:27.0425171Z Evaluate and set environment url
+2025-01-16T06:28:27.0428247Z Evaluated environment url: https://jonzim-cmd.github.io/abwesenheiten/
+2025-01-16T06:28:27.0429117Z Cleaning up orphan processes
