@@ -38,7 +38,7 @@ jobs:
           # Build the application
           npm run build
           # Create output directory if it doesn't exist
-          mkdir -p dist/public
+          mkdir -p dist
           # Copy static assets
           cp -r dist/public/* dist/
           # Copy index.html as 404.html for client-side routing
