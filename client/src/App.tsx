@@ -10,6 +10,7 @@ function Router() {
   return (
     <WouterRouter base={config.baseUrl}>
       <Switch>
+        {/* The path should be relative to the base URL */}
         <Route path="/" component={AttendanceAnalyzer} />
         <Route component={NotFound} />
       </Switch>
