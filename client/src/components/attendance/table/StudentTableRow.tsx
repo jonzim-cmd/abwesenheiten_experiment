@@ -4,6 +4,7 @@ import { StudentStats } from '@/lib/attendance-utils';
 
 interface StudentTableRowProps {
   student: string;
+  index: number;
   stats: StudentStats;
   schoolYearData: {
     verspaetungen_unentsch: number;
@@ -21,6 +22,7 @@ interface StudentTableRowProps {
 
 const StudentTableRow = ({
   student,
+  index,
   stats,
   schoolYearData,
   weeklyData,
@@ -60,8 +62,14 @@ const StudentTableRow = ({
 
   return (
     <tr className={rowColor}>
+      <td className="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200 text-center">
+        {index + 1}
+      </td>
+      <td className="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200 truncate">
+        {student}
+      </td>
       <td className="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200">
-        {student} ({stats.klasse})
+        {stats.klasse}
       </td>
       <td className="px-4 py-3 text-sm text-center text-green-600 border-r border-gray-200">
         {createClickableCell(stats.verspaetungen_entsch, 'verspaetungen_entsch', 'text-green-600')}
@@ -81,11 +89,11 @@ const StudentTableRow = ({
       <td className="px-4 py-3 text-sm text-center text-yellow-600 border-r border-gray-200">
         {createClickableCell(stats.fehlzeiten_offen, 'fehlzeiten_offen', 'text-yellow-600')}
       </td>
-      <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
-        {createClickableCell(schoolYearData.verspaetungen_unentsch, 'sj_verspaetungen')}
+      <td className="px-4 py-3 text-sm text-center text-red-600 border-r border-gray-200">
+        {createClickableCell(schoolYearData.verspaetungen_unentsch, 'sj_verspaetungen', 'text-red-600')}
       </td>
-      <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
-        {createClickableCell(schoolYearData.fehlzeiten_unentsch, 'sj_fehlzeiten')}
+      <td className="px-4 py-3 text-sm text-center text-red-600 border-r border-gray-200">
+        {createClickableCell(schoolYearData.fehlzeiten_unentsch, 'sj_fehlzeiten', 'text-red-600')}
       </td>
       <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
         {createClickableWeeklyCell(verspaetungenWeekly, weeklyData.verspaetungen.weekly, 'weekly_verspaetungen')}
@@ -103,7 +111,8 @@ const StudentTableRow = ({
         {hasRelevantCases && (
           <Button
             variant="ghost"
-            size="sm"
+            size="xs"
+            className="px-2 py-1 text-xs"
             onClick={onToggleDetails}
           >
             Details
