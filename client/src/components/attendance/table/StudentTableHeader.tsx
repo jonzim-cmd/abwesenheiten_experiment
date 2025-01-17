@@ -16,23 +16,47 @@ type SortField = 'name' | 'klasse' |
 
 type SortDirection = 'asc' | 'desc';
 
-interface StudentTableHeaderProps {
-  onSort: (field: SortField) => void;
-  sortField: SortField;
-  sortDirection: SortDirection;
+export interface SortConfig {
+  field: SortField;
+  direction: SortDirection;
 }
 
-const StudentTableHeader = ({ onSort, sortField, sortDirection }: StudentTableHeaderProps) => {
-  const renderSortIndicator = (field: SortField) => {
-    if (sortField !== field) return null;
+interface StudentTableHeaderProps {
+  onSort: (field: SortField, event: React.MouseEvent) => void;
+  sortConfigs: SortConfig[];
+}
 
-    return sortDirection === 'asc' ? 
-      <ChevronUp className="w-4 h-4 inline-block ml-1" /> :
-      <ChevronDown className="w-4 h-4 inline-block ml-1" />;
+const StudentTableHeader = ({ onSort, sortConfigs }: StudentTableHeaderProps) => {
+  const getSortIndex = (field: SortField): number => {
+    const index = sortConfigs.findIndex(config => config.field === field);
+    return index === -1 ? -1 : index + 1;
+  };
+
+  const getDirection = (field: SortField): SortDirection | null => {
+    const config = sortConfigs.find(config => config.field === field);
+    return config ? config.direction : null;
+  };
+
+  const renderSortIndicator = (field: SortField) => {
+    const direction = getDirection(field);
+    if (!direction) return null;
+
+    const index = getSortIndex(field);
+    
+    return (
+      <span className="inline-flex items-center">
+        {direction === 'asc' ? 
+          <ChevronUp className="w-4 h-4 inline-block ml-1" /> :
+          <ChevronDown className="w-4 h-4 inline-block ml-1" />}
+        {sortConfigs.length > 1 && (
+          <span className="text-xs ml-1">{index}</span>
+        )}
+      </span>
+    );
   };
 
   const getSortableHeaderClass = (field: SortField) => {
-    return `cursor-pointer hover:bg-gray-50 ${sortField === field ? 'bg-gray-50' : ''}`;
+    return `cursor-pointer hover:bg-gray-50 ${getDirection(field) ? 'bg-gray-50' : ''}`;
   };
 
   return (
@@ -43,13 +67,13 @@ const StudentTableHeader = ({ onSort, sortField, sortDirection }: StudentTableHe
             Nr.
           </th>
           <th 
-            onClick={() => onSort('name')}
+            onClick={(e) => onSort('name', e)}
             className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200 bg-white w-48 ${getSortableHeaderClass('name')}`}
           >
             Name {renderSortIndicator('name')}
           </th>
           <th 
-            onClick={() => onSort('klasse')}
+            onClick={(e) => onSort('klasse', e)}
             className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200 bg-white w-24 ${getSortableHeaderClass('klasse')}`}
           >
             Klasse {renderSortIndicator('klasse')}
@@ -92,7 +116,7 @@ const StudentTableHeader = ({ onSort, sortField, sortDirection }: StudentTableHe
           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-r border-gray-200"></th>
           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-r border-gray-200"></th>
           <th 
-            onClick={() => onSort('verspaetungen_entsch')}
+            onClick={(e) => onSort('verspaetungen_entsch', e)}
             className={`px-4 py-2 text-center text-xs font-medium text-green-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('verspaetungen_entsch')}`}
           >
             <Tooltip>
@@ -103,7 +127,7 @@ const StudentTableHeader = ({ onSort, sortField, sortDirection }: StudentTableHe
             </Tooltip> {renderSortIndicator('verspaetungen_entsch')}
           </th>
           <th 
-            onClick={() => onSort('verspaetungen_unentsch')}
+            onClick={(e) => onSort('verspaetungen_unentsch', e)}
             className={`px-4 py-2 text-center text-xs font-medium text-red-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('verspaetungen_unentsch')}`}
           >
             <Tooltip>
@@ -114,7 +138,7 @@ const StudentTableHeader = ({ onSort, sortField, sortDirection }: StudentTableHe
             </Tooltip> {renderSortIndicator('verspaetungen_unentsch')}
           </th>
           <th 
-            onClick={() => onSort('verspaetungen_offen')}
+            onClick={(e) => onSort('verspaetungen_offen', e)}
             className={`px-4 py-2 text-center text-xs font-medium text-yellow-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('verspaetungen_offen')}`}
           >
             <Tooltip>
@@ -125,7 +149,7 @@ const StudentTableHeader = ({ onSort, sortField, sortDirection }: StudentTableHe
             </Tooltip> {renderSortIndicator('verspaetungen_offen')}
           </th>
           <th 
-            onClick={() => onSort('fehlzeiten_entsch')}
+            onClick={(e) => onSort('fehlzeiten_entsch', e)}
             className={`px-4 py-2 text-center text-xs font-medium text-green-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('fehlzeiten_entsch')}`}
           >
             <Tooltip>
@@ -136,7 +160,7 @@ const StudentTableHeader = ({ onSort, sortField, sortDirection }: StudentTableHe
             </Tooltip> {renderSortIndicator('fehlzeiten_entsch')}
           </th>
           <th 
-            onClick={() => onSort('fehlzeiten_unentsch')}
+            onClick={(e) => onSort('fehlzeiten_unentsch', e)}
             className={`px-4 py-2 text-center text-xs font-medium text-red-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('fehlzeiten_unentsch')}`}
           >
             <Tooltip>
@@ -147,7 +171,7 @@ const StudentTableHeader = ({ onSort, sortField, sortDirection }: StudentTableHe
             </Tooltip> {renderSortIndicator('fehlzeiten_unentsch')}
           </th>
           <th 
-            onClick={() => onSort('fehlzeiten_offen')}
+            onClick={(e) => onSort('fehlzeiten_offen', e)}
             className={`px-4 py-2 text-center text-xs font-medium text-yellow-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('fehlzeiten_offen')}`}
           >
             <Tooltip>
@@ -158,7 +182,7 @@ const StudentTableHeader = ({ onSort, sortField, sortDirection }: StudentTableHe
             </Tooltip> {renderSortIndicator('fehlzeiten_offen')}
           </th>
           <th 
-            onClick={() => onSort('sj_verspaetungen')}
+            onClick={(e) => onSort('sj_verspaetungen', e)}
             className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('sj_verspaetungen')}`}
           >
             <Tooltip>
@@ -169,7 +193,7 @@ const StudentTableHeader = ({ onSort, sortField, sortDirection }: StudentTableHe
             </Tooltip> {renderSortIndicator('sj_verspaetungen')}
           </th>
           <th 
-            onClick={() => onSort('sj_fehlzeiten')}
+            onClick={(e) => onSort('sj_fehlzeiten', e)}
             className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('sj_fehlzeiten')}`}
           >
             <Tooltip>
@@ -180,7 +204,7 @@ const StudentTableHeader = ({ onSort, sortField, sortDirection }: StudentTableHe
             </Tooltip> {renderSortIndicator('sj_fehlzeiten')}
           </th>
           <th 
-            onClick={() => onSort('weekly_verspaetungen')}
+            onClick={(e) => onSort('weekly_verspaetungen', e)}
             className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('weekly_verspaetungen')}`}
           >
             <Tooltip>
@@ -191,7 +215,7 @@ const StudentTableHeader = ({ onSort, sortField, sortDirection }: StudentTableHe
             </Tooltip> {renderSortIndicator('weekly_verspaetungen')}
           </th>
           <th 
-            onClick={() => onSort('weekly_fehlzeiten')}
+            onClick={(e) => onSort('weekly_fehlzeiten', e)}
             className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('weekly_fehlzeiten')}`}
           >
             <Tooltip>
@@ -202,7 +226,7 @@ const StudentTableHeader = ({ onSort, sortField, sortDirection }: StudentTableHe
             </Tooltip> {renderSortIndicator('weekly_fehlzeiten')}
           </th>
           <th 
-            onClick={() => onSort('sum_verspaetungen')}
+            onClick={(e) => onSort('sum_verspaetungen', e)}
             className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('sum_verspaetungen')}`}
           >
             <Tooltip>
@@ -213,10 +237,9 @@ const StudentTableHeader = ({ onSort, sortField, sortDirection }: StudentTableHe
             </Tooltip> {renderSortIndicator('sum_verspaetungen')}
           </th>
           <th 
-            onClick={() => onSort('sum_fehlzeiten')}
+            onClick={(e) => onSort('sum_fehlzeiten', e)}
             className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('sum_fehlzeiten')}`}
-          >
-            <Tooltip>
+          ><Tooltip>
               <TooltipTrigger>∑x() F</TooltipTrigger>
               <TooltipContent className="text-xs">
                 <p className="text-xs">Vor (): ∑ Fehlz. pro vollständige Woche (je nach Auswahl 1–4 W). In (): ∑Fehlz. in W4, W3, W2, W1.</p>
