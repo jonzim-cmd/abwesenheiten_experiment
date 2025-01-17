@@ -42,6 +42,12 @@ type SortField = 'name' | 'klasse' |
 
 type SortDirection = 'asc' | 'desc';
 
+interface SortState {
+  field: SortField;
+  direction: SortDirection | null;
+  order: number;
+}
+
 const NormalView = ({ 
   filteredStudents, 
   detailedData, 
@@ -56,8 +62,7 @@ const NormalView = ({
   const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
   const [activeFilters, setActiveFilters] = useState<Map<string, string>>(new Map());
   const [isAllExpanded, setIsAllExpanded] = useState(false);
-  const [sortField, setSortField] = useState<SortField>('name');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [sortStates, setSortStates] = useState<Map<SortField, SortState>>(new Map());
 
   const parseDate = (dateStr: string | Date): Date => {
     if (dateStr instanceof Date) return dateStr;
@@ -215,58 +220,96 @@ const NormalView = ({
   };
 
   const handleSort = (field: SortField) => {
-    if (field === sortField) {
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
+    setSortStates(prevStates => {
+      const newStates = new Map(prevStates);
+      const currentState = newStates.get(field);
+      
+      if (!currentState) {
+        // First click: Add ascending sort
+        newStates.set(field, {
+          field,
+          direction: 'asc',
+          order: newStates.size
+        });
+      } else if (currentState.direction === 'asc') {
+        // Second click: Change to descending
+        newStates.set(field, {
+          ...currentState,
+          direction: 'desc'
+        });
+      } else {
+        // Third click: Remove sort
+        newStates.delete(field);
+        
+        // Reorder remaining sorts
+        let order = 0;
+        newStates.forEach(state => {
+          state.order = order++;
+        });
+      }
+      
+      return newStates;
+    });
+  };
+
+  const compareValues = (a: any, b: any, field: SortField, direction: SortDirection): number => {
+    const [studentA, statsA] = a;
+    const [studentB, statsB] = b;
+    const multiplier = direction === 'asc' ? 1 : -1;
+
+    switch (field) {
+      case 'name':
+        return multiplier * studentA.localeCompare(studentB);
+      case 'klasse':
+        return multiplier * statsA.klasse.localeCompare(statsB.klasse);
+      case 'verspaetungen_entsch':
+        return multiplier * (statsA.verspaetungen_entsch - statsB.verspaetungen_entsch);
+      case 'verspaetungen_unentsch':
+        return multiplier * (statsA.verspaetungen_unentsch - statsB.verspaetungen_unentsch);
+      case 'verspaetungen_offen':
+        return multiplier * (statsA.verspaetungen_offen - statsB.verspaetungen_offen);
+      case 'fehlzeiten_entsch':
+        return multiplier * (statsA.fehlzeiten_entsch - statsB.fehlzeiten_entsch);
+      case 'fehlzeiten_unentsch':
+        return multiplier * (statsA.fehlzeiten_unentsch - statsB.fehlzeiten_unentsch);
+      case 'fehlzeiten_offen':
+        return multiplier * (statsA.fehlzeiten_offen - statsB.fehlzeiten_offen);
+      case 'sj_verspaetungen':
+        return multiplier * ((schoolYearStats[studentA]?.verspaetungen_unentsch || 0) - 
+                           (schoolYearStats[studentB]?.verspaetungen_unentsch || 0));
+      case 'sj_fehlzeiten':
+        return multiplier * ((schoolYearStats[studentA]?.fehlzeiten_unentsch || 0) - 
+                           (schoolYearStats[studentB]?.fehlzeiten_unentsch || 0));
+      case 'weekly_verspaetungen':
+        return multiplier * ((weeklyStats[studentA]?.verspaetungen.total / parseInt(selectedWeeks) || 0) - 
+                           (weeklyStats[studentB]?.verspaetungen.total / parseInt(selectedWeeks) || 0));
+      case 'weekly_fehlzeiten':
+        return multiplier * ((weeklyStats[studentA]?.fehlzeiten.total / parseInt(selectedWeeks) || 0) - 
+                           (weeklyStats[studentB]?.fehlzeiten.total / parseInt(selectedWeeks) || 0));
+      case 'sum_verspaetungen':
+        return multiplier * ((weeklyStats[studentA]?.verspaetungen.total || 0) - 
+                           (weeklyStats[studentB]?.verspaetungen.total || 0));
+      case 'sum_fehlzeiten':
+        return multiplier * ((weeklyStats[studentA]?.fehlzeiten.total || 0) - 
+                           (weeklyStats[studentB]?.fehlzeiten.total || 0));
+      default:
+        return 0;
     }
   };
 
   const getSortedStudents = () => {
     return [...filteredStudents].sort((a, b) => {
-      const [studentA, statsA] = a;
-      const [studentB, statsB] = b;
-      const direction = sortDirection === 'asc' ? 1 : -1;
+      const sortEntries = Array.from(sortStates.values())
+        .sort((x, y) => x.order - y.order);
 
-      switch (sortField) {
-        case 'name':
-          return direction * studentA.localeCompare(studentB);
-        case 'klasse':
-          return direction * statsA.klasse.localeCompare(statsB.klasse);
-        case 'verspaetungen_entsch':
-          return direction * (statsA.verspaetungen_entsch - statsB.verspaetungen_entsch);
-        case 'verspaetungen_unentsch':
-          return direction * (statsA.verspaetungen_unentsch - statsB.verspaetungen_unentsch);
-        case 'verspaetungen_offen':
-          return direction * (statsA.verspaetungen_offen - statsB.verspaetungen_offen);
-        case 'fehlzeiten_entsch':
-          return direction * (statsA.fehlzeiten_entsch - statsB.fehlzeiten_entsch);
-        case 'fehlzeiten_unentsch':
-          return direction * (statsA.fehlzeiten_unentsch - statsB.fehlzeiten_unentsch);
-        case 'fehlzeiten_offen':
-          return direction * (statsA.fehlzeiten_offen - statsB.fehlzeiten_offen);
-        case 'sj_verspaetungen':
-          return direction * ((schoolYearStats[studentA]?.verspaetungen_unentsch || 0) - 
-                            (schoolYearStats[studentB]?.verspaetungen_unentsch || 0));
-        case 'sj_fehlzeiten':
-          return direction * ((schoolYearStats[studentA]?.fehlzeiten_unentsch || 0) - 
-                            (schoolYearStats[studentB]?.fehlzeiten_unentsch || 0));
-        case 'weekly_verspaetungen':
-          return direction * ((weeklyStats[studentA]?.verspaetungen.total / parseInt(selectedWeeks) || 0) - 
-                            (weeklyStats[studentB]?.verspaetungen.total / parseInt(selectedWeeks) || 0));
-        case 'weekly_fehlzeiten':
-          return direction * ((weeklyStats[studentA]?.fehlzeiten.total / parseInt(selectedWeeks) || 0) - 
-                            (weeklyStats[studentB]?.fehlzeiten.total / parseInt(selectedWeeks) || 0));
-        case 'sum_verspaetungen':
-          return direction * ((weeklyStats[studentA]?.verspaetungen.total || 0) - 
-                            (weeklyStats[studentB]?.verspaetungen.total || 0));
-        case 'sum_fehlzeiten':
-          return direction * ((weeklyStats[studentA]?.fehlzeiten.total || 0) - 
-                            (weeklyStats[studentB]?.fehlzeiten.total || 0));
-        default:
-          return 0;
+      for (const sortState of sortEntries) {
+        if (sortState.direction) {
+          const comparison = compareValues(a, b, sortState.field, sortState.direction);
+          if (comparison !== 0) return comparison;
+        }
       }
+      
+      return 0;
     });
   };
 
@@ -299,8 +342,7 @@ const NormalView = ({
           <table className="min-w-full border-collapse bg-white">
             <StudentTableHeader 
               onSort={handleSort}
-              sortField={sortField}
-              sortDirection={sortDirection}
+              sortStates={sortStates}
             />
             <tbody>
               {getSortedStudents().map(([student, stats], index) => {
