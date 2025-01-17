@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import StudentTableHeader, { SortConfig } from './table/StudentTableHeader';
+import StudentTableHeader from './table/StudentTableHeader';
 import StudentTableRow from './table/StudentTableRow';
 import StudentDetailsRow from './table/StudentDetailsRow';
 import { StudentStats, AbsenceEntry, getLastNWeeks, getCurrentSchoolYear } from '@/lib/attendance-utils';
@@ -40,6 +40,8 @@ type SortField = 'name' | 'klasse' |
   'weekly_verspaetungen' | 'weekly_fehlzeiten' |
   'sum_verspaetungen' | 'sum_fehlzeiten';
 
+type SortDirection = 'asc' | 'desc';
+
 const NormalView = ({ 
   filteredStudents, 
   detailedData, 
@@ -54,7 +56,8 @@ const NormalView = ({
   const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
   const [activeFilters, setActiveFilters] = useState<Map<string, string>>(new Map());
   const [isAllExpanded, setIsAllExpanded] = useState(false);
-  const [sortConfigs, setSortConfigs] = useState<SortConfig[]>([]);
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   const parseDate = (dateStr: string | Date): Date => {
     if (dateStr instanceof Date) return dateStr;
@@ -141,9 +144,7 @@ const NormalView = ({
 
       default: {
         const selectedType = filterType as keyof DetailedStats;
-        return studentData[selectedType].sort((a, b) => 
-          parseDate(b.datum).getTime() - parseDate(a.datum).getTime()
-        );
+        return studentData[selectedType];
       }
     }
   };
@@ -213,118 +214,63 @@ const NormalView = ({
     }
   };
 
-  const handleSort = (field: SortField, event: React.MouseEvent) => {
-    setSortConfigs(prev => {
-      const newConfigs = [...prev];
-      const existingIndex = newConfigs.findIndex(config => config.field === field);
-
-      // If shift key is not pressed, handle single sort
-      if (!event.shiftKey) {
-        // If the same column is clicked
-        if (existingIndex !== -1) {
-          // If it's ascending, make it descending
-          if (newConfigs[existingIndex].direction === 'asc') {
-            return [{ field, direction: 'desc' }];
-          }
-          // If it's descending, remove sort
-          return [];
-        }
-        // New single sort
-        return [{ field, direction: 'asc' }];
-      }
-
-      // Shift key is pressed - handle multi-sort
-      if (existingIndex === -1) {
-        // Add new sort
-        newConfigs.push({ field, direction: 'asc' });
-      } else {
-        // Toggle existing sort
-        if (newConfigs[existingIndex].direction === 'asc') {
-          newConfigs[existingIndex].direction = 'desc';
-        } else {
-          // Remove this sort
-          newConfigs.splice(existingIndex, 1);
-        }
-      }
-
-      return newConfigs;
-    });
+  const handleSort = (field: SortField) => {
+    if (field === sortField) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
   };
 
   const getSortedStudents = () => {
-    if (sortConfigs.length === 0) {
-      // Wenn keine Sortierung aktiv ist, Standard-Sortierung nach Name
-      return [...filteredStudents].sort((a, b) => a[0].localeCompare(b[0]));
-    }
-
     return [...filteredStudents].sort((a, b) => {
-      for (const config of sortConfigs) {
-        const [studentA, statsA] = a;
-        const [studentB, statsB] = b;
-        const direction = config.direction === 'asc' ? 1 : -1;
+      const [studentA, statsA] = a;
+      const [studentB, statsB] = b;
+      const direction = sortDirection === 'asc' ? 1 : -1;
 
-        let comparison = 0;
-        switch (config.field) {
-          case 'name':
-            comparison = studentA.localeCompare(studentB);
-            break;
-          case 'klasse':
-            comparison = statsA.klasse.localeCompare(statsB.klasse);
-            break;
-          case 'verspaetungen_entsch':
-            comparison = statsA.verspaetungen_entsch - statsB.verspaetungen_entsch;
-            break;
-          case 'verspaetungen_unentsch':
-            comparison = statsA.verspaetungen_unentsch - statsB.verspaetungen_unentsch;
-            break;
-          case 'verspaetungen_offen':
-            comparison = statsA.verspaetungen_offen - statsB.verspaetungen_offen;
-            break;
-          case 'fehlzeiten_entsch':
-            comparison = statsA.fehlzeiten_entsch - statsB.fehlzeiten_entsch;
-            break;
-          case 'fehlzeiten_unentsch':
-            comparison = statsA.fehlzeiten_unentsch - statsB.fehlzeiten_unentsch;
-            break;
-          case 'fehlzeiten_offen':
-            comparison = statsA.fehlzeiten_offen - statsB.fehlzeiten_offen;
-            break;
-          case 'sj_verspaetungen':
-            comparison = ((schoolYearStats[studentA]?.verspaetungen_unentsch || 0) - 
-                        (schoolYearStats[studentB]?.verspaetungen_unentsch || 0));
-            break;
-          case 'sj_fehlzeiten':
-            comparison = ((schoolYearStats[studentA]?.fehlzeiten_unentsch || 0) - 
-                        (schoolYearStats[studentB]?.fehlzeiten_unentsch || 0));
-            break;
-          case 'weekly_verspaetungen':
-            comparison = ((weeklyStats[studentA]?.verspaetungen.total / parseInt(selectedWeeks) || 0) - 
-                        (weeklyStats[studentB]?.verspaetungen.total / parseInt(selectedWeeks) || 0));
-            break;
-          case 'weekly_fehlzeiten':
-            comparison = ((weeklyStats[studentA]?.fehlzeiten.total / parseInt(selectedWeeks) || 0) - 
-                        (weeklyStats[studentB]?.fehlzeiten.total / parseInt(selectedWeeks) || 0));
-            break;
-          case 'sum_verspaetungen':
-            comparison = ((weeklyStats[studentA]?.verspaetungen.total || 0) - 
-                        (weeklyStats[studentB]?.verspaetungen.total || 0));
-            break;
-          case 'sum_fehlzeiten':
-            comparison = ((weeklyStats[studentA]?.fehlzeiten.total || 0) - 
-                        (weeklyStats[studentB]?.fehlzeiten.total || 0));
-            break;
-        }
-
-        if (comparison !== 0) {
-          return direction * comparison;
-        }
+      switch (sortField) {
+        case 'name':
+          return direction * studentA.localeCompare(studentB);
+        case 'klasse':
+          return direction * statsA.klasse.localeCompare(statsB.klasse);
+        case 'verspaetungen_entsch':
+          return direction * (statsA.verspaetungen_entsch - statsB.verspaetungen_entsch);
+        case 'verspaetungen_unentsch':
+          return direction * (statsA.verspaetungen_unentsch - statsB.verspaetungen_unentsch);
+        case 'verspaetungen_offen':
+          return direction * (statsA.verspaetungen_offen - statsB.verspaetungen_offen);
+        case 'fehlzeiten_entsch':
+          return direction * (statsA.fehlzeiten_entsch - statsB.fehlzeiten_entsch);
+        case 'fehlzeiten_unentsch':
+          return direction * (statsA.fehlzeiten_unentsch - statsB.fehlzeiten_unentsch);
+        case 'fehlzeiten_offen':
+          return direction * (statsA.fehlzeiten_offen - statsB.fehlzeiten_offen);
+        case 'sj_verspaetungen':
+          return direction * ((schoolYearStats[studentA]?.verspaetungen_unentsch || 0) - 
+                            (schoolYearStats[studentB]?.verspaetungen_unentsch || 0));
+        case 'sj_fehlzeiten':
+          return direction * ((schoolYearStats[studentA]?.fehlzeiten_unentsch || 0) - 
+                            (schoolYearStats[studentB]?.fehlzeiten_unentsch || 0));
+        case 'weekly_verspaetungen':
+          return direction * ((weeklyStats[studentA]?.verspaetungen.total / parseInt(selectedWeeks) || 0) - 
+                            (weeklyStats[studentB]?.verspaetungen.total / parseInt(selectedWeeks) || 0));
+        case 'weekly_fehlzeiten':
+          return direction * ((weeklyStats[studentA]?.fehlzeiten.total / parseInt(selectedWeeks) || 0) - 
+                            (weeklyStats[studentB]?.fehlzeiten.total / parseInt(selectedWeeks) || 0));
+        case 'sum_verspaetungen':
+          return direction * ((weeklyStats[studentA]?.verspaetungen.total || 0) - 
+                            (weeklyStats[studentB]?.verspaetungen.total || 0));
+        case 'sum_fehlzeiten':
+          return direction * ((weeklyStats[studentA]?.fehlzeiten.total || 0) - 
+                            (weeklyStats[studentB]?.fehlzeiten.total || 0));
+        default:
+          return 0;
       }
-
-      return 0;
     });
   };
 
-  returnreturn (
+  return (
     <div className="mt-6 space-y-6">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">
@@ -353,7 +299,8 @@ const NormalView = ({
           <table className="min-w-full border-collapse bg-white">
             <StudentTableHeader 
               onSort={handleSort}
-              sortConfigs={sortConfigs}
+              sortField={sortField}
+              sortDirection={sortDirection}
             />
             <tbody>
               {getSortedStudents().map(([student, stats], index) => {
