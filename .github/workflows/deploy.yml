@@ -40,14 +40,14 @@ jobs:
             if (fs.existsSync(file)) {
               let html = fs.readFileSync(file, 'utf8');
               // Erst bestehende doppelte Pfade korrigieren
-              html = html.replace(/\/abwesenheiten\/abwesenheiten\//g, '/abwesenheiten/')
+              html = html.replace(/\/abwesenheiten_experiment\/abwesenheiten_experiment\//g, '/abwesenheiten_experiment/')
                    // Dann base href setzen
-                   .replace(/<base href="[^"]*"/, '<base href="/abwesenheiten/"')
+                   .replace(/<base href="[^"]*"/, '<base href="/abwesenheiten_experiment/"')
                    // Dann neue Pfade setzen wenn nötig
-                   .replace(/src="\//g, 'src="/abwesenheiten/')
-                   .replace(/href="\//g, 'href="/abwesenheiten/')
+                   .replace(/src="\//g, 'src="/abwesenheiten_experiment/')
+                   .replace(/href="\//g, 'href="/abwesenheiten_experiment/')
                    // Doppelte Pfade verhindern
-                   .replace(/\/abwesenheiten\/abwesenheiten\//g, '/abwesenheiten/');
+                   .replace(/\/abwesenheiten_experiment\/abwesenheiten_experiment\//g, '/abwesenheiten_experiment/');
               fs.writeFileSync(file, html);
             }
           });
@@ -56,9 +56,9 @@ jobs:
           # Copy index.html as 404.html
           cp dist/index.html dist/404.html
         env:
-          VITE_BASE_URL: /abwesenheiten/
-          BASE: /abwesenheiten/
-          PUBLIC_URL: /abwesenheiten/
+          VITE_BASE_URL: /abwesenheiten_experiment/
+          BASE: /abwesenheiten_experiment/
+          PUBLIC_URL: /abwesenheiten_experiment/
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Upload artifact
