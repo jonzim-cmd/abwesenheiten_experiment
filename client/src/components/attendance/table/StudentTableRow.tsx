@@ -96,16 +96,16 @@ const StudentTableRow = ({
         {createClickableCell(schoolYearData.fehlzeiten_unentsch, 'sj_fehlzeiten', 'text-red-600')}
       </td>
       <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
-        {createClickableWeeklyCell(verspaetungenWeekly, weeklyData.verspaetungen.weekly, 'weekly_verspaetungen')}
-      </td>
-      <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
-        {createClickableWeeklyCell(fehlzeitenWeekly, weeklyData.fehlzeiten.weekly, 'weekly_fehlzeiten')}
-      </td>
-      <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
         {createClickableWeeklyCell(verspaetungenSum, weeklyData.verspaetungen.weekly, 'sum_verspaetungen')}
       </td>
       <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
         {createClickableWeeklyCell(fehlzeitenSum, weeklyData.fehlzeiten.weekly, 'sum_fehlzeiten')}
+      </td>
+      <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
+        {createClickableWeeklyCell(verspaetungenWeekly, weeklyData.verspaetungen.weekly, 'weekly_verspaetungen')}
+      </td>
+      <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
+        {createClickableWeeklyCell(fehlzeitenWeekly, weeklyData.fehlzeiten.weekly, 'weekly_fehlzeiten')}
       </td>
       <td className="px-4 py-3 text-sm text-center">
         {hasRelevantCases && (
