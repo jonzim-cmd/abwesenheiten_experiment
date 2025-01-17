@@ -69,7 +69,7 @@ const AttendanceAnalyzer = () => {
     setSelectedWeeks('1');
     setSchoolYearStats({});
     setWeeklyStats({});
-    setWeeklyDetailedData({}); 
+    setWeeklyDetailedData({});
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -77,8 +77,8 @@ const AttendanceAnalyzer = () => {
 
   const calculateSchoolYearStats = useCallback((data: any[]) => {
     const schoolYear = getCurrentSchoolYear();
-    const sjStartDate = new Date(schoolYear.start, 8, 1); 
-    const sjEndDate = new Date(schoolYear.end, 7, 31); 
+    const sjStartDate = new Date(schoolYear.start, 8, 1);
+    const sjEndDate = new Date(schoolYear.end, 7, 31);
     const today = new Date();
 
     const stats: Record<string, { verspaetungen_unentsch: number; fehlzeiten_unentsch: number }> = {};
@@ -92,9 +92,9 @@ const AttendanceAnalyzer = () => {
       const studentName = `${row.Langname}, ${row.Vorname}`;
 
       if (!stats[studentName]) {
-        stats[studentName] = { 
-          verspaetungen_unentsch: 0, 
-          fehlzeiten_unentsch: 0 
+        stats[studentName] = {
+          verspaetungen_unentsch: 0,
+          fehlzeiten_unentsch: 0
         };
       }
 
@@ -134,7 +134,7 @@ const AttendanceAnalyzer = () => {
         return date >= startDate && date <= endDate;
       });
 
-      if (weekIndex === -1) return; 
+      if (weekIndex === -1) return;
 
       if (!stats[studentName]) {
         stats[studentName] = {
@@ -520,15 +520,7 @@ const AttendanceAnalyzer = () => {
             {results && (
               <>
                 <div className="mb-6">
-                  <Label htmlFor="searchQuery">Suche nach Namen</Label>
-                  <Input
-                    id="searchQuery"
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Namen eingeben..."
-                    className="mt-1"
-                  />
+                  {/*Removed search bar here */}
                 </div>
 
                 <Card className="mb-6">
@@ -587,7 +579,7 @@ const AttendanceAnalyzer = () => {
                   </CardContent>
                 </Card>
 
-                <div className="flex gap-4 mb-6">
+                <div className="flex gap-4 mb-6 items-center">
                   <Button
                     variant={isReportView ? "outline" : "default"}
                     onClick={() => setIsReportView(false)}
@@ -606,6 +598,16 @@ const AttendanceAnalyzer = () => {
                   >
                     Zurücksetzen
                   </Button>
+                  <div className="flex-grow">
+                    <Input
+                      id="searchQuery"
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Namen eingeben..."
+                      className="w-full"
+                    />
+                  </div>
                 </div>
 
                 {isReportView ? (
