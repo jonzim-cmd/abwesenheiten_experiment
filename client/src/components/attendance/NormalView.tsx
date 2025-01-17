@@ -33,6 +33,15 @@ interface NormalViewProps {
   selectedWeeks: string;
 }
 
+type SortField = 'name' | 'klasse' | 
+  'verspaetungen_entsch' | 'verspaetungen_unentsch' | 'verspaetungen_offen' |
+  'fehlzeiten_entsch' | 'fehlzeiten_unentsch' | 'fehlzeiten_offen' |
+  'sj_verspaetungen' | 'sj_fehlzeiten' |
+  'weekly_verspaetungen' | 'weekly_fehlzeiten' |
+  'sum_verspaetungen' | 'sum_fehlzeiten';
+
+type SortDirection = 'asc' | 'desc';
+
 const NormalView = ({ 
   filteredStudents, 
   detailedData, 
@@ -47,6 +56,8 @@ const NormalView = ({
   const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
   const [activeFilters, setActiveFilters] = useState<Map<string, string>>(new Map());
   const [isAllExpanded, setIsAllExpanded] = useState(false);
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   const parseDate = (dateStr: string | Date): Date => {
     if (dateStr instanceof Date) return dateStr;
@@ -203,6 +214,62 @@ const NormalView = ({
     }
   };
 
+  const handleSort = (field: SortField) => {
+    if (field === sortField) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortedStudents = () => {
+    return [...filteredStudents].sort((a, b) => {
+      const [studentA, statsA] = a;
+      const [studentB, statsB] = b;
+      const direction = sortDirection === 'asc' ? 1 : -1;
+
+      switch (sortField) {
+        case 'name':
+          return direction * studentA.localeCompare(studentB);
+        case 'klasse':
+          return direction * statsA.klasse.localeCompare(statsB.klasse);
+        case 'verspaetungen_entsch':
+          return direction * (statsA.verspaetungen_entsch - statsB.verspaetungen_entsch);
+        case 'verspaetungen_unentsch':
+          return direction * (statsA.verspaetungen_unentsch - statsB.verspaetungen_unentsch);
+        case 'verspaetungen_offen':
+          return direction * (statsA.verspaetungen_offen - statsB.verspaetungen_offen);
+        case 'fehlzeiten_entsch':
+          return direction * (statsA.fehlzeiten_entsch - statsB.fehlzeiten_entsch);
+        case 'fehlzeiten_unentsch':
+          return direction * (statsA.fehlzeiten_unentsch - statsB.fehlzeiten_unentsch);
+        case 'fehlzeiten_offen':
+          return direction * (statsA.fehlzeiten_offen - statsB.fehlzeiten_offen);
+        case 'sj_verspaetungen':
+          return direction * ((schoolYearStats[studentA]?.verspaetungen_unentsch || 0) - 
+                            (schoolYearStats[studentB]?.verspaetungen_unentsch || 0));
+        case 'sj_fehlzeiten':
+          return direction * ((schoolYearStats[studentA]?.fehlzeiten_unentsch || 0) - 
+                            (schoolYearStats[studentB]?.fehlzeiten_unentsch || 0));
+        case 'weekly_verspaetungen':
+          return direction * ((weeklyStats[studentA]?.verspaetungen.total / parseInt(selectedWeeks) || 0) - 
+                            (weeklyStats[studentB]?.verspaetungen.total / parseInt(selectedWeeks) || 0));
+        case 'weekly_fehlzeiten':
+          return direction * ((weeklyStats[studentA]?.fehlzeiten.total / parseInt(selectedWeeks) || 0) - 
+                            (weeklyStats[studentB]?.fehlzeiten.total / parseInt(selectedWeeks) || 0));
+        case 'sum_verspaetungen':
+          return direction * ((weeklyStats[studentA]?.verspaetungen.total || 0) - 
+                            (weeklyStats[studentB]?.verspaetungen.total || 0));
+        case 'sum_fehlzeiten':
+          return direction * ((weeklyStats[studentA]?.fehlzeiten.total || 0) - 
+                            (weeklyStats[studentB]?.fehlzeiten.total || 0));
+        default:
+          return 0;
+      }
+    });
+  };
+
   return (
     <div className="mt-6 space-y-6">
       <div className="flex justify-between items-center mb-4">
@@ -230,9 +297,13 @@ const NormalView = ({
       <div className="relative h-[500px]">
         <div className="absolute inset-0 overflow-x-auto overflow-y-auto">
           <table className="min-w-full border-collapse bg-white">
-            <StudentTableHeader />
+            <StudentTableHeader 
+              onSort={handleSort}
+              sortField={sortField}
+              sortDirection={sortDirection}
+            />
             <tbody>
-              {filteredStudents.map(([student, stats], index) => {
+              {getSortedStudents().map(([student, stats], index) => {
                 const rowColor = index % 2 === 0 ? 'bg-white' : 'bg-gray-100';
                 const schoolYearData = schoolYearStats[student] || { 
                   verspaetungen_unentsch: 0, 
@@ -247,6 +318,7 @@ const NormalView = ({
                   <React.Fragment key={student}>
                     <StudentTableRow
                       student={student}
+                      index={index}
                       stats={stats}
                       schoolYearData={schoolYearData}
                       weeklyData={weeklyData}
