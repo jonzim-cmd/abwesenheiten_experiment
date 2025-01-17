@@ -16,23 +16,41 @@ type SortField = 'name' | 'klasse' |
 
 type SortDirection = 'asc' | 'desc';
 
-interface StudentTableHeaderProps {
-  onSort: (field: SortField) => void;
-  sortField: SortField;
-  sortDirection: SortDirection;
+interface SortState {
+  field: SortField;
+  direction: SortDirection | null;
+  order: number;
 }
 
-const StudentTableHeader = ({ onSort, sortField, sortDirection }: StudentTableHeaderProps) => {
-  const renderSortIndicator = (field: SortField) => {
-    if (sortField !== field) return null;
+interface StudentTableHeaderProps {
+  onSort: (field: SortField) => void;
+  sortStates: Map<SortField, SortState>;
+}
 
-    return sortDirection === 'asc' ? 
-      <ChevronUp className="w-4 h-4 inline-block ml-1" /> :
-      <ChevronDown className="w-4 h-4 inline-block ml-1" />;
+const StudentTableHeader = ({ onSort, sortStates }: StudentTableHeaderProps) => {
+  const renderSortIndicator = (field: SortField) => {
+    const state = sortStates.get(field);
+    if (!state) return null;
+
+    return (
+      <span className="inline-flex items-center">
+        {state.direction === 'asc' ? (
+          <ChevronUp className="w-4 h-4 ml-1" />
+        ) : (
+          <ChevronDown className="w-4 h-4 ml-1" />
+        )}
+        {sortStates.size > 1 && (
+          <span className="ml-1 text-xs">
+            {state.order + 1}
+          </span>
+        )}
+      </span>
+    );
   };
 
   const getSortableHeaderClass = (field: SortField) => {
-    return `cursor-pointer hover:bg-gray-50 ${sortField === field ? 'bg-gray-50' : ''}`;
+    const state = sortStates.get(field);
+    return `cursor-pointer hover:bg-gray-50 ${state ? 'bg-gray-50' : ''}`;
   };
 
   return (
