@@ -36,10 +36,12 @@ export function registerRoutes(app: Express): Server {
 
       Papa.parse<CSVRow>(fileContent, {
         header: true,
+        delimiter: '\t', // Explizit Tabulator als Trennzeichen setzen
+        skipEmptyLines: true,
         complete: (results) => {
           res.json(results.data);
         },
-        error: (error: Papa.ParseError) => {
+        error: (error) => {
           console.error('CSV parsing error:', error);
           res.status(500).json({ error: 'Failed to parse CSV data' });
         }
