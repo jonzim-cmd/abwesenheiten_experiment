@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import NormalView from '@/components/attendance/NormalView';
 import ReportView from '@/components/attendance/ReportView';
 import { getWeekNumber, getLastNWeeks, getCurrentSchoolYear } from '@/lib/attendance';
+import * as XLSX from 'xlsx';
 
 interface AbsenceEntry {
   datum: Date;
@@ -309,18 +310,66 @@ const AttendanceAnalyzer = () => {
         return;
       }
 
-      const text = await file.text();
-
-      Papa.parse(text, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          setRawData(results.data);
-        },
-        error: (error) => {
-          setError('Fehler beim Verarbeiten der CSV-Datei: ' + error.message);
-        }
-      });
+      if (file.name.toLowerCase().endsWith('.csv')) {
+        const text = await file.text();
+        // Versuche zuerst mit Tabulator
+        Papa.parse(text, {
+          header: true,
+          skipEmptyLines: true,
+          delimiter: '\t',
+          complete: (results) => {
+            if (results.data && Array.isArray(results.data) && results.data.length > 0) {
+              const firstRow = results.data[0] as any;
+              if (!firstRow.Langname || !firstRow.Vorname || !firstRow.Beginndatum) {
+                // Versuche es mit Komma
+                Papa.parse(text, {
+                  header: true,
+                  skipEmptyLines: true,
+                  delimiter: ',',
+                  complete: (results) => {
+                    if (results.data && Array.isArray(results.data) && results.data.length > 0) {
+                      const firstRow = results.data[0] as any;
+                      if (!firstRow.Langname || !firstRow.Vorname || !firstRow.Beginndatum) {
+                        // Als letztes mit Semikolon versuchen
+                        Papa.parse(text, {
+                          header: true,
+                          skipEmptyLines: true,
+                          delimiter: ';',
+                          complete: (results) => {
+                            setRawData(results.data);
+                          },
+                          error: (error) => {
+                            setError('Fehler beim Verarbeiten der CSV-Datei: ' + error.message);
+                          }
+                        });
+                      } else {
+                        setRawData(results.data);
+                      }
+                    }
+                  },
+                  error: (error) => {
+                    setError('Fehler beim Verarbeiten der CSV-Datei: ' + error.message);
+                  }
+                });
+              } else {
+                setRawData(results.data);
+              }
+            }
+          },
+          error: (error) => {
+            setError('Fehler beim Verarbeiten der CSV-Datei: ' + error.message);
+          }
+        });
+      } else if (file.name.toLowerCase().match(/\.xlsx?$/)) {
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer);
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: false });
+        setRawData(jsonData);
+      } else {
+        setError('Nicht unterstütztes Dateiformat. Bitte laden Sie eine CSV- oder Excel-Datei hoch.');
+      }
     } catch (err: any) {
       setError('Fehler beim Lesen der Datei: ' + err.message);
     }
@@ -496,11 +545,11 @@ const AttendanceAnalyzer = () => {
             </div>
 
             <div>
-              <Label htmlFor="file">CSV-Datei hochladen</Label>
+              <Label htmlFor="file">CSV-Datei oder Excel-Datei hochladen</Label>
               <Input
                 id="file"
                 type="file"
-                accept=".csv"
+                accept=".csv,.xlsx,.xls"
                 ref={fileInputRef}
                 onChange={(e) => {
                   if (e.target.files?.[0]) {
