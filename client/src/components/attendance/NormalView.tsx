@@ -218,19 +218,31 @@ const NormalView = ({
       const newConfigs = [...prev];
       const existingIndex = newConfigs.findIndex(config => config.field === field);
 
-      // If shift key is not pressed, clear other sorts
+      // If shift key is not pressed, handle single sort
       if (!event.shiftKey) {
-        newConfigs.length = 0;
+        // If the same column is clicked
+        if (existingIndex !== -1) {
+          // If it's ascending, make it descending
+          if (newConfigs[existingIndex].direction === 'asc') {
+            return [{ field, direction: 'desc' }];
+          }
+          // If it's descending, remove sort
+          return [];
+        }
+        // New single sort
+        return [{ field, direction: 'asc' }];
       }
 
+      // Shift key is pressed - handle multi-sort
       if (existingIndex === -1) {
         // Add new sort
         newConfigs.push({ field, direction: 'asc' });
       } else {
-        // Toggle direction or remove if already desc
+        // Toggle existing sort
         if (newConfigs[existingIndex].direction === 'asc') {
           newConfigs[existingIndex].direction = 'desc';
         } else {
+          // Remove this sort
           newConfigs.splice(existingIndex, 1);
         }
       }
@@ -240,6 +252,11 @@ const NormalView = ({
   };
 
   const getSortedStudents = () => {
+    if (sortConfigs.length === 0) {
+      // Wenn keine Sortierung aktiv ist, Standard-Sortierung nach Name
+      return [...filteredStudents].sort((a, b) => a[0].localeCompare(b[0]));
+    }
+
     return [...filteredStudents].sort((a, b) => {
       for (const config of sortConfigs) {
         const [studentA, statsA] = a;
@@ -303,12 +320,11 @@ const NormalView = ({
         }
       }
 
-      // If all sort criteria are equal, maintain stable sort by comparing names
-      return a[0].localeCompare(b[0]);
+      return 0;
     });
   };
 
-  return (
+  returnreturn (
     <div className="mt-6 space-y-6">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">
@@ -343,7 +359,8 @@ const NormalView = ({
               {getSortedStudents().map(([student, stats], index) => {
                 const rowColor = index % 2 === 0 ? 'bg-white' : 'bg-gray-100';
                 const schoolYearData = schoolYearStats[student] || { 
-                  verspaetungen_unentsch: 0,fehlzeiten_unentsch: 0 
+                  verspaetungen_unentsch: 0, 
+                  fehlzeiten_unentsch: 0 
                 };
                 const weeklyData = weeklyStats[student] || { 
                   verspaetungen: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) },
