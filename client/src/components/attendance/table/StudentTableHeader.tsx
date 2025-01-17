@@ -239,7 +239,9 @@ const StudentTableHeader = ({ onSort, sortConfigs }: StudentTableHeaderProps) =>
           <th 
             onClick={(e) => onSort('sum_fehlzeiten', e)}
             className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('sum_fehlzeiten')}`}
-          ><Tooltip>
+          >
+            <Tooltip>
+              <TooltipT<Tooltip>
               <TooltipTrigger>∑x() F</TooltipTrigger>
               <TooltipContent className="text-xs">
                 <p className="text-xs">Vor (): ∑ Fehlz. pro vollständige Woche (je nach Auswahl 1–4 W). In (): ∑Fehlz. in W4, W3, W2, W1.</p>
