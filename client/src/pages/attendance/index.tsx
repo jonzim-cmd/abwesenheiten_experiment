@@ -145,7 +145,10 @@ const AttendanceAnalyzer = () => {
       }
 
       const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
-      const isUnentschuldigt = row.Status === 'nicht entsch.' || row.Status === 'nicht akzep.';
+      const today = new Date();
+      const isUnentschuldigt = row.Status === 'nicht entsch.' || 
+                              row.Status === 'nicht akzep.' || 
+                              (!row.Status && today > new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
 
       if (isUnentschuldigt) {
         if (isVerspaetung) {
