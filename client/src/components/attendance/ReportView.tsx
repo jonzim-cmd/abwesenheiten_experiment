@@ -35,8 +35,11 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
               <th className="w-16 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200">
                 Nr.
               </th>
-              <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200">
+              <th className="w-48 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200">
                 Name
+              </th>
+              <th className="w-24 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200">
+                Klasse
               </th>
               <th className="w-1/3 px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200">
                 <div>Unentschuldigte Verspätungen</div>
@@ -56,11 +59,9 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
             {filteredStudents.map(([student, stats], index) => {
               const studentData = detailedData[student];
 
-              // Get unexcused late entries and absences
               const lateEntries = studentData?.verspaetungen_unentsch || [];
               const absenceEntries = studentData?.fehlzeiten_unentsch || [];
 
-              // Format late entries
               const formattedLates = lateEntries.map(entry => 
                 `${new Date(entry.datum).toLocaleDateString('de-DE', {
                   weekday: 'long',
@@ -70,7 +71,6 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
                 })} (${entry.beginnZeit} - ${entry.endZeit} Uhr)`
               );
 
-              // Format absence entries
               const formattedAbsences = absenceEntries.map(entry => 
                 `${new Date(entry.datum).toLocaleDateString('de-DE', {
                   weekday: 'long',
@@ -89,7 +89,10 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
                     {index + 1}
                   </td>
                   <td className="px-6 py-4 whitespace-normal text-sm font-medium text-gray-900 border-b border-r border-gray-200">
-                    {student} ({stats.klasse})
+                    {student}
+                  </td>
+                  <td className="px-6 py-4 whitespace-normal text-sm font-medium text-gray-900 border-b border-r border-gray-200">
+                    {stats.klasse}
                   </td>
                   <td className="px-6 py-4 whitespace-pre-line text-sm text-gray-500 border-b border-r border-gray-200">
                     {formattedLates.length > 0 ? formattedLates.join('\n') : '-'}
