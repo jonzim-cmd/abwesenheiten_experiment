@@ -198,28 +198,6 @@ const StudentTableHeader = ({ onSort, sortStates }: StudentTableHeaderProps) => 
             </Tooltip> {renderSortIndicator('sj_fehlzeiten')}
           </th>
           <th 
-            onClick={() => onSort('weekly_verspaetungen')}
-            className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('weekly_verspaetungen')}`}
-          >
-            <Tooltip>
-              <TooltipTrigger>Øx() V</TooltipTrigger>
-              <TooltipContent className="text-xs">
-                <p className="text-xs">Vor (): Ø Versp. pro vollständige Woche (je nach Auswahl 1–4 W). In (): ∑Versp. in W4, W3, W2, W1.</p>
-              </TooltipContent>
-            </Tooltip> {renderSortIndicator('weekly_verspaetungen')}
-          </th>
-          <th 
-            onClick={() => onSort('weekly_fehlzeiten')}
-            className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('weekly_fehlzeiten')}`}
-          >
-            <Tooltip>
-              <TooltipTrigger>Øx() F</TooltipTrigger>
-              <TooltipContent className="text-xs">
-                <p className="text-xs">Vor (): Ø Fehlz. pro vollständige Woche (je nach Auswahl 1–4 W). In (): ∑Fehlz. W4, W3, W2, W1.</p>
-              </TooltipContent>
-            </Tooltip> {renderSortIndicator('weekly_fehlzeiten')}
-          </th>
-          <th 
             onClick={() => onSort('sum_verspaetungen')}
             className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('sum_verspaetungen')}`}
           >
@@ -240,6 +218,28 @@ const StudentTableHeader = ({ onSort, sortStates }: StudentTableHeaderProps) => 
                 <p className="text-xs">Vor (): ∑ Fehlz. pro vollständige Woche (je nach Auswahl 1–4 W). In (): ∑Fehlz. in W4, W3, W2, W1.</p>
               </TooltipContent>
             </Tooltip> {renderSortIndicator('sum_fehlzeiten')}
+          </th>
+          <th 
+            onClick={() => onSort('weekly_verspaetungen')}
+            className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('weekly_verspaetungen')}`}
+          >
+            <Tooltip>
+              <TooltipTrigger>Øx() V</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">Vor (): Ø Versp. pro vollständige Woche (je nach Auswahl 1–4 W). In (): ∑Versp. in W4, W3, W2, W1.</p>
+              </TooltipContent>
+            </Tooltip> {renderSortIndicator('weekly_verspaetungen')}
+          </th>
+          <th 
+            onClick={() => onSort('weekly_fehlzeiten')}
+            className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('weekly_fehlzeiten')}`}
+          >
+            <Tooltip>
+              <TooltipTrigger>Øx() F</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">Vor (): Ø Fehlz. pro vollständige Woche (je nach Auswahl 1–4 W). In (): ∑Fehlz. W4, W3, W2, W1.</p>
+              </TooltipContent>
+            </Tooltip> {renderSortIndicator('weekly_fehlzeiten')}
           </th>
           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-gray-200 bg-white"></th>
         </tr>
