@@ -1,5 +1,11 @@
 import React from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type SortField = 'name' | 'klasse' | 
   'verspaetungen_entsch' | 'verspaetungen_unentsch' | 'verspaetungen_offen' |
@@ -30,124 +36,197 @@ const StudentTableHeader = ({ onSort, sortField, sortDirection }: StudentTableHe
   };
 
   return (
-    <thead className="sticky top-0 z-10 bg-white shadow-sm">
-      <tr>
-        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200 bg-white w-12">
-          Nr.
-        </th>
-        <th 
-          onClick={() => onSort('name')}
-          className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200 bg-white w-48 ${getSortableHeaderClass('name')}`}
-        >
-          Name {renderSortIndicator('name')}
-        </th>
-        <th 
-          onClick={() => onSort('klasse')}
-          className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200 bg-white w-24 ${getSortableHeaderClass('klasse')}`}
-        >
-          Klasse {renderSortIndicator('klasse')}
-        </th>
-        <th colSpan={3} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200 bg-white">
-          Verspätungen
-          <div className="text-[8px] font-normal normal-case text-gray-400">
-            ausgewählter Zeitraum
-          </div>
-        </th>
-        <th colSpan={3} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200 bg-white">
-          Fehlzeiten
-          <div className="text-[8px] font-normal normal-case text-gray-400">
-            ausgewählter Zeitraum
-          </div>
-        </th>
-        <th colSpan={6} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200 bg-white">
-          Statistik
-        </th>
-        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 bg-white w-16">
-          Details
-          <div className="text-[8px] font-normal normal-case text-gray-400">
-            unentsch.
-          </div>
-        </th>
-      </tr>
-      <tr className="bg-white">
-        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-r border-gray-200"></th>
-        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-r border-gray-200"></th>
-        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-r border-gray-200"></th>
-        <th 
-          onClick={() => onSort('verspaetungen_entsch')}
-          className={`px-4 py-2 text-center text-xs font-medium text-green-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('verspaetungen_entsch')}`}
-        >
-          E {renderSortIndicator('verspaetungen_entsch')}
-        </th>
-        <th 
-          onClick={() => onSort('verspaetungen_unentsch')}
-          className={`px-4 py-2 text-center text-xs font-medium text-red-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('verspaetungen_unentsch')}`}
-        >
-          U {renderSortIndicator('verspaetungen_unentsch')}
-        </th>
-        <th 
-          onClick={() => onSort('verspaetungen_offen')}
-          className={`px-4 py-2 text-center text-xs font-medium text-yellow-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('verspaetungen_offen')}`}
-        >
-          O {renderSortIndicator('verspaetungen_offen')}
-        </th>
-        <th 
-          onClick={() => onSort('fehlzeiten_entsch')}
-          className={`px-4 py-2 text-center text-xs font-medium text-green-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('fehlzeiten_entsch')}`}
-        >
-          E {renderSortIndicator('fehlzeiten_entsch')}
-        </th>
-        <th 
-          onClick={() => onSort('fehlzeiten_unentsch')}
-          className={`px-4 py-2 text-center text-xs font-medium text-red-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('fehlzeiten_unentsch')}`}
-        >
-          U {renderSortIndicator('fehlzeiten_unentsch')}
-        </th>
-        <th 
-          onClick={() => onSort('fehlzeiten_offen')}
-          className={`px-4 py-2 text-center text-xs font-medium text-yellow-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('fehlzeiten_offen')}`}
-        >
-          O {renderSortIndicator('fehlzeiten_offen')}
-        </th>
-        <th 
-          onClick={() => onSort('sj_verspaetungen')}
-          className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('sj_verspaetungen')}`}
-        >
-          ∑SJ V {renderSortIndicator('sj_verspaetungen')}
-        </th>
-        <th 
-          onClick={() => onSort('sj_fehlzeiten')}
-          className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('sj_fehlzeiten')}`}
-        >
-          ∑SJ F {renderSortIndicator('sj_fehlzeiten')}
-        </th>
-        <th 
-          onClick={() => onSort('weekly_verspaetungen')}
-          className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('weekly_verspaetungen')}`}
-        >
-          Øx() V {renderSortIndicator('weekly_verspaetungen')}
-        </th>
-        <th 
-          onClick={() => onSort('weekly_fehlzeiten')}
-          className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('weekly_fehlzeiten')}`}
-        >
-          Øx() F {renderSortIndicator('weekly_fehlzeiten')}
-        </th>
-        <th 
-          onClick={() => onSort('sum_verspaetungen')}
-          className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('sum_verspaetungen')}`}
-        >
-          ∑x() V {renderSortIndicator('sum_verspaetungen')}
-        </th>
-        <th 
-          onClick={() => onSort('sum_fehlzeiten')}
-          className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('sum_fehlzeiten')}`}
-        >
-          ∑x() F {renderSortIndicator('sum_fehlzeiten')}
-        </th>
-        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-gray-200 bg-white"></th>
-      </tr>
-    </thead>
+    <TooltipProvider delayDuration={1000}>
+      <thead className="sticky top-0 z-10 bg-white shadow-sm">
+        <tr>
+          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200 bg-white w-12">
+            Nr.
+          </th>
+          <th 
+            onClick={() => onSort('name')}
+            className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200 bg-white w-48 ${getSortableHeaderClass('name')}`}
+          >
+            Name {renderSortIndicator('name')}
+          </th>
+          <th 
+            onClick={() => onSort('klasse')}
+            className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200 bg-white w-24 ${getSortableHeaderClass('klasse')}`}
+          >
+            Klasse {renderSortIndicator('klasse')}
+          </th>
+          <th colSpan={3} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200 bg-white">
+            <Tooltip>
+              <TooltipTrigger>Verspätungen</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">bezieht sich auf ausgewählten Zeitraum</p>
+              </TooltipContent>
+            </Tooltip>
+          </th>
+          <th colSpan={3} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200 bg-white">
+            <Tooltip>
+              <TooltipTrigger>Fehlzeiten</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">bezieht sich auf ausgewählten Zeitraum</p>
+              </TooltipContent>
+            </Tooltip>
+          </th>
+          <th colSpan={6} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200 bg-white">
+            <Tooltip>
+              <TooltipTrigger>Statistik</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">bezieht sich auf 1-4 vollständige Wochen zurück, je nach Auswahl</p>
+              </TooltipContent>
+            </Tooltip>
+          </th>
+          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 bg-white w-16">
+            <Tooltip>
+              <TooltipTrigger>Details</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">unent. Versp. & Fehlz. im ausgewählten Zeitraum</p>
+              </TooltipContent>
+            </Tooltip>
+          </th>
+        </tr>
+        <tr className="bg-white">
+          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-r border-gray-200"></th>
+          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-r border-gray-200"></th>
+          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-r border-gray-200"></th>
+          <th 
+            onClick={() => onSort('verspaetungen_entsch')}
+            className={`px-4 py-2 text-center text-xs font-medium text-green-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('verspaetungen_entsch')}`}
+          >
+            <Tooltip>
+              <TooltipTrigger>E</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">entschuldigt</p>
+              </TooltipContent>
+            </Tooltip> {renderSortIndicator('verspaetungen_entsch')}
+          </th>
+          <th 
+            onClick={() => onSort('verspaetungen_unentsch')}
+            className={`px-4 py-2 text-center text-xs font-medium text-red-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('verspaetungen_unentsch')}`}
+          >
+            <Tooltip>
+              <TooltipTrigger>U</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">unentschuldigt</p>
+              </TooltipContent>
+            </Tooltip> {renderSortIndicator('verspaetungen_unentsch')}
+          </th>
+          <th 
+            onClick={() => onSort('verspaetungen_offen')}
+            className={`px-4 py-2 text-center text-xs font-medium text-yellow-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('verspaetungen_offen')}`}
+          >
+            <Tooltip>
+              <TooltipTrigger>O</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">offen</p>
+              </TooltipContent>
+            </Tooltip> {renderSortIndicator('verspaetungen_offen')}
+          </th>
+          <th 
+            onClick={() => onSort('fehlzeiten_entsch')}
+            className={`px-4 py-2 text-center text-xs font-medium text-green-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('fehlzeiten_entsch')}`}
+          >
+            <Tooltip>
+              <TooltipTrigger>E</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">entschuldigt</p>
+              </TooltipContent>
+            </Tooltip> {renderSortIndicator('fehlzeiten_entsch')}
+          </th>
+          <th 
+            onClick={() => onSort('fehlzeiten_unentsch')}
+            className={`px-4 py-2 text-center text-xs font-medium text-red-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('fehlzeiten_unentsch')}`}
+          >
+            <Tooltip>
+              <TooltipTrigger>U</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">unentschuldigt</p>
+              </TooltipContent>
+            </Tooltip> {renderSortIndicator('fehlzeiten_unentsch')}
+          </th>
+          <th 
+            onClick={() => onSort('fehlzeiten_offen')}
+            className={`px-4 py-2 text-center text-xs font-medium text-yellow-600 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('fehlzeiten_offen')}`}
+          >
+            <Tooltip>
+              <TooltipTrigger>O</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">offen</p>
+              </TooltipContent>
+            </Tooltip> {renderSortIndicator('fehlzeiten_offen')}
+          </th>
+          <th 
+            onClick={() => onSort('sj_verspaetungen')}
+            className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('sj_verspaetungen')}`}
+          >
+            <Tooltip>
+              <TooltipTrigger>∑SJ V</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">unent. Versp. im gesamten Schuljahr</p>
+              </TooltipContent>
+            </Tooltip> {renderSortIndicator('sj_verspaetungen')}
+          </th>
+          <th 
+            onClick={() => onSort('sj_fehlzeiten')}
+            className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('sj_fehlzeiten')}`}
+          >
+            <Tooltip>
+              <TooltipTrigger>∑SJ F</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">unent. Fehlzeiten im gesamten Schuljahr</p>
+              </TooltipContent>
+            </Tooltip> {renderSortIndicator('sj_fehlzeiten')}
+          </th>
+          <th 
+            onClick={() => onSort('weekly_verspaetungen')}
+            className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('weekly_verspaetungen')}`}
+          >
+            <Tooltip>
+              <TooltipTrigger>Øx() V</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">Vor (): Ø Versp. pro vollständige Woche (je nach Auswahl 1–4 W). In (): ∑Versp. in W4, W3, W2, W1.</p>
+              </TooltipContent>
+            </Tooltip> {renderSortIndicator('weekly_verspaetungen')}
+          </th>
+          <th 
+            onClick={() => onSort('weekly_fehlzeiten')}
+            className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('weekly_fehlzeiten')}`}
+          >
+            <Tooltip>
+              <TooltipTrigger>Øx() F</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">Vor (): Ø Fehlz. pro vollständige Woche (je nach Auswahl 1–4 W). In (): ∑Fehlz. W4, W3, W2, W1.</p>
+              </TooltipContent>
+            </Tooltip> {renderSortIndicator('weekly_fehlzeiten')}
+          </th>
+          <th 
+            onClick={() => onSort('sum_verspaetungen')}
+            className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('sum_verspaetungen')}`}
+          >
+            <Tooltip>
+              <TooltipTrigger>∑x() V</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">Vor (): ∑ Versp. pro vollständige Woche (je nach Auswahl 1–4 W). In (): ∑Versp. in W4, W3, W2, W1.</p>
+              </TooltipContent>
+            </Tooltip> {renderSortIndicator('sum_verspaetungen')}
+          </th>
+          <th 
+            onClick={() => onSort('sum_fehlzeiten')}
+            className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('sum_fehlzeiten')}`}
+          >
+            <Tooltip>
+              <TooltipTrigger>∑x() F</TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p className="text-xs">Vor (): ∑ Fehlz. pro vollständige Woche (je nach Auswahl 1–4 W). In (): ∑Fehlz. in W4, W3, W2, W1.</p>
+              </TooltipContent>
+            </Tooltip> {renderSortIndicator('sum_fehlzeiten')}
+          </th>
+          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-gray-200 bg-white"></th>
+        </tr>
+      </thead>
+    </TooltipProvider>
   );
 };
 
