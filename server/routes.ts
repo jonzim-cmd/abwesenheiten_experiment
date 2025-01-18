@@ -117,8 +117,8 @@ export function registerRoutes(app: Express): Server {
       const { start, end, className } = req.query;
       
       const config: WebUntisConfig = {
-        baseUrl: process.env.WEBUNTIS_API_URL || '',
-        auth: process.env.WEBUNTIS_AUTH_TOKEN || ''
+        baseUrl: process.env.VITE_WEBUNTIS_API_URL || '',
+        auth: process.env.VITE_WEBUNTIS_AUTH_TOKEN || ''
       };
 
       if (!config.baseUrl || !config.auth) {
