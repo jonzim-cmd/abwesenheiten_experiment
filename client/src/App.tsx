@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import AttendanceAnalyzer from "@/pages/attendance";
 import { config } from "./lib/config";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 function Router() {
   return (
@@ -23,7 +22,6 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router />
-      <ThemeToggle />
       <Toaster />
     </QueryClientProvider>
   );
