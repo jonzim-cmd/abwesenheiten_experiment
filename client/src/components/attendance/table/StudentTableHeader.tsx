@@ -88,7 +88,7 @@ const StudentTableHeader = ({ onSort, sortStates }: StudentTableHeaderProps) => 
               </TooltipContent>
             </Tooltip>
           </th>
-          <th colSpan={6} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200 bg-white">
+          <th colSpan={6} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b bg-white">
             <Tooltip>
               <TooltipTrigger>Statistik</TooltipTrigger>
               <TooltipContent className="text-xs">
@@ -96,14 +96,7 @@ const StudentTableHeader = ({ onSort, sortStates }: StudentTableHeaderProps) => 
               </TooltipContent>
             </Tooltip>
           </th>
-          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 bg-white w-16">
-            <Tooltip>
-              <TooltipTrigger>Details</TooltipTrigger>
-              <TooltipContent className="text-xs">
-                <p className="text-xs">unent. Versp. & Fehlz. im ausgewählten Zeitraum</p>
-              </TooltipContent>
-            </Tooltip>
-          </th>
+          {/* Details Spalte wurde hier entfernt */}
         </tr>
         <tr className="bg-white">
           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-r border-gray-200"></th>
@@ -232,7 +225,7 @@ const StudentTableHeader = ({ onSort, sortStates }: StudentTableHeaderProps) => 
           </th>
           <th 
             onClick={() => onSort('weekly_fehlzeiten')}
-            className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('weekly_fehlzeiten')}`}
+            className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b bg-white ${getSortableHeaderClass('weekly_fehlzeiten')}`}
           >
             <Tooltip>
               <TooltipTrigger>Øx() F</TooltipTrigger>
@@ -241,7 +234,6 @@ const StudentTableHeader = ({ onSort, sortStates }: StudentTableHeaderProps) => 
               </TooltipContent>
             </Tooltip> {renderSortIndicator('weekly_fehlzeiten')}
           </th>
-          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-gray-200 bg-white"></th>
         </tr>
       </thead>
     </TooltipProvider>
