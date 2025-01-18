@@ -428,6 +428,17 @@ const AttendanceAnalyzer = () => {
       .sort(([a], [b]) => a.localeCompare(b));
   };
 
+  const exportButtonProps = {
+      data: filteredStudents,
+      startDate,
+      endDate,
+      schoolYearStats,
+      weeklyStats,
+      selectedWeeks,
+      isReportView,
+      detailedData: isReportView ? detailedData : {}
+  };
+  
   return (
     <div className="container mx-auto py-6 px-4">
       <Card className="w-full bg-white">
