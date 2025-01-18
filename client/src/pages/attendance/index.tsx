@@ -10,6 +10,7 @@ import NormalView from '@/components/attendance/NormalView';
 import ReportView from '@/components/attendance/ReportView';
 import { getWeekNumber, getLastNWeeks, getCurrentSchoolYear } from '@/lib/attendance';
 import * as XLSX from 'xlsx';
+import ExportButtons from '@/components/attendance/ExportButtons';
 
 interface AbsenceEntry {
   datum: Date;
@@ -644,7 +645,16 @@ const AttendanceAnalyzer = () => {
                   <Button variant="destructive" onClick={resetAll}>
                     Zurücksetzen
                   </Button>
-                  <ExportButtons {...exportButtonProps} />
+                  <ExportButtons 
+                    data={getFilteredStudents()}
+                    startDate={startDate}
+                    endDate={endDate}
+                    schoolYearStats={schoolYearStats}
+                    weeklyStats={weeklyStats}
+                    selectedWeeks={selectedWeeks}
+                    isReportView={isReportView}
+                    detailedData={isReportView ? detailedData : {}}
+                  />
                 </div>
                 
                 {/* Überschrift und Suchfeld */}
