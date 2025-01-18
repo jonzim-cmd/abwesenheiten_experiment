@@ -51,6 +51,8 @@ const AttendanceAnalyzer = () => {
   const [schoolYearStats, setSchoolYearStats] = useState<any>({});
   const [weeklyStats, setWeeklyStats] = useState<any>({});
   const [weeklyDetailedData, setWeeklyDetailedData] = useState<Record<string, DetailedStats>>({});
+  const [dataSource, setDataSource] = useState<'csv' | 'api'>('csv');
+  const [selectedClass, setSelectedClass] = useState<string>('');
 
   const resetAll = () => {
     setRawData(null);
@@ -71,6 +73,8 @@ const AttendanceAnalyzer = () => {
     setSchoolYearStats({});
     setWeeklyStats({});
     setWeeklyDetailedData({});
+    setDataSource('csv');
+    setSelectedClass('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -227,7 +231,7 @@ const AttendanceAnalyzer = () => {
             fehlzeiten_offen: []
           };
         }
-
+        
         const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
         let effectiveStatus = row.Status ? row.Status.trim() : '';
         const isAttest = effectiveStatus === 'Attest' || effectiveStatus === 'Attest Amtsarzt';
@@ -315,7 +319,6 @@ const AttendanceAnalyzer = () => {
 
       if (file.name.toLowerCase().endsWith('.csv')) {
         const text = await file.text();
-        // Versuche zuerst mit Tabulator
         Papa.parse(text, {
           header: true,
           skipEmptyLines: true,
@@ -324,7 +327,6 @@ const AttendanceAnalyzer = () => {
             if (results.data && Array.isArray(results.data) && results.data.length > 0) {
               const firstRow = results.data[0] as any;
               if (!firstRow.Langname || !firstRow.Vorname || !firstRow.Beginndatum) {
-                // Versuche es mit Komma
                 Papa.parse(text, {
                   header: true,
                   skipEmptyLines: true,
@@ -333,7 +335,6 @@ const AttendanceAnalyzer = () => {
                     if (results.data && Array.isArray(results.data) && results.data.length > 0) {
                       const firstRow = results.data[0] as any;
                       if (!firstRow.Langname || !firstRow.Vorname || !firstRow.Beginndatum) {
-                        // Als letztes mit Semikolon versuchen
                         Papa.parse(text, {
                           header: true,
                           skipEmptyLines: true,
@@ -375,6 +376,41 @@ const AttendanceAnalyzer = () => {
       }
     } catch (err: any) {
       setError('Fehler beim Lesen der Datei: ' + err.message);
+    }
+  };
+
+  const fetchWebUntisData = async () => {
+    try {
+      if (!startDate || !endDate) {
+        setError('Bitte wählen Sie erst den Zeitraum aus.');
+        return;
+      }
+
+      if (!selectedClass) {
+        setError('Bitte wählen Sie eine Klasse aus.');
+        return;
+      }
+
+      setError('');
+      
+      const response = await fetch(
+        `/api/attendance/webuntis?start=${startDate}T00:00:00&end=${endDate}T23:59:59&className=${selectedClass}`
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || 'API request failed');
+      }
+
+      const data = await response.json();
+      if (!data || !Array.isArray(data)) {
+        throw new Error('Ungültiges Datenformat von der API');
+      }
+      
+      setRawData(data);
+      
+    } catch (err: any) {
+      setError('Fehler beim Abrufen der WebUntis-Daten: ' + err.message);
     }
   };
 
@@ -547,21 +583,65 @@ const AttendanceAnalyzer = () => {
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="file">CSV-Datei oder Excel-Datei hochladen</Label>
-              <Input
-                id="file"
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                ref={fileInputRef}
-                onChange={(e) => {
-                  if (e.target.files?.[0]) {
-                    processFile(e.target.files[0]);
-                  }
-                }}
-                className="mt-1"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Datenquelle</Label>
+                <Select
+                  value={dataSource}
+                  onValueChange={(value: 'csv' | 'api') => {
+                    setDataSource(value);
+                    setError('');
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Datenquelle wählen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="csv">CSV Upload</SelectItem>
+                    <SelectItem value="api">WebUntis API</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {dataSource === 'api' && (
+                <div>
+                  <Label>Klasse</Label>
+                  <Input
+                    type="text"
+                    value={selectedClass}
+                    onChange={(e) => setSelectedClass(e.target.value)}
+                    placeholder="z.B. 1AHELE"
+                    className="mt-1"
+                  />
+                </div>
+              )}
             </div>
+
+            {dataSource === 'csv' ? (
+              <div>
+                <Label htmlFor="file">CSV-Datei oder Excel-Datei hochladen</Label>
+                <Input
+                  id="file"
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  ref={fileInputRef}
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      processFile(e.target.files[0]);
+                    }
+                  }}
+                  className="mt-1"
+                />
+              </div>
+            ) : (
+              <div className="mt-4">
+                <Button 
+                  onClick={fetchWebUntisData}
+                  disabled={!startDate || !endDate || !selectedClass}
+                >
+                  Daten von WebUntis abrufen
+                </Button>
+              </div>
+            )}
 
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -571,10 +651,6 @@ const AttendanceAnalyzer = () => {
 
             {results && (
               <>
-                <div className="mb-6">
-                  {/*Removed search bar here */}
-                </div>
-
                 <Card className="mb-6">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg">Filter für den ausgewählten Zeitraum</CardTitle>
