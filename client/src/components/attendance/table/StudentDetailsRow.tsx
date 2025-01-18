@@ -89,7 +89,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     return 'text-yellow-600';
   };
 
-  const renderDetailSection = (entries: AbsenceEntry[], title: string) => {
+  const renderDetailSection = (entries: AbsenceEntry[], title: string, startIndex: number = 0) => {
     if (!entries || entries.length === 0) return null;
 
     return (
@@ -103,7 +103,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
                 key={i}
                 className={`${statusColor} hover:bg-gray-50 p-1 rounded`}
               >
-                <span className="font-medium">{formatDate(entry.datum)}</span>
+                <span className="font-medium">{startIndex + i + 1}. {formatDate(entry.datum)}</span>
                 {entry.art === 'Verspätung' ? (
                   <span className="ml-2">
                     {entry.beginnZeit} - {entry.endZeit} Uhr
@@ -155,7 +155,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
       return (
         <>
           {renderDetailSection(unexcusedLates, 'Unentschuldigte Verspätungen')}
-          {renderDetailSection(unexcusedAbsences, 'Unentschuldigte Fehlzeiten')}
+          {renderDetailSection(unexcusedAbsences, 'Unentschuldigte Fehlzeiten', unexcusedLates.length)}
           {(!unexcusedLates?.length && !unexcusedAbsences?.length) && (
             <div className="text-gray-500 italic">Keine unentschuldigten Einträge für den ausgewählten Zeitraum gefunden</div>
           )}
@@ -174,7 +174,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
                   key={i}
                   className={`${statusColor} hover:bg-gray-50 p-1 rounded`}
                 >
-                  <span className="font-medium">{formatDate(entry.datum)}</span>
+                  <span className="font-medium">{i + 1}. {formatDate(entry.datum)}</span>
                   {entry.art === 'Verspätung' ? (
                     <span className="ml-2">
                       {entry.beginnZeit} - {entry.endZeit} Uhr
