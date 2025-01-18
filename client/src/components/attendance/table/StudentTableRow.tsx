@@ -61,7 +61,7 @@ const StudentTableRow = ({
   );
 
   return (
-    <tr className={rowColor}>
+    <tr className={행Color}>
       <td className="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200 text-center">
         {index + 1}
       </td>
@@ -109,9 +109,6 @@ const StudentTableRow = ({
       </td>
       <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
         {createClickableWeeklyCell(fehlzeitenWeekly, weeklyData.fehlzeiten.weekly, 'weekly_fehlzeiten')}
-      </td>
-      <td className="px-4 py-3 text-sm text-center">
-        {/* Detailbutton entfernt */}
       </td>
     </tr>
   );
