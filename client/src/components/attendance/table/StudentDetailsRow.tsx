@@ -89,7 +89,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     return 'text-yellow-600';
   };
 
-  const renderDetailSection = (entries: AbsenceEntry[], title: string, startIndex: number = 0) => {
+  const renderDetailSection = (entries: AbsenceEntry[], title: string, totalPreviousEntries: number = 0) => {
     if (!entries || entries.length === 0) return null;
 
     return (
@@ -98,12 +98,14 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
         <div className="space-y-1 pl-4">
           {entries.map((entry, i) => {
             const statusColor = getStatusColor(entry.status || '', entry.datum);
+            const reverseIndex = entries.length - i;
+            const displayNumber = totalPreviousEntries + reverseIndex;
             return (
               <div 
                 key={i}
                 className={`${statusColor} hover:bg-gray-50 p-1 rounded`}
               >
-                <span className="font-medium">{startIndex + i + 1}. {formatDate(entry.datum)}</span>
+                <span className="font-medium">{displayNumber}. {formatDate(entry.datum)}</span>
                 {entry.art === 'Verspätung' ? (
                   <span className="ml-2">
                     {entry.beginnZeit} - {entry.endZeit} Uhr
@@ -151,11 +153,12 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     if (filterType === 'details') {
       const unexcusedLates = detailedData.filter(entry => entry.art === 'Verspätung' && isUnexcused(entry));
       const unexcusedAbsences = detailedData.filter(entry => entry.art !== 'Verspätung' && isUnexcused(entry));
+      const totalEntries = unexcusedLates.length + unexcusedAbsences.length;
 
       return (
         <>
-          {renderDetailSection(unexcusedLates, 'Unentschuldigte Verspätungen')}
-          {renderDetailSection(unexcusedAbsences, 'Unentschuldigte Fehlzeiten', unexcusedLates.length)}
+          {renderDetailSection(unexcusedLates, 'Unentschuldigte Verspätungen', unexcusedAbsences.length)}
+          {renderDetailSection(unexcusedAbsences, 'Unentschuldigte Fehlzeiten', 0)}
           {(!unexcusedLates?.length && !unexcusedAbsences?.length) && (
             <div className="text-gray-500 italic">Keine unentschuldigten Einträge für den ausgewählten Zeitraum gefunden</div>
           )}
@@ -169,12 +172,13 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
           <div className="space-y-1">
             {detailedData.map((entry, i) => {
               const statusColor = getStatusColor(entry.status || '', entry.datum);
+              const reverseIndex = detailedData.length - i;
               return (
                 <div 
                   key={i}
                   className={`${statusColor} hover:bg-gray-50 p-1 rounded`}
                 >
-                  <span className="font-medium">{i + 1}. {formatDate(entry.datum)}</span>
+                  <span className="font-medium">{reverseIndex}. {formatDate(entry.datum)}</span>
                   {entry.art === 'Verspätung' ? (
                     <span className="ml-2">
                       {entry.beginnZeit} - {entry.endZeit} Uhr
