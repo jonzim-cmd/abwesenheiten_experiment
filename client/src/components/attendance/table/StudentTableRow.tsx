@@ -65,7 +65,10 @@ const StudentTableRow = ({
       <td className="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200 text-center">
         {index + 1}
       </td>
-      <td className="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200 truncate">
+      <td 
+        className="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200 truncate cursor-pointer hover:underline"
+        onClick={onToggleDetails}
+      >
         {student}
       </td>
       <td className="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200">
@@ -108,16 +111,7 @@ const StudentTableRow = ({
         {createClickableWeeklyCell(fehlzeitenWeekly, weeklyData.fehlzeiten.weekly, 'weekly_fehlzeiten')}
       </td>
       <td className="px-4 py-3 text-sm text-center">
-        {hasRelevantCases && (
-          <Button
-            variant="ghost"
-            size="xs"
-            className="px-2 py-1 text-xs"
-            onClick={onToggleDetails}
-          >
-            Details
-          </Button>
-        )}
+        {/* Detailbutton entfernt */}
       </td>
     </tr>
   );
