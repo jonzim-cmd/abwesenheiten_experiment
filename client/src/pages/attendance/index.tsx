@@ -380,39 +380,47 @@ const AttendanceAnalyzer = () => {
   };
 
   const fetchWebUntisData = async () => {
-    try {
-      if (!startDate || !endDate) {
-        setError('Bitte wählen Sie erst den Zeitraum aus.');
-        return;
-      }
-
-      if (!selectedClass) {
-        setError('Bitte wählen Sie eine Klasse aus.');
-        return;
-      }
-
-      setError('');
-      
-      const response = await fetch(
-        `/api/attendance/webuntis?start=${startDate}T00:00:00&end=${endDate}T23:59:59&className=${selectedClass}`
-      );
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || 'API request failed');
-      }
-
-      const data = await response.json();
-      if (!data || !Array.isArray(data)) {
-        throw new Error('Ungültiges Datenformat von der API');
-      }
-      
-      setRawData(data);
-      
-    } catch (err: any) {
-      setError('Fehler beim Abrufen der WebUntis-Daten: ' + err.message);
+  try {
+    if (!startDate || !endDate) {
+      setError('Bitte wählen Sie erst den Zeitraum aus.');
+      return;
     }
-  };
+
+    if (!selectedClass) {
+      setError('Bitte wählen Sie eine Klasse aus.');
+      return;
+    }
+
+    setError('');
+    setRawData(null); // Reset der alten Daten
+    
+    const response = await fetch(
+      `/api/attendance/webuntis?start=${startDate}T00:00:00&end=${endDate}T23:59:59&className=${selectedClass}`
+    );
+      
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.details || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!data || !Array.isArray(data)) {
+      throw new Error('Ungültiges Datenformat von der API');
+    }
+    
+    if (data.length === 0) {
+      setError('Keine Daten für den ausgewählten Zeitraum gefunden.');
+      return;
+    }
+    
+    setRawData(data);
+      
+  } catch (err: any) {
+    console.error('WebUntis API error:', err);
+    setError('Fehler beim Abrufen der WebUntis-Daten: ' + (err.message || 'Unbekannter Fehler'));
+    setRawData(null);
+  }
+};
 
   React.useEffect(() => {
     if (rawData && startDate && endDate) {
@@ -609,7 +617,7 @@ const AttendanceAnalyzer = () => {
                     type="text"
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
-                    placeholder="z.B. 1AHELE"
+                    placeholder="z.B. 10A"
                     className="mt-1"
                   />
                 </div>
