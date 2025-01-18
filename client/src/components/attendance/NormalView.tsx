@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import StudentTableHeader from './table/StudentTableHeader';
 import StudentTableRow from './table/StudentTableRow';
 import StudentDetailsRow from './table/StudentDetailsRow';
-import { StudentStats, AbsenceEntry, getLastNWeeks, getCurrentSchoolYear } from '@/lib/attendance-utils';
+import { StudentStats, AbsenceEntry, getLastNWeeks } from '@/lib/attendance-utils';
 
 interface DetailedStats {
   verspaetungen_entsch: AbsenceEntry[];
@@ -30,6 +31,8 @@ interface NormalViewProps {
     fehlzeiten: { total: number; weekly: number[] };
   }>;
   selectedWeeks: string;
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
 }
 
 type SortField = 'name' | 'klasse' | 
@@ -56,7 +59,9 @@ const NormalView = ({
   endDate, 
   schoolYearStats, 
   weeklyStats,
-  selectedWeeks 
+  selectedWeeks,
+  searchQuery,
+  onSearchChange
 }: NormalViewProps) => {
   const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
   const [activeFilters, setActiveFilters] = useState<Map<string, string>>(new Map());
@@ -315,9 +320,20 @@ const NormalView = ({
   return (
     <div className="mt-6 space-y-6">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">
-          Ergebnisse für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
-        </h3>
+        <div className="flex items-center gap-4 flex-1">
+          <h3 className="text-lg font-semibold">
+            Ergebnisse für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
+          </h3>
+          <div className="w-72">
+            <Input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Namen eingeben..."
+              className="w-full"
+            />
+          </div>
+        </div>
         <Button
           variant="outline"
           size="sm"
@@ -326,6 +342,7 @@ const NormalView = ({
           {isAllExpanded ? 'Alle Details einklappen' : 'Alle Details ausklappen'}
         </Button>
       </div>
+
       <div className="relative h-[500px]">
         <div className="absolute inset-0 overflow-x-auto overflow-y-auto">
           <table className="min-w-full border-collapse bg-white">
