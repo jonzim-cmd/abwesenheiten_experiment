@@ -175,13 +175,17 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
       );
     }
 
+    const sortedData = [...detailedData].sort((a, b) => 
+      parseDateString(b.datum).getTime() - parseDateString(a.datum).getTime()
+    );
+
     return (
       <div className="space-y-1">
-        {detailedData.length > 0 ? (
+        {sortedData.length > 0 ? (
           <div className="space-y-1">
-            {detailedData.map((entry, i) => {
+            {sortedData.map((entry, i) => {
               const statusColor = getStatusColor(entry.status || '', entry.datum);
-              const reverseIndex = detailedData.length - i;
+              const reverseIndex = sortedData.length - i;
               return (
                 <div 
                   key={i}
