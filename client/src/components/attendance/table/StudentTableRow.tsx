@@ -1,6 +1,12 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { StudentStats } from '@/lib/attendance-utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface StudentTableRowProps {
   student: string;
@@ -65,11 +71,22 @@ const StudentTableRow = ({
       <td className="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200 text-center">
         {index + 1}
       </td>
-      <td 
-        className="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200 truncate cursor-pointer hover:underline"
-        onClick={onToggleDetails}
-      >
-        {student}
+      <td className="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200 truncate">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span 
+                className="cursor-pointer hover:underline"
+                onClick={onToggleDetails}
+              >
+                {student}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Unent. Versp./Fehlz. Zeitr.: {stats.verspaetungen_unentsch}/{stats.fehlzeiten_unentsch}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </td>
       <td className="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200">
         {stats.klasse}
