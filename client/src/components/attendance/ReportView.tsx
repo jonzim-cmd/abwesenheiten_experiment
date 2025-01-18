@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { DetailedStats } from '@/lib/attendance-utils';
 
 interface ReportViewProps {
@@ -6,15 +7,35 @@ interface ReportViewProps {
   detailedData: Record<string, DetailedStats>;
   startDate: string;
   endDate: string;
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
 }
 
-const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: ReportViewProps) => {
+const ReportView = ({ 
+  filteredStudents, 
+  detailedData, 
+  startDate, 
+  endDate,
+  searchQuery,
+  onSearchChange 
+}: ReportViewProps) => {
   return (
     <div className="mt-6 space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">
-          Unentschuldigte Verspätungen und Fehlzeiten für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
-        </h3>
+        <div className="flex items-center gap-4 flex-1">
+          <h3 className="text-lg font-semibold">
+            Unentschuldigte Verspätungen und Fehlzeiten für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
+          </h3>
+          <div className="w-72">
+            <Input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Namen eingeben..."
+              className="w-full"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
