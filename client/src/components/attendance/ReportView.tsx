@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { DetailedStats } from '@/lib/attendance-utils';
-import ExportButtons from './ExportButtons';
 
 interface ReportViewProps {
   filteredStudents: [string, any][];
@@ -16,16 +15,6 @@ const ReportView = ({ filteredStudents, detailedData, startDate, endDate }: Repo
         <h3 className="text-lg font-semibold">
           Unentschuldigte Verspätungen und Fehlzeiten für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
         </h3>
-        <ExportButtons
-          data={filteredStudents}
-          startDate={startDate}
-          endDate={endDate}
-          schoolYearStats={{}}
-          weeklyStats={{}}
-          selectedWeeks="1"
-          isReportView={true}
-          detailedData={detailedData}
-        />
       </div>
 
       <div className="overflow-x-auto">
