@@ -5,6 +5,7 @@ import StudentTableHeader from './table/StudentTableHeader';
 import StudentTableRow from './table/StudentTableRow';
 import StudentDetailsRow from './table/StudentDetailsRow';
 import { StudentStats, AbsenceEntry, getLastNWeeks } from '@/lib/attendance-utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DetailedStats {
   verspaetungen_entsch: AbsenceEntry[];
@@ -320,28 +321,37 @@ const NormalView = ({
   return (
     <div className="mt-6 space-y-6">
       <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-4 flex-1">
-          <h3 className="text-lg font-semibold">
-            Ergebnisse für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
-          </h3>
-          <div className="w-72">
-            <Input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Namen eingeben..."
-              className="w-full"
-            />
+          <div className="flex items-center gap-4 flex-1">
+            <h3 className="text-lg font-semibold">
+              Ergebnisse für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
+            </h3>
+            <div className="w-72">
+              <Input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="Namen eingeben..."
+                className="w-full"
+              />
+            </div>
           </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleAllDetails}
+                >
+                  {isAllExpanded ? 'Alle Details einklappen' : 'Alle Details ausklappen'}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>zeige unent. V./F. Zeitr.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={toggleAllDetails}
-        >
-          {isAllExpanded ? 'Alle Details einklappen' : 'Alle Details ausklappen'}
-        </Button>
-      </div>
 
       <div className="relative h-[500px]">
         <div className="absolute inset-0 overflow-x-auto overflow-y-auto">
