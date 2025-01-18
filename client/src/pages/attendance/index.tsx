@@ -657,23 +657,6 @@ const AttendanceAnalyzer = () => {
                   />
                 </div>
                 
-                {/* Überschrift und Suchfeld */}
-                <div className="flex justify-between items-center mt-6">
-                  <h3 className="text-lg font-semibold">
-                    Ergebnisse für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
-                  </h3>
-                  <div className="w-72">
-                    <Input
-                      id="searchQuery"
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Namen eingeben..."
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-
                 {isReportView ? (
                   <ReportView
                     filteredStudents={getFilteredStudents()}
@@ -692,6 +675,8 @@ const AttendanceAnalyzer = () => {
                     schoolYearStats={schoolYearStats}
                     weeklyStats={weeklyStats}
                     selectedWeeks={selectedWeeks}
+                    searchQuery={searchQuery}
+                    onSearchChange={(value) => setSearchQuery(value)}
                   />
                 )}
               </>
