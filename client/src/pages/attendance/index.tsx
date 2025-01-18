@@ -663,6 +663,8 @@ const AttendanceAnalyzer = () => {
                     detailedData={detailedData}
                     startDate={startDate}
                     endDate={endDate}
+                    searchQuery={searchQuery}
+                    onSearchChange={(value) => setSearchQuery(value)}
                   />
                 ) : (
                   <NormalView
