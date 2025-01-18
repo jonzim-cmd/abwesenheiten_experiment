@@ -117,7 +117,7 @@ export function registerRoutes(app: Express): Server {
       const { start, end, className } = req.query;
       
       const config: WebUntisConfig = {
-        baseUrl: process.env.VITE_WEBUNTIS_EAP_URL || '',  // Geändert zu EAP URL
+        baseUrl: process.env.VITE_WEBUNTIS_EAP_URL || '',
         auth: process.env.VITE_WEBUNTIS_AUTH_TOKEN || ''
       };
 
@@ -125,9 +125,12 @@ export function registerRoutes(app: Express): Server {
         throw new Error('WebUntis API configuration missing');
       }
 
+      console.log('Requesting WebUntis API:', `${config.baseUrl}/WebUntis/api/rest/extern/v1/classreg/students/absencetimes`);
       const response = await axios.get(`${config.baseUrl}/WebUntis/api/rest/extern/v1/classreg/students/absencetimes`, {
         headers: {
           'Authorization': `Basic ${config.auth}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
         },
         params: {
           start,
@@ -138,6 +141,7 @@ export function registerRoutes(app: Express): Server {
       });
 
       if (!response.data || !response.data.students) {
+        console.error('Unexpected API response:', response.data);
         throw new Error('Unexpected API response format');
       }
 
@@ -149,8 +153,8 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ 
         error: 'Failed to fetch attendance data from WebUntis',
         details: error.message,
-        url: error.config?.url,  // Hilft beim Debuggen
-        response: error.response?.data  // Hilft beim Debuggen
+        url: error.config?.url,
+        response: error.response?.data
       });
     }
   });
