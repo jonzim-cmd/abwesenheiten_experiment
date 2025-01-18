@@ -144,6 +144,14 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     return isUnentschuldigt;
   };
 
+  const parseDateString = (datum: string | Date): Date => {
+    if (typeof datum === 'string') {
+      const [day, month, year] = datum.split('.');
+      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    }
+    return datum;
+  };
+
   const renderDetailsContent = () => {
     if (!detailedData) return (
       <div className="text-gray-500 italic">Keine Daten verfügbar</div>
@@ -152,7 +160,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     if (filterType === 'details') {
       const unexcusedLates = detailedData
         .filter(entry => entry.art === 'Verspätung' && isUnexcused(entry))
-        .reverse();
+        .sort((a, b) => parseDateString(b.datum).getTime() - parseDateString(a.datum).getTime());
       const unexcusedAbsences = detailedData
         .filter(entry => entry.art !== 'Verspätung' && isUnexcused(entry));
 
