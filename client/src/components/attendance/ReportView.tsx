@@ -1,16 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DetailedStats } from '@/lib/attendance-utils';
-
 interface ReportViewProps {
   filteredStudents: [string, any][];
-  detailedData: Record<string, DetailedStats>;
+  detailedData: Record<string, any>;
   startDate: string;
   endDate: string;
   searchQuery: string;
   onSearchChange: (value: string) => void;
 }
-
 const ReportView = ({ 
   filteredStudents, 
   detailedData, 
@@ -37,7 +34,6 @@ const ReportView = ({
           </div>
         </div>
       </div>
-
       <div className="overflow-x-auto">
         <table className="w-full table-fixed">
           <thead>
@@ -68,10 +64,8 @@ const ReportView = ({
           <tbody>
             {filteredStudents.map(([student, stats], index) => {
               const studentData = detailedData[student];
-
               const lateEntries = studentData?.verspaetungen_unentsch || [];
               const absenceEntries = studentData?.fehlzeiten_unentsch || [];
-
               const formattedLates = lateEntries.map(entry => 
                 `${new Date(entry.datum).toLocaleDateString('de-DE', {
                   weekday: 'long',
@@ -80,7 +74,6 @@ const ReportView = ({
                   day: '2-digit'
                 })} (${entry.beginnZeit} - ${entry.endZeit} Uhr)`
               );
-
               const formattedAbsences = absenceEntries.map(entry => 
                 `${new Date(entry.datum).toLocaleDateString('de-DE', {
                   weekday: 'long',
@@ -89,7 +82,6 @@ const ReportView = ({
                   day: '2-digit'
                 })} - ${entry.art}${entry.grund ? ` (${entry.grund})` : ''}`
               );
-
               return (
                 <tr 
                   key={student} 
@@ -119,5 +111,4 @@ const ReportView = ({
     </div>
   );
 };
-
 export default ReportView;
