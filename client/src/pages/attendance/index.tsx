@@ -642,26 +642,28 @@ const AttendanceAnalyzer = () => {
                   </CardContent>
                 </Card>
 
-                <div className="flex gap-4 mb-6 items-center">
-                  <Button
-                    variant={isReportView ? "outline" : "default"}
-                    onClick={() => setIsReportView(false)}
-                  >
+                {/* View Toggle und Reset */}
+                <div className="flex gap-4 items-center">
+                  <Button variant={isReportView ? "outline" : "default"}
+                    onClick={() => setIsReportView(false)}>
                     Normale Ansicht
                   </Button>
-                  <Button
-                    variant={isReportView ? "default" : "outline"}
-                    onClick={() => setIsReportView(true)}
-                  >
+                  <Button variant={isReportView ? "default" : "outline"}
+                    onClick={() => setIsReportView(true)}>
                     Berichtsansicht
                   </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={resetAll}
-                  >
+                  <Button variant="destructive" onClick={resetAll}>
                     Zurücksetzen
                   </Button>
-                  <div className="flex-grow">
+                  <ExportButtons {...exportButtonProps} />
+                </div>
+                
+                {/* Überschrift und Suchfeld */}
+                <div className="flex justify-between items-center mt-6">
+                  <h3 className="text-lg font-semibold">
+                    Ergebnisse für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
+                  </h3>
+                  <div className="w-72">
                     <Input
                       id="searchQuery"
                       type="text"
