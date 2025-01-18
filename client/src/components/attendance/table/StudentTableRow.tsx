@@ -83,7 +83,7 @@ const StudentTableRow = ({
               </span>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Unent. Versp./Fehlz. Zeitr.: {stats.verspaetungen_unentsch}/{stats.fehlzeiten_unentsch}</p>
+              <p>zeige unent. V./F. Zeitr.: {stats.verspaetungen_unentsch}/{stats.fehlzeiten_unentsch}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
