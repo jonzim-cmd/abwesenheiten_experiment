@@ -534,6 +534,15 @@ const AttendanceAnalyzer = () => {
                         end.setDate(start.getDate() + 6);
                         break;
                       }
+                      case 'lastTwoWeeks': {
+                        const currentDay = now.getDay();
+                        const diff = currentDay === 0 ? 6 : currentDay - 1;
+                        start = new Date(now);
+                        start.setDate(now.getDate() - diff - 14);  // 2 Wochen + Tage bis Montag zurück
+                        end = new Date(start);
+                        end.setDate(start.getDate() + 13);         // 14 Tage (2 volle Wochen) vorwärts
+                        break;
+                      }
                       case 'thisMonth': {
                         start = new Date(currentYear, currentMonth, 1);
                         end = new Date(currentYear, currentMonth + 1, 0);
@@ -567,6 +576,7 @@ const AttendanceAnalyzer = () => {
                     <SelectItem value="custom">Benutzerdefiniert</SelectItem>
                     <SelectItem value="thisWeek">Diese Woche</SelectItem>
                     <SelectItem value="lastWeek">Letzte Woche</SelectItem>
+                    <SelectItem value="lastTwoWeeks">Letzte zwei Wochen</SelectItem>
                     <SelectItem value="thisMonth">Dieser Monat</SelectItem>
                     <SelectItem value="lastMonth">Letzter Monat</SelectItem>
                     <SelectItem value="schoolYear">Gesamtes Schuljahr</SelectItem>
