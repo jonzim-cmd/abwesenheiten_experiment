@@ -73,7 +73,7 @@ const AttendanceAnalyzer = () => {
     setAvailableStudents([]);
     setAvailableClasses([]);
     setSelectedClasses([]);
-    setSelectedWeeks('1');
+    setSelectedWeeks('4');
     setSchoolYearStats({});
     setWeeklyStats({});
     setWeeklyDetailedData({});
@@ -414,6 +414,19 @@ const AttendanceAnalyzer = () => {
   }, [startDate, endDate, rawData, processData]);
 
   React.useEffect(() => {
+    if (!startDate && !endDate) {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      const start = new Date(currentYear, currentMonth, 1);
+      const end = new Date(currentYear, currentMonth + 1, 0);
+      
+      setStartDate(start.toLocaleDateString('sv').split('T')[0]);
+      setEndDate(end.toLocaleDateString('sv').split('T')[0]);
+    }
+  }, []);
+  
+  React.useEffect(() => {
     if (rawData) {
       calculateSchoolYearStats(rawData);
       calculateWeeklyStats(rawData);
@@ -548,7 +561,7 @@ const AttendanceAnalyzer = () => {
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Zeitraum auswählen" />
+                    <SelectValue placeholder="Dieser Monat" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="custom">Benutzerdefiniert</SelectItem>
