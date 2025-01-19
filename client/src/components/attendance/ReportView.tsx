@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import ClassFilter from './ClassFilter';
+import { ClassFilter } from './ClassFilter';
 interface ReportViewProps {
   filteredStudents: [string, any][];
   detailedData: Record<string, any>;
