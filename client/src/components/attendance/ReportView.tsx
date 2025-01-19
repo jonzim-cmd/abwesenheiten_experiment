@@ -99,6 +99,7 @@ const ReportView = ({
 
   const getSortedStudents = () => {
     return [...filteredStudents].sort((a, b) => {
+      // Erst nach den benutzerdefinierten Sortierungen sortieren
       const sortEntries = Array.from(sortStates.values())
         .sort((x, y) => x.order - y.order);
 
@@ -109,7 +110,17 @@ const ReportView = ({
         }
       }
       
-      return 0;
+      // Wenn keine benutzerdefinierte Sortierung aktiv ist oder alle Vergleiche gleich sind,
+      // dann nach Klasse und dann nach Name sortieren
+      const [, statsA] = a;
+      const [studentA] = a;
+      const [, statsB] = b;
+      const [studentB] = b;
+      
+      const classComparison = statsA.klasse.localeCompare(statsB.klasse);
+      if (classComparison !== 0) return classComparison;
+      
+      return studentA.localeCompare(studentB);
     });
   };
 
