@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Check } from "lucide-react";
 
 interface ClassFilterProps {
   availableClasses: string[];
@@ -14,8 +15,8 @@ interface ClassFilterProps {
 }
 
 export function ClassFilter({ availableClasses, selectedClasses, onChange }: ClassFilterProps) {
-  // Remove isOpen state as Select handles this internally
-  
+  const [open, setOpen] = useState(false);
+
   const formatSelectedClasses = () => {
     if (selectedClasses.length === 0) return "all";
     return selectedClasses.join(", ");
@@ -34,6 +35,8 @@ export function ClassFilter({ availableClasses, selectedClasses, onChange }: Cla
     <div className="w-48">
       <Select 
         value={formatSelectedClasses()}
+        open={open}
+        onOpenChange={setOpen}
       >
         <SelectTrigger className="w-full">
           <SelectValue>
@@ -41,32 +44,32 @@ export function ClassFilter({ availableClasses, selectedClasses, onChange }: Cla
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={selectedClasses.length === 0}
-                onChange={() => onChange([])}
-                onClick={(e) => e.stopPropagation()}
-                className="mr-2"
-              />
+          <SelectItem 
+            value="all"
+            className="relative flex items-center"
+          >
+            <div className="flex items-center gap-2 flex-1">
               Alle Klassen
+              {selectedClasses.length === 0 && (
+                <Check className="h-4 w-4 ml-auto" />
+              )}
             </div>
           </SelectItem>
           {availableClasses.map((className) => (
             <SelectItem 
               key={className} 
               value={className}
+              className="relative flex items-center"
+              onSelect={(e) => {
+                e.preventDefault();
+                toggleClass(className);
+              }}
             >
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={selectedClasses.includes(className)}
-                  onChange={() => toggleClass(className)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="mr-2"
-                />
+              <div className="flex items-center gap-2 flex-1">
                 {className}
+                {selectedClasses.includes(className) && (
+                  <Check className="h-4 w-4 ml-auto" />
+                )}
               </div>
             </SelectItem>
           ))}
