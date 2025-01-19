@@ -34,6 +34,9 @@ interface NormalViewProps {
   selectedWeeks: string;
   searchQuery: string;
   onSearchChange: (value: string) => void;
+  availableClasses: string[];
+  selectedClasses: string[];
+  onClassesChange: (classes: string[]) => void;
 }
 
 type SortField = 'name' | 'klasse' | 
@@ -62,7 +65,10 @@ const NormalView = ({
   weeklyStats,
   selectedWeeks,
   searchQuery,
-  onSearchChange
+  onSearchChange,
+  availableClasses,
+  selectedClasses,
+  onClassesChange
 }: NormalViewProps) => {
   const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
   const [activeFilters, setActiveFilters] = useState<Map<string, string>>(new Map());
@@ -334,6 +340,11 @@ const NormalView = ({
                 className="w-full"
               />
             </div>
+            <ClassFilter
+              availableClasses={availableClasses}
+              selectedClasses={selectedClasses}
+              onChange={onClassesChange}
+            />
           </div>
           <TooltipProvider>
             <Tooltip>
