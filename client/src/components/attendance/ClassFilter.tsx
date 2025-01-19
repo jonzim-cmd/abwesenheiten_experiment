@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,16 +17,27 @@ interface ClassFilterProps {
 export function ClassFilter({ availableClasses, selectedClasses, onChange }: ClassFilterProps) {
   const [open, setOpen] = useState(false);
 
+  // Debug-Logging
+  useEffect(() => {
+    console.log('ClassFilter - Available Classes:', availableClasses);
+    console.log('ClassFilter - Selected Classes:', selectedClasses);
+  }, [availableClasses, selectedClasses]);
+
   const getDisplayText = () => {
     if (selectedClasses.length === 0) return "Alle Klassen";
     return selectedClasses.join(", ");
   };
 
   const toggleClass = (className: string) => {
+    console.log('Toggling class:', className);
+    console.log('Current selected classes:', selectedClasses);
+    
     const isCurrentlySelected = selectedClasses.includes(className);
     const newSelection = isCurrentlySelected
       ? selectedClasses.filter(c => c !== className)
       : [...selectedClasses, className];
+    
+    console.log('New selection will be:', newSelection);
     onChange(newSelection);
   };
 
@@ -34,6 +45,7 @@ export function ClassFilter({ availableClasses, selectedClasses, onChange }: Cla
     e.preventDefault();
     e.stopPropagation();
     if (className === undefined) {
+      console.log('Clearing all selections');
       onChange([]);
     } else {
       toggleClass(className);
