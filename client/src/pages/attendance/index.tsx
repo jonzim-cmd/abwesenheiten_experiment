@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import NormalView from '@/components/attendance/NormalView';
 import ReportView from '@/components/attendance/ReportView';
-import ClassFilter from './ClassFilter';
+import { ClassFilter } from './ClassFilter';
 import { getWeekNumber, getLastNWeeks, getCurrentSchoolYear } from '@/lib/attendance';
 import * as XLSX from 'xlsx';
 import ExportButtons from '@/components/attendance/ExportButtons';
