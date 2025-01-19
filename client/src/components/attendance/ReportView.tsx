@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import ClassFilter from './ClassFilter';
 interface ReportViewProps {
   filteredStudents: [string, any][];
   detailedData: Record<string, any>;
@@ -7,6 +8,9 @@ interface ReportViewProps {
   endDate: string;
   searchQuery: string;
   onSearchChange: (value: string) => void;
+  availableClasses: string[];
+  selectedClasses: string[];
+  onClassesChange: (classes: string[]) => void;
 }
 const ReportView = ({ 
   filteredStudents, 
@@ -14,7 +18,10 @@ const ReportView = ({
   startDate, 
   endDate,
   searchQuery,
-  onSearchChange 
+  onSearchChange,
+  availableClasses,
+  selectedClasses,
+  onClassesChange
 }: ReportViewProps) => {
   return (
     <div className="mt-6 space-y-4">
@@ -32,6 +39,11 @@ const ReportView = ({
               className="w-full"
             />
           </div>
+          <ClassFilter
+            availableClasses={availableClasses}
+            selectedClasses={selectedClasses}
+            onChange={onClassesChange}
+          />
         </div>
       </div>
       <div className="overflow-x-auto">
