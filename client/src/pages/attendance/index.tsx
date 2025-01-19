@@ -430,42 +430,35 @@ const AttendanceAnalyzer = () => {
   const getFilteredStudents = () => {
   if (!results) return [];
 
-  console.log('Filtering with selected classes:', selectedClasses);
-  
-  const filtered = Object.entries(results)
+  return Object.entries(results)
     .filter(([student, stats]: [string, any]) => {
       const matchesSearch = student.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      // Debug für jeden Studenten
-      console.log('-------------------');
-      console.log('Student:', student);
-      console.log('Student class:', stats.klasse);
-      console.log('Selected classes:', selectedClasses);
-      console.log('Includes class?', selectedClasses.includes(stats.klasse));
-      console.log('Empty selection?', selectedClasses.length === 0);
-      
       const matchesClass = selectedClasses.length === 0 || selectedClasses.includes(stats.klasse);
       
-      console.log('Matches class?', matchesClass);
-      
-      const hasUnexcusedLate = filterUnexcusedLate ? stats.verspaetungen_unentsch > 0 : true;
-      const hasUnexcusedAbsent = filterUnexcusedAbsent ? stats.fehlzeiten_unentsch > 0 : true;
-      const meetsMinUnexcusedLates = minUnexcusedLates === '' || stats.verspaetungen_unentsch >= parseInt(minUnexcusedLates);
-      const meetsMinUnexcusedAbsences = minUnexcusedAbsences === '' || stats.fehlzeiten_unentsch >= parseInt(minUnexcusedAbsences);
+      // Separate Bedingungen für unentschuldigte Verspätungen und Fehlzeiten
+      let meetsUnexcusedCriteria = true;
+      if (filterUnexcusedLate || filterUnexcusedAbsent) {
+        meetsUnexcusedCriteria = false;
+        if (filterUnexcusedLate && stats.verspaetungen_unentsch > 0) {
+          meetsUnexcusedCriteria = true;
+        }
+        if (filterUnexcusedAbsent && stats.fehlzeiten_unentsch > 0) {
+          meetsUnexcusedCriteria = true;
+        }
+      }
 
-      const shouldInclude = matchesSearch && matchesClass && 
-        ((filterUnexcusedLate || filterUnexcusedAbsent) ? 
-          (hasUnexcusedLate || hasUnexcusedAbsent) : true) &&
-        meetsMinUnexcusedLates && meetsMinUnexcusedAbsences;
+      const meetsMinUnexcusedLates = minUnexcusedLates === '' || 
+        stats.verspaetungen_unentsch >= parseInt(minUnexcusedLates);
+      const meetsMinUnexcusedAbsences = minUnexcusedAbsences === '' || 
+        stats.fehlzeiten_unentsch >= parseInt(minUnexcusedAbsences);
 
-      console.log('Will include student?', shouldInclude);
-      
-      return shouldInclude;
+      return matchesSearch && 
+             matchesClass && 
+             meetsUnexcusedCriteria && 
+             meetsMinUnexcusedLates && 
+             meetsMinUnexcusedAbsences;
     })
     .sort(([a], [b]) => a.localeCompare(b));
-
-  console.log('Filtered result count:', filtered.length);
-  return filtered;
 };
  
   return (
