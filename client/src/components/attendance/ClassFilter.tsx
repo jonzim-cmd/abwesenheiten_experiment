@@ -22,14 +22,21 @@ export function ClassFilter({ availableClasses, selectedClasses, onChange }: Cla
     return selectedClasses.join(", ");
   };
 
-  const toggleClass = (e: React.MouseEvent, className: string) => {
+  const toggleClass = (className: string) => {
+    const isCurrentlySelected = selectedClasses.includes(className);
+    const newSelection = isCurrentlySelected
+      ? selectedClasses.filter(c => c !== className)
+      : [...selectedClasses, className];
+    onChange(newSelection);
+  };
+
+  const handleClick = (e: React.MouseEvent, className?: string) => {
     e.preventDefault();
     e.stopPropagation();
-    const isCurrentlySelected = selectedClasses.includes(className);
-    if (isCurrentlySelected) {
-      onChange(selectedClasses.filter(c => c !== className));
+    if (className === undefined) {
+      onChange([]);
     } else {
-      onChange([...selectedClasses, className]);
+      toggleClass(className);
     }
   };
 
@@ -41,13 +48,14 @@ export function ClassFilter({ availableClasses, selectedClasses, onChange }: Cla
           <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-48" align="start">
+      <DropdownMenuContent 
+        className="w-48" 
+        align="start"
+        onClick={e => e.stopPropagation()}
+      >
         <DropdownMenuItem
-          className="flex items-center justify-between"
-          onSelect={(e) => {
-            e.preventDefault();
-            onChange([]);
-          }}
+          className="flex items-center justify-between cursor-pointer"
+          onClick={e => handleClick(e)}
         >
           <span>Alle Klassen</span>
           {selectedClasses.length === 0 && <Check className="h-4 w-4" />}
@@ -56,11 +64,8 @@ export function ClassFilter({ availableClasses, selectedClasses, onChange }: Cla
         {availableClasses.map((className) => (
           <DropdownMenuItem
             key={className}
-            className="flex items-center justify-between"
-            onSelect={(e) => {
-              e.preventDefault();
-              toggleClass(e, className);
-            }}
+            className="flex items-center justify-between cursor-pointer"
+            onClick={e => handleClick(e, className)}
           >
             <span>{className}</span>
             {selectedClasses.includes(className) && <Check className="h-4 w-4" />}
