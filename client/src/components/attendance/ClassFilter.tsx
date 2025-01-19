@@ -14,17 +14,30 @@ interface ClassFilterProps {
 }
 
 export function ClassFilter({ availableClasses, selectedClasses, onChange }: ClassFilterProps) {
+  // Helfer-Funktion zum Formatieren der ausgewählten Klassen
+  const formatSelectedClasses = () => {
+    if (selectedClasses.length === 0) return "all";
+    if (selectedClasses.length === 1) return selectedClasses[0];
+    return `${selectedClasses.length} Klassen`;
+  };
+
+  // Helfer-Funktion zum Aktualisieren der Auswahl
+  const handleSelection = (className: string) => {
+    if (className === "all") {
+      onChange([]);
+    } else {
+      const newSelection = selectedClasses.includes(className)
+        ? selectedClasses.filter(c => c !== className)
+        : [...selectedClasses, className];
+      onChange(newSelection);
+    }
+  };
+
   return (
     <div className="w-48">
       <Select
-        value={selectedClasses.length === 0 ? "all" : selectedClasses.join(",")}
-        onValueChange={(value) => {
-          if (value === "all") {
-            onChange([]);
-          } else {
-            onChange(value.split(","));
-          }
-        }}
+        value={formatSelectedClasses()}
+        onValueChange={handleSelection}
       >
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Klasse(n) auswählen" />
@@ -33,7 +46,16 @@ export function ClassFilter({ availableClasses, selectedClasses, onChange }: Cla
           <SelectItem value="all">Alle Klassen</SelectItem>
           {availableClasses.map((className) => (
             <SelectItem key={className} value={className}>
-              {className}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedClasses.includes(className)}
+                  onChange={() => handleSelection(className)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="mr-2"
+                />
+                {className}
+              </div>
             </SelectItem>
           ))}
         </SelectContent>
