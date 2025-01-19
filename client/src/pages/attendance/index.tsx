@@ -51,7 +51,7 @@ const AttendanceAnalyzer = () => {
   const [availableStudents, setAvailableStudents] = useState<string[]>([]);
   const [availableClasses, setAvailableClasses] = useState<string[]>([]);
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
-  const [selectedWeeks, setSelectedWeeks] = useState('1');
+  const [selectedWeeks, setSelectedWeeks] = useState('4');
   const [schoolYearStats, setSchoolYearStats] = useState<any>({});
   const [weeklyStats, setWeeklyStats] = useState<any>({});
   const [weeklyDetailedData, setWeeklyDetailedData] = useState<Record<string, DetailedStats>>({});
@@ -73,7 +73,7 @@ const AttendanceAnalyzer = () => {
     setAvailableStudents([]);
     setAvailableClasses([]);
     setSelectedClasses([]);
-    setSelectedWeeks('1');
+    setSelectedWeeks('4');
     setSchoolYearStats({});
     setWeeklyStats({});
     setWeeklyDetailedData({});
@@ -414,6 +414,19 @@ const AttendanceAnalyzer = () => {
   }, [startDate, endDate, rawData, processData]);
 
   React.useEffect(() => {
+    if (!startDate && !endDate) {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      const start = new Date(currentYear, currentMonth, 1);
+      const end = new Date(currentYear, currentMonth + 1, 0);
+      
+      setStartDate(start.toLocaleDateString('sv').split('T')[0]);
+      setEndDate(end.toLocaleDateString('sv').split('T')[0]);
+    }
+  }, []);
+  
+  React.useEffect(() => {
     if (rawData) {
       calculateSchoolYearStats(rawData);
       calculateWeeklyStats(rawData);
@@ -521,6 +534,15 @@ const AttendanceAnalyzer = () => {
                         end.setDate(start.getDate() + 6);
                         break;
                       }
+                      case 'lastTwoWeeks': {
+                        const currentDay = now.getDay();
+                        const diff = currentDay === 0 ? 6 : currentDay - 1;
+                        start = new Date(now);
+                        start.setDate(now.getDate() - diff - 14);  // 2 Wochen + Tage bis Montag zurück
+                        end = new Date(start);
+                        end.setDate(start.getDate() + 13);         // 14 Tage (2 volle Wochen) vorwärts
+                        break;
+                      }
                       case 'thisMonth': {
                         start = new Date(currentYear, currentMonth, 1);
                         end = new Date(currentYear, currentMonth + 1, 0);
@@ -548,12 +570,13 @@ const AttendanceAnalyzer = () => {
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Zeitraum auswählen" />
+                    <SelectValue placeholder="Dieser Monat" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="custom">Benutzerdefiniert</SelectItem>
                     <SelectItem value="thisWeek">Diese Woche</SelectItem>
                     <SelectItem value="lastWeek">Letzte Woche</SelectItem>
+                    <SelectItem value="lastTwoWeeks">Letzte zwei Wochen</SelectItem>
                     <SelectItem value="thisMonth">Dieser Monat</SelectItem>
                     <SelectItem value="lastMonth">Letzter Monat</SelectItem>
                     <SelectItem value="schoolYear">Gesamtes Schuljahr</SelectItem>
