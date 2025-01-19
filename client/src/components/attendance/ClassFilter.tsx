@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,12 +15,16 @@ interface ClassFilterProps {
 }
 
 export function ClassFilter({ availableClasses, selectedClasses, onChange }: ClassFilterProps) {
+  const [open, setOpen] = useState(false);
+
   const getDisplayText = () => {
     if (selectedClasses.length === 0) return "Alle Klassen";
     return selectedClasses.join(", ");
   };
 
-  const toggleClass = (className: string) => {
+  const toggleClass = (e: React.MouseEvent, className: string) => {
+    e.preventDefault();
+    e.stopPropagation();
     const isCurrentlySelected = selectedClasses.includes(className);
     if (isCurrentlySelected) {
       onChange(selectedClasses.filter(c => c !== className));
@@ -30,7 +34,7 @@ export function ClassFilter({ availableClasses, selectedClasses, onChange }: Cla
   };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="w-48 justify-between">
           <span className="truncate">{getDisplayText()}</span>
@@ -40,7 +44,10 @@ export function ClassFilter({ availableClasses, selectedClasses, onChange }: Cla
       <DropdownMenuContent className="w-48" align="start">
         <DropdownMenuItem
           className="flex items-center justify-between"
-          onClick={() => onChange([])}
+          onSelect={(e) => {
+            e.preventDefault();
+            onChange([]);
+          }}
         >
           <span>Alle Klassen</span>
           {selectedClasses.length === 0 && <Check className="h-4 w-4" />}
@@ -50,7 +57,10 @@ export function ClassFilter({ availableClasses, selectedClasses, onChange }: Cla
           <DropdownMenuItem
             key={className}
             className="flex items-center justify-between"
-            onClick={() => toggleClass(className)}
+            onSelect={(e) => {
+              e.preventDefault();
+              toggleClass(e, className);
+            }}
           >
             <span>{className}</span>
             {selectedClasses.includes(className) && <Check className="h-4 w-4" />}
