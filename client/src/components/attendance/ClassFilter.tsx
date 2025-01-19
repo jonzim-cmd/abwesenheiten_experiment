@@ -14,10 +14,10 @@ interface ClassFilterProps {
 }
 
 export function ClassFilter({ availableClasses, selectedClasses, onChange }: ClassFilterProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
+  // Remove isOpen state as Select handles this internally
+  
   const formatSelectedClasses = () => {
-    if (selectedClasses.length === 0) return "Alle Klassen";
+    if (selectedClasses.length === 0) return "all";
     return selectedClasses.join(", ");
   };
 
@@ -30,28 +30,18 @@ export function ClassFilter({ availableClasses, selectedClasses, onChange }: Cla
     }
   };
 
-  const handleTriggerClick = () => {
-    setIsOpen(true);
-  };
-
   return (
     <div className="w-48">
       <Select 
         value={formatSelectedClasses()}
-        open={isOpen}
-        onOpenChange={setIsOpen}
       >
-        <SelectTrigger className="w-full" onClick={handleTriggerClick}>
-          <SelectValue placeholder="Klasse(n) auswählen" />
+        <SelectTrigger className="w-full">
+          <SelectValue>
+            {selectedClasses.length === 0 ? "Alle Klassen" : selectedClasses.join(", ")}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          <SelectItem 
-            value="all" 
-            onSelect={(e) => {
-              e.preventDefault();
-              onChange([]);
-            }}
-          >
+          <SelectItem value="all">
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -67,10 +57,6 @@ export function ClassFilter({ availableClasses, selectedClasses, onChange }: Cla
             <SelectItem 
               key={className} 
               value={className}
-              onSelect={(e) => {
-                e.preventDefault();
-                toggleClass(className);
-              }}
             >
               <div className="flex items-center gap-2">
                 <input
