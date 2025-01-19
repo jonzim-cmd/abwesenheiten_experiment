@@ -321,7 +321,11 @@ const NormalView = ({
         }
       }
       
-      return 0;
+      const [studentA, statsA] = a;
+      const [studentB, statsB] = b;
+      const classComparison = statsA.klasse.localeCompare(statsB.klasse);
+      if (classComparison !== 0) return classComparison;
+      return studentA.localeCompare(studentB);
     });
   };
 
