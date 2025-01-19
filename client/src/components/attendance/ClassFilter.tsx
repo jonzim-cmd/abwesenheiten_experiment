@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Check } from "lucide-react";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Check, ChevronDown } from "lucide-react";
 
 interface ClassFilterProps {
   availableClasses: string[];
@@ -15,10 +15,8 @@ interface ClassFilterProps {
 }
 
 export function ClassFilter({ availableClasses, selectedClasses, onChange }: ClassFilterProps) {
-  const [open, setOpen] = useState(false);
-
-  const formatSelectedClasses = () => {
-    if (selectedClasses.length === 0) return "all";
+  const getDisplayText = () => {
+    if (selectedClasses.length === 0) return "Alle Klassen";
     return selectedClasses.join(", ");
   };
 
@@ -32,49 +30,33 @@ export function ClassFilter({ availableClasses, selectedClasses, onChange }: Cla
   };
 
   return (
-    <div className="w-48">
-      <Select 
-        value={formatSelectedClasses()}
-        open={open}
-        onOpenChange={setOpen}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue>
-            {selectedClasses.length === 0 ? "Alle Klassen" : selectedClasses.join(", ")}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem 
-            value="all"
-            className="relative flex items-center"
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" className="w-48 justify-between">
+          <span className="truncate">{getDisplayText()}</span>
+          <ChevronDown className="h-4 w-4 opacity-50" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-48" align="start">
+        <DropdownMenuItem
+          className="flex items-center justify-between"
+          onClick={() => onChange([])}
+        >
+          <span>Alle Klassen</span>
+          {selectedClasses.length === 0 && <Check className="h-4 w-4" />}
+        </DropdownMenuItem>
+        
+        {availableClasses.map((className) => (
+          <DropdownMenuItem
+            key={className}
+            className="flex items-center justify-between"
+            onClick={() => toggleClass(className)}
           >
-            <div className="flex items-center gap-2 flex-1">
-              Alle Klassen
-              {selectedClasses.length === 0 && (
-                <Check className="h-4 w-4 ml-auto" />
-              )}
-            </div>
-          </SelectItem>
-          {availableClasses.map((className) => (
-            <SelectItem 
-              key={className} 
-              value={className}
-              className="relative flex items-center"
-              onSelect={(e) => {
-                e.preventDefault();
-                toggleClass(className);
-              }}
-            >
-              <div className="flex items-center gap-2 flex-1">
-                {className}
-                {selectedClasses.includes(className) && (
-                  <Check className="h-4 w-4 ml-auto" />
-                )}
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+            <span>{className}</span>
+            {selectedClasses.includes(className) && <Check className="h-4 w-4" />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
