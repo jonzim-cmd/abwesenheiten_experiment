@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import NormalView from '@/components/attendance/NormalView';
 import ReportView from '@/components/attendance/ReportView';
+import ClassFilter from './ClassFilter';
 import { getWeekNumber, getLastNWeeks, getCurrentSchoolYear } from '@/lib/attendance';
 import * as XLSX from 'xlsx';
 import ExportButtons from '@/components/attendance/ExportButtons';
@@ -48,6 +49,8 @@ const AttendanceAnalyzer = () => {
   const [minUnexcusedAbsences, setMinUnexcusedAbsences] = useState('');
   const [isReportView, setIsReportView] = useState(false);
   const [availableStudents, setAvailableStudents] = useState<string[]>([]);
+  const [availableClasses, setAvailableClasses] = useState<string[]>([]);
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [selectedWeeks, setSelectedWeeks] = useState('1');
   const [schoolYearStats, setSchoolYearStats] = useState<any>({});
   const [weeklyStats, setWeeklyStats] = useState<any>({});
@@ -68,6 +71,8 @@ const AttendanceAnalyzer = () => {
     setMinUnexcusedAbsences('');
     setIsReportView(false);
     setAvailableStudents([]);
+    setAvailableClasses([]);
+    setSelectedClasses([]);
     setSelectedWeeks('1');
     setSchoolYearStats({});
     setWeeklyStats({});
@@ -301,6 +306,16 @@ const AttendanceAnalyzer = () => {
       setSchoolYearDetailedData(schoolYearDetails);
       setWeeklyDetailedData(weeklyDetails);
       setAvailableStudents(Object.keys(studentStats).sort());
+
+      // Extrahiere alle einzigartigen Klassennamen
+      const classes = new Set<string>();
+      data.forEach(row => {
+        if (row.Klasse) {
+          classes.add(row.Klasse);
+        }
+      });
+      setAvailableClasses(Array.from(classes).sort());
+      
       setError('');
     } catch (err: any) {
       setError('Fehler bei der Datenverarbeitung: ' + err.message);
@@ -411,6 +426,7 @@ const AttendanceAnalyzer = () => {
     return Object.entries(results)
       .filter(([student, stats]: [string, any]) => {
         const matchesSearch = student.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesClass = selectedClasses.length === 0 || selectedClasses.includes(stats.klasse);
         const hasUnexcusedLate = filterUnexcusedLate ? stats.verspaetungen_unentsch > 0 : true;
         const hasUnexcusedAbsent = filterUnexcusedAbsent ? stats.fehlzeiten_unentsch > 0 : true;
         const meetsMinUnexcusedLates = minUnexcusedLates === '' || stats.verspaetungen_unentsch >= parseInt(minUnexcusedLates);
@@ -665,6 +681,9 @@ const AttendanceAnalyzer = () => {
                     endDate={endDate}
                     searchQuery={searchQuery}
                     onSearchChange={(value) => setSearchQuery(value)}
+                    availableClasses={availableClasses}
+                    selectedClasses={selectedClasses}
+                    onClassesChange={setSelectedClasses}
                   />
                 ) : (
                   <NormalView
@@ -679,6 +698,9 @@ const AttendanceAnalyzer = () => {
                     selectedWeeks={selectedWeeks}
                     searchQuery={searchQuery}
                     onSearchChange={(value) => setSearchQuery(value)}
+                    availableClasses={availableClasses}
+                    selectedClasses={selectedClasses}
+                    onClassesChange={setSelectedClasses}
                   />
                 )}
               </>
