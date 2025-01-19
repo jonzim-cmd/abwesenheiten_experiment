@@ -51,7 +51,7 @@ const AttendanceAnalyzer = () => {
   const [availableStudents, setAvailableStudents] = useState<string[]>([]);
   const [availableClasses, setAvailableClasses] = useState<string[]>([]);
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
-  const [selectedWeeks, setSelectedWeeks] = useState('1');
+  const [selectedWeeks, setSelectedWeeks] = useState('4');
   const [schoolYearStats, setSchoolYearStats] = useState<any>({});
   const [weeklyStats, setWeeklyStats] = useState<any>({});
   const [weeklyDetailedData, setWeeklyDetailedData] = useState<Record<string, DetailedStats>>({});
