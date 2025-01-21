@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import StudentTableHeader from './table/StudentTableHeader';
@@ -38,10 +38,6 @@ interface NormalViewProps {
   availableClasses: string[];
   selectedClasses: string[];
   onClassesChange: (classes: string[]) => void;
-  expandedStudents: Set<string>;
-  activeFilters: Map<string, string>;
-  onToggleDetails: (student: string) => void;
-  onShowFilteredDetails: (student: string, type: string) => void;
 }
 
 type SortField = 'name' | 'klasse' | 
@@ -73,14 +69,12 @@ const NormalView = ({
   onSearchChange,
   availableClasses,
   selectedClasses,
-  onClassesChange,
-  expandedStudents,
-  activeFilters,
-  onToggleDetails,
-  onShowFilteredDetails
+  onClassesChange
 }: NormalViewProps) => {
-  const [isAllExpanded, setIsAllExpanded] = React.useState(false);
-  const [sortStates, setSortStates] = React.useState<Map<SortField, SortState>>(new Map());
+  const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
+  const [activeFilters, setActiveFilters] = useState<Map<string, string>>(new Map());
+  const [isAllExpanded, setIsAllExpanded] = useState(false);
+  const [sortStates, setSortStates] = useState<Map<SortField, SortState>>(new Map());
 
   const parseDate = (dateStr: string | Date): Date => {
     if (dateStr instanceof Date) return dateStr;
@@ -172,12 +166,48 @@ const NormalView = ({
     }
   };
 
-  const toggleDetailsHandler = (student: string) => {
-    onToggleDetails(student);
+  const toggleDetails = (student: string) => {
+    setExpandedStudents(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(student)) {
+        newSet.delete(student);
+        setActiveFilters(prevFilters => {
+          const newFilters = new Map(prevFilters);
+          newFilters.delete(student);
+          return newFilters;
+        });
+      } else {
+        newSet.add(student);
+        setActiveFilters(prevFilters => {
+          const newFilters = new Map(prevFilters);
+          newFilters.set(student, 'details');
+          return newFilters;
+        });
+      }
+      return newSet;
+    });
   };
 
-  const showFilteredDetailsHandler = (student: string, type: string) => {
-    onShowFilteredDetails(student, type);
+  const showFilteredDetails = (student: string, type: string) => {
+    setExpandedStudents(prev => {
+      const newSet = new Set(prev);
+      if (prev.has(student) && activeFilters.get(student) === type) {
+        newSet.delete(student);
+        setActiveFilters(prevFilters => {
+          const newFilters = new Map(prevFilters);
+          newFilters.delete(student);
+          return newFilters;
+        });
+      } else {
+        newSet.add(student);
+        setActiveFilters(prevFilters => {
+          const newFilters = new Map(prevFilters);
+          newFilters.set(student, type);
+          return newFilters;
+        });
+      }
+      return newSet;
+    });
   };
 
   const toggleAllDetails = () => {
@@ -193,9 +223,11 @@ const NormalView = ({
         }
       });
 
-      onToggleDetails(Array.from(newExpandedStudents).join(',')); // Pseudo-Update, muss angepasst werden
+      setExpandedStudents(newExpandedStudents);
+      setActiveFilters(newActiveFilters);
     } else {
-      onToggleDetails(''); // Reset
+      setExpandedStudents(new Set());
+      setActiveFilters(new Map());
     }
   };
 
@@ -205,23 +237,29 @@ const NormalView = ({
       const currentState = newStates.get(field);
       
       if (!currentState) {
+        // First click: Add ascending sort
         newStates.set(field, {
           field,
           direction: 'asc',
           order: newStates.size
         });
       } else if (currentState.direction === 'asc') {
+        // Second click: Change to descending
         newStates.set(field, {
           ...currentState,
           direction: 'desc'
         });
       } else {
+        // Third click: Remove sort
         newStates.delete(field);
+        
+        // Reorder remaining sorts
         let order = 0;
         newStates.forEach(state => {
           state.order = order++;
         });
       }
+      
       return newStates;
     });
   };
@@ -360,8 +398,8 @@ const NormalView = ({
                       weeklyData={weeklyData}
                       selectedWeeks={selectedWeeks}
                       rowColor={rowColor}
-                      onToggleDetails={() => toggleDetailsHandler(student)}
-                      onShowFilteredDetails={showFilteredDetailsHandler}
+                      onToggleDetails={() => toggleDetails(student)}
+                      onShowFilteredDetails={showFilteredDetails}
                     />
                     {expandedStudents.has(student) && (
                       <StudentDetailsRow
