@@ -55,8 +55,6 @@ const AttendanceAnalyzer = () => {
   const [schoolYearStats, setSchoolYearStats] = useState<any>({});
   const [weeklyStats, setWeeklyStats] = useState<any>({});
   const [weeklyDetailedData, setWeeklyDetailedData] = useState<Record<string, DetailedStats>>({});
-  const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
-  const [activeFilters, setActiveFilters] = useState<Map<string, string>>(new Map());
 
   const resetAll = () => {
     setRawData(null);
@@ -79,8 +77,6 @@ const AttendanceAnalyzer = () => {
     setSchoolYearStats({});
     setWeeklyStats({});
     setWeeklyDetailedData({});
-    setExpandedStudents(new Set());
-    setActiveFilters(new Map());
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -705,22 +701,20 @@ const AttendanceAnalyzer = () => {
                     Zurücksetzen
                   </Button>
                   <ExportButtons 
-                    getFilteredStudents={getFilteredStudents}  // neu
+                    data={getFilteredStudents()}
                     startDate={startDate}
                     endDate={endDate}
                     schoolYearStats={schoolYearStats}
                     weeklyStats={weeklyStats}
                     selectedWeeks={selectedWeeks}
                     isReportView={isReportView}
-                    detailedData={detailedData}  // Entfernen der isReportView-Bedingung
-                    expandedStudents={expandedStudents}
-                    activeFilters={activeFilters}
+                    detailedData={isReportView ? detailedData : {}}
                   />
                 </div>
                 
                 {isReportView ? (
                   <ReportView
-                    getFilteredStudents={getFilteredStudents}  // Pass the function instead of its result
+                    filteredStudents={getFilteredStudents()}
                     detailedData={detailedData}
                     startDate={startDate}
                     endDate={endDate}
@@ -732,7 +726,7 @@ const AttendanceAnalyzer = () => {
                   />
                 ) : (
                   <NormalView
-                    getFilteredStudents={getFilteredStudents}  // Pass the function instead of its result
+                    filteredStudents={getFilteredStudents()}
                     detailedData={detailedData}
                     schoolYearDetailedData={schoolYearDetailedData}
                     weeklyDetailedData={weeklyDetailedData}
@@ -746,10 +740,6 @@ const AttendanceAnalyzer = () => {
                     availableClasses={availableClasses}
                     selectedClasses={selectedClasses}
                     onClassesChange={setSelectedClasses}
-                    expandedStudents={expandedStudents}
-                    setExpandedStudents={setExpandedStudents}
-                    activeFilters={activeFilters}
-                    setActiveFilters={setActiveFilters}
                   />
                 )}
               </>
