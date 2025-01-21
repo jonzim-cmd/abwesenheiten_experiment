@@ -25,8 +25,6 @@ interface ExportButtonsProps {
   selectedWeeks: string;
   isReportView?: boolean;
   detailedData?: Record<string, any>;
-  expandedStudents?: Set<string>;
-  activeFilters?: Map<string, string>;
 }
 
 const ExportButtons = ({ 
@@ -192,41 +190,6 @@ const ExportButtons = ({
     doc.setFontSize(12);
     doc.text(`Zeitraum: ${new Date(startDate).toLocaleDateString('de-DE')} - ${new Date(endDate).toLocaleDateString('de-DE')}`, margin.left, margin.top + 10);
 
- // Create table data with expanded details
-    let tableData = [];
-    formattedData.forEach((row) => {
-        tableData.push(Object.values(row));
-        
-        const studentName = `${row['Nachname']}, ${row['Vorname']}`;
-        if (expandedStudents?.has(studentName)) {
-            const filterType = activeFilters?.get(studentName);
-            let details = [];
-            
-            switch(filterType) {
-                case 'verspaetungen_unentsch':
-                    details = detailedData[studentName]?.verspaetungen_unentsch || [];
-                    break;
-                case 'fehlzeiten_unentsch':
-                    details = detailedData[studentName]?.fehlzeiten_unentsch || [];
-                    break;
-                // ... weitere cases für andere Filter
-            }
-            
-            if (details.length > 0) {
-                details.forEach(detail => {
-                    tableData.push([
-                        '',  // Einrückung
-                        formatDate(detail.datum),
-                        detail.art,
-                        detail.beginnZeit || '',
-                        detail.endZeit || '',
-                        detail.grund || ''
-                    ]);
-                });
-            }
-        }
-    });
-    
     // Add table
     autoTable(doc, {
       head: [Object.keys(formattedData[0])],
@@ -269,13 +232,10 @@ const ExportButtons = ({
         13: { cellWidth: 18 }, // ∑x() V
         14: { cellWidth: 18 }, // ∑x() F
       },
-        alternateRowStyles: {
-            fillColor: [245, 245, 245]
-        }
     });
 
     doc.save(`Anwesenheitsstatistik_${startDate}_${endDate}.pdf`);
-};
+  };
 
   return (
     <div className="flex gap-2">
