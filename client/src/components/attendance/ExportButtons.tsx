@@ -25,6 +25,7 @@ interface ExportButtonsProps {
   selectedWeeks: string;
   isReportView?: boolean;
   detailedData?: Record<string, any>;
+  expandedStudents?: Set<string>;
 }
 
 const ExportButtons = ({ 
@@ -35,7 +36,8 @@ const ExportButtons = ({
   weeklyStats,
   selectedWeeks,
   isReportView = false,
-  detailedData = {}
+  detailedData = {},
+  expandedStudents = new Set()
 }: ExportButtonsProps) => {
   const formatDate = (datum: Date | string) => {
     if (typeof datum === 'string') {
@@ -61,8 +63,11 @@ const ExportButtons = ({
       // Format data for report view
       return data.map(([student, stats], index) => {
         const studentData = detailedData[student];
-        const lateEntries = studentData?.verspaetungen_unentsch || [];
-        const absenceEntries = studentData?.fehlzeiten_unentsch || [];
+        const shouldIncludeDetails = expandedStudents.has(student);
+        
+        // Only include details if the student is expanded
+        const lateEntries = shouldIncludeDetails ? (studentData?.verspaetungen_unentsch || []) : [];
+        const absenceEntries = shouldIncludeDetails ? (studentData?.fehlzeiten_unentsch || []) : [];
 
         // Format late entries
         const formattedLates = lateEntries.map((entry: any) => 
@@ -82,8 +87,8 @@ const ExportButtons = ({
           'Nachname': nachname,
           'Vorname': vorname,
           'Klasse': stats.klasse,
-          'Unentschuldigte Verspätungen': formattedLates || '-',
-          'Unentschuldigte Fehlzeiten': formattedAbsences || '-'
+          'Unentschuldigte Verspätungen': shouldIncludeDetails ? (formattedLates || '-') : stats.verspaetungen_unentsch.toString(),
+          'Unentschuldigte Fehlzeiten': shouldIncludeDetails ? (formattedAbsences || '-') : stats.fehlzeiten_unentsch.toString()
         };
       });
     } else {
