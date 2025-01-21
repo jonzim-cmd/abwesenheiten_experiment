@@ -746,6 +746,10 @@ const AttendanceAnalyzer = () => {
                     availableClasses={availableClasses}
                     selectedClasses={selectedClasses}
                     onClassesChange={setSelectedClasses}
+                    expandedStudents={expandedStudents} 
+                    setExpandedStudents={setExpandedStudents}
+                    activeFilters={activeFilters}
+                    setActiveFilters={setActiveFilters}
                   />
                 )}
               </>
