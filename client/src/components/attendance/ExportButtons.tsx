@@ -35,7 +35,7 @@ interface StudentStats {
 }
 
 interface ExportButtonsProps {
-  data: [string, StudentStats][];
+  getFilteredStudents: () => [string, StudentStats][];
   startDate: string;
   endDate: string;
   schoolYearStats: {
@@ -64,7 +64,7 @@ const parseDate = (dateStr: string | Date): Date => {
 };
 
 const ExportButtons: React.FC<ExportButtonsProps> = ({ 
-  data, 
+  getFilteredStudents, 
   startDate, 
   endDate, 
   schoolYearStats,
@@ -95,6 +95,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
   };
 
   const formatData = () => {
+    const data = getFilteredStudents();
     if (isReportView) {
       return data.map(([student, stats], index) => {
         const studentData = detailedData[student];
