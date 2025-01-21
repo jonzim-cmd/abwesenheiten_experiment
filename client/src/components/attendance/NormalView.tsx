@@ -38,6 +38,10 @@ interface NormalViewProps {
   availableClasses: string[];
   selectedClasses: string[];
   onClassesChange: (classes: string[]) => void;
+  expandedStudents: Set<string>;
+  setExpandedStudents: (value: Set<string>) => void;
+  activeFilters: Map<string, string>;
+  setActiveFilters: (value: Map<string, string>) => void;
 }
 
 type SortField = 'name' | 'klasse' | 
