@@ -222,6 +222,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
     const enrichedData = formattedData.map(row => {
       const studentName = `${row['Nachname']}, ${row['Vorname']}`;
 
+      // Nur für expandierte Schüler Details hinzufügen
       if (!expandedStudents.has(studentName)) {
         return row;
       }
@@ -232,6 +233,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       let details: AbsenceEntry[] = [];
       const studentData = detailedData[studentName];
       
+      // Genau die Details holen, die aktuell angezeigt werden
       if (studentData) {
         switch(filterType) {
           case 'verspaetungen_entsch':
@@ -287,13 +289,19 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
           return `${date}${time}: ${type}${reason}${status}`;
         });
 
-      return {
-        ...row,
-        'Details': formattedDetails.length > 0 ? formattedDetails.join('\n') : '-'
-      };
+      // Nur wenn Details vorhanden sind, diese als separate Spalte hinzufügen
+      if (formattedDetails.length > 0) {
+        return {
+          ...row,
+          'Details': formattedDetails.join('\n')
+        };
+      }
+      return row;
     });
 
     const hasDetails = enrichedData.some(row => row['Details']);
+    
+    // Spaltenbreiten anpassen - bestehende Breiten plus Details-Spalte wenn nötig
     const baseColumnStyles = isReportView ? {
       0: { cellWidth: 8 },
       1: { cellWidth: 25 },
@@ -324,9 +332,24 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       'Details': { cellWidth: 60 }
     } : baseColumnStyles;
 
+    // PDF Tabelle mit Detail-Zeilen erstellen
     autoTable(doc, {
       head: [Object.keys(enrichedData[0])],
-      body: enrichedData.map(Object.values),
+      body: enrichedData.flatMap(row => {
+        if (row['Details']) {
+          // Hauptzeile (alle Daten außer Details)
+          const mainRow = Object.entries(row)
+            .filter(([key]) => key !== 'Details')
+            .map(([_, value]) => value);
+          
+          // Detailzeile (leere Zellen + Details in letzter Spalte)
+          const detailRow = Array(mainRow.length).fill('');
+          detailRow[detailRow.length - 1] = row['Details'];
+          
+          return [mainRow, detailRow];
+        }
+        return [Object.values(row)];
+      }),
       startY: margin.top + 20,
       margin: margin,
       styles: {
@@ -342,6 +365,17 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
         fontStyle: 'bold'
       },
       columnStyles: columnStyles,
+      // Styling für Detail-Zeilen
+      rowStyles: (row) => {
+        if (row.raw[row.raw.length - 1] && typeof row.raw[0] === 'string' && row.raw[0] === '') {
+          return {
+            fillColor: [245, 245, 245],
+            textColor: [100, 100, 100],
+            fontSize: 7
+          };
+        }
+        return {};
+      }
     });
 
     doc.save(`Anwesenheitsstatistik_${startDate}_${endDate}.pdf`);
