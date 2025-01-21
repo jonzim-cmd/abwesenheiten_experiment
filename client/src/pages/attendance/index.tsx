@@ -79,6 +79,8 @@ const AttendanceAnalyzer = () => {
     setSchoolYearStats({});
     setWeeklyStats({});
     setWeeklyDetailedData({});
+    setExpandedStudents(new Set());
+    setActiveFilters(new Map());
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -730,7 +732,7 @@ const AttendanceAnalyzer = () => {
                   />
                 ) : (
                   <NormalView
-                    filteredStudents={getFilteredStudents()}
+                    filteredStudents={filteredStudents}
                     detailedData={detailedData}
                     schoolYearDetailedData={schoolYearDetailedData}
                     weeklyDetailedData={weeklyDetailedData}
@@ -744,6 +746,10 @@ const AttendanceAnalyzer = () => {
                     availableClasses={availableClasses}
                     selectedClasses={selectedClasses}
                     onClassesChange={setSelectedClasses}
+                    expandedStudents={expandedStudents}
+                    setExpandedStudents={setExpandedStudents}
+                    activeFilters={activeFilters}
+                    setActiveFilters={setActiveFilters}
                   />
                 )}
               </>
