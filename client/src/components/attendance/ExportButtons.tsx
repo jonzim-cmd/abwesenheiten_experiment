@@ -347,3 +347,31 @@ const ExportButtons = ({
 
   doc.save(`Anwesenheitsstatistik_${startDate}_${endDate}.pdf`);
 };
+return (
+    <div className="flex gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={exportToExcel}
+      >
+        Als Excel exportieren
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={exportToCSV}
+      >
+        Als CSV exportieren
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={exportToPDF}
+      >
+        Als PDF exportieren
+      </Button>
+    </div>
+  );
+};
+
+export default ExportButtons;
