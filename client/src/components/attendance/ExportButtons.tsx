@@ -61,10 +61,10 @@ const ExportButtons = ({
     });
   };
 
-  const getDetailTitle = (filterType: string): string => {
+    const getDetailTitle = (filterType: string): string => {
     switch (filterType) {
       case 'details':
-        return 'Detaillierte Übersicht der unentschuldigten Abwesenheiten';
+        return 'Detaillierte Übersicht aller Abwesenheiten';
       case 'verspaetungen_entsch':
         return 'Entschuldigte Verspätungen im ausgewählten Zeitraum';
       case 'verspaetungen_unentsch':
@@ -110,23 +110,7 @@ const ExportButtons = ({
   };
 
   const getDetailEntries = (details: any, filterType: string): AbsenceEntry[] => {
-    const today = new Date();
-    const addOverdueEntries = (entries: AbsenceEntry[]) => {
-      return entries.filter(entry => {
-        const entryDate = new Date(entry.datum);
-        const deadlineDate = new Date(entryDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-        return today > deadlineDate;
-      });
-    };
-
     switch(filterType) {
-      case 'details':
-        return [
-          ...(details.verspaetungen_unentsch || []),
-          ...(details.fehlzeiten_unentsch || []),
-          ...addOverdueEntries(details.verspaetungen_offen || []),
-          ...addOverdueEntries(details.fehlzeiten_offen || [])
-        ];
       case 'verspaetungen_entsch':
         return details.verspaetungen_entsch || [];
       case 'verspaetungen_unentsch':
@@ -140,12 +124,8 @@ const ExportButtons = ({
       case 'fehlzeiten_offen':
         return details.fehlzeiten_offen || [];
       case 'sj_verspaetungen':
-      case 'weekly_verspaetungen':
-      case 'sum_verspaetungen':
         return details.verspaetungen_unentsch || [];
       case 'sj_fehlzeiten':
-      case 'weekly_fehlzeiten':
-      case 'sum_fehlzeiten':
         return details.fehlzeiten_unentsch || [];
       default:
         return [];
@@ -156,11 +136,13 @@ const ExportButtons = ({
     if (isReportView) {
       return data.map(([student, stats], index) => {
         const studentData = detailedData[student];
-        const lateEntries = studentData?.verspaetungen_unentsch || [];
-        const absenceEntries = studentData?.fehlzeiten_unentsch || [];
+        const filterType = activeFilters.get(student);
+        let detailsToShow: string[] = [];
 
-        const formattedLates = formatDetails(lateEntries);
-        const formattedAbsences = formatDetails(absenceEntries);
+        if (expandedStudents.has(student) && filterType && studentData) {
+          const entries = getDetailEntries(studentData, filterType);
+          detailsToShow = formatDetails(entries);
+        }
 
         const [nachname = "", vorname = ""] = student.split(",").map(s => s.trim());
 
@@ -169,8 +151,7 @@ const ExportButtons = ({
           'Nachname': nachname,
           'Vorname': vorname,
           'Klasse': stats.klasse,
-          'Unentschuldigte Verspätungen': formattedLates.join('\n') || '-',
-          'Unentschuldigte Fehlzeiten': formattedAbsences.join('\n') || '-'
+          'Details': detailsToShow.join('\n') || '-'
         };
       });
     } else {
@@ -180,19 +161,13 @@ const ExportButtons = ({
           fehlzeiten: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) }
         };
 
-        const verspaetungenAvg = (weeklyData.verspaetungen.total / parseInt(selectedWeeks)).toFixed(2);
-        const fehlzeitenAvg = (weeklyData.fehlzeiten.total / parseInt(selectedWeeks)).toFixed(2);
+        const filterType = activeFilters.get(student);
+        let detailsToShow: string[] = [];
 
-        const verspaetungenWeekly = `${verspaetungenAvg}(${weeklyData.verspaetungen.weekly.join(',')})`;
-        const fehlzeitenWeekly = `${fehlzeitenAvg}(${weeklyData.fehlzeiten.weekly.join(',')})`;
-
-        const verspaetungenSum = `${weeklyData.verspaetungen.total}(${weeklyData.verspaetungen.weekly.join(',')})`;
-        const fehlzeitenSum = `${weeklyData.fehlzeiten.total}(${weeklyData.fehlzeiten.weekly.join(',')})`;
-
-        const schoolYearData = schoolYearStats[student] || {
-          verspaetungen_unentsch: 0,
-          fehlzeiten_unentsch: 0
-        };
+        if (expandedStudents.has(student) && filterType && detailedData[student]) {
+          const entries = getDetailEntries(detailedData[student], filterType);
+          detailsToShow = formatDetails(entries);
+        }
 
         const [nachname = "", vorname = ""] = student.split(",").map(s => s.trim());
 
@@ -206,12 +181,7 @@ const ExportButtons = ({
           'Fehlzeiten (E)': stats.fehlzeiten_entsch,
           'Fehlzeiten (U)': stats.fehlzeiten_unentsch,
           'Fehlzeiten (O)': stats.fehlzeiten_offen,
-          '∑SJ V': schoolYearData.verspaetungen_unentsch,
-          '∑SJ F': schoolYearData.fehlzeiten_unentsch,
-          'Øx() V': verspaetungenWeekly,
-          'Øx() F': fehlzeitenWeekly,
-          '∑x() V': verspaetungenSum,
-          '∑x() F': fehlzeitenSum
+          'Details': detailsToShow.length > 0 ? `\n${detailsToShow.join('\n')}` : '-'
         };
       });
     }
@@ -224,8 +194,8 @@ const ExportButtons = ({
     XLSX.utils.book_append_sheet(workbook, worksheet, "Anwesenheitsstatistik");
 
     const colWidths = isReportView ? 
-      [10, 30, 30, 15, 60, 60] :
-      [25, 25, 15, 12, 12, 12, 12, 12, 12, 10, 10, 25, 25, 25, 25];
+      [10, 30, 30, 15, 60] :
+      [25, 25, 15, 12, 12, 12, 12, 12, 12, 60];
 
     worksheet['!cols'] = colWidths.map(width => ({ width }));
 
@@ -250,7 +220,7 @@ const ExportButtons = ({
   const exportToPDF = () => {
     const formattedData = formatData();
     const doc = new jsPDF({
-      orientation: isReportView ? 'portrait' : 'landscape',
+      orientation: 'landscape',
       unit: 'mm',
       format: 'a4'
     });
@@ -272,45 +242,17 @@ const ExportButtons = ({
       margin.top + 10
     );
 
-    // Prepare table data with expanded details
-    const tableData = formattedData.reduce((acc: any[], row: any) => {
-      // Add main row
-      acc.push(Object.values(row));
-      
-      // If student is expanded and has details
-      const studentName = row['Nachname'] + ", " + row['Vorname'];
-      if (expandedStudents.has(studentName)) {
-        const filterType = activeFilters.get(studentName);
-        const details = detailedData[studentName];
-        
-        if (details && filterType) {
-          const columnCount = isReportView ? 6 : 15;
-          
-          // Add empty row for better readability
-          acc.push(Array(columnCount).fill(''));
-          
-          // Add detail section title
-          const detailTitle = getDetailTitle(filterType);
-          acc.push([{ content: detailTitle, colSpan: columnCount, styles: { fontStyle: 'bold' } }]);
-          
-          // Format and add detail entries
-          const entries = getDetailEntries(details, filterType);
-          const formattedDetails = formatDetails(entries);
-          formattedDetails.forEach(detail => {
-            acc.push([{ content: detail, colSpan: columnCount, styles: { fontSize: 8 } }]);
-          });
-          
-          // Add empty row after details
-          acc.push(Array(columnCount).fill(''));
-        }
-      }
-      
-      return acc;
-    }, []);
+    // Prepare table data
+    const tableData = formattedData.map(row => Object.values(row));
+
+    // Define columns based on view type
+    const columns = isReportView ?
+      ['Nr.', 'Nachname', 'Vorname', 'Klasse', 'Details'] :
+      ['Nachname', 'Vorname', 'Klasse', 'V (E)', 'V (U)', 'V (O)', 'F (E)', 'F (U)', 'F (O)', 'Details'];
 
     // Create the table
     autoTable(doc, {
-      head: [Object.keys(formattedData[0])],
+      head: [columns],
       body: tableData,
       startY: margin.top + 20,
       margin: margin,
@@ -319,8 +261,7 @@ const ExportButtons = ({
         cellPadding: 1.5,
         overflow: 'linebreak',
         cellWidth: 'wrap',
-        minCellHeight: 3,
-        halign: 'left'
+        minCellHeight: 3
       },
       headStyles: {
         fillColor: [66, 66, 66],
@@ -328,28 +269,22 @@ const ExportButtons = ({
         fontStyle: 'bold'
       },
       columnStyles: isReportView ? {
-        0: { cellWidth: 8 },
-        1: { cellWidth: 25 },
-        2: { cellWidth: 25 },
-        3: { cellWidth: 12 },
-        4: { cellWidth: 55 },
-        5: { cellWidth: 55 }
+        0: { cellWidth: 10 },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 15 },
+        4: { cellWidth: 80 }
       } : {
-        0: { cellWidth: 25 }, // Nachname
-        1: { cellWidth: 25 }, // Vorname
-        2: { cellWidth: 12 }, // Klasse
-        3: { cellWidth: 12 }, // V (E)
-        4: { cellWidth: 12 }, // V (U)
-        5: { cellWidth: 12 }, // V (O)
-        6: { cellWidth: 12 }, // F (E)
-        7: { cellWidth: 12 }, // F (U)
-        8: { cellWidth: 12 }, // F (O)
-        9: { cellWidth: 10 }, // ∑SJ V
-        10: { cellWidth: 10 }, // ∑SJ F
-        11: { cellWidth: 25 }, // Øx() V - breiter für Klammerwerte
-        12: { cellWidth: 25 }, // Øx() F
-        13: { cellWidth: 25 }, // ∑x() V
-        14: { cellWidth: 25 }  // ∑x() F
+        0: { cellWidth: 25 },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 15 },
+        3: { cellWidth: 12 },
+        4: { cellWidth: 12 },
+        5: { cellWidth: 12 },
+        6: { cellWidth: 12 },
+        7: { cellWidth: 12 },
+        8: { cellWidth: 12 },
+        9: { cellWidth: 80 }
       }
     });
 
