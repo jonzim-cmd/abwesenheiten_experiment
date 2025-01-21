@@ -5,6 +5,13 @@ import { unparse } from 'papaparse';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { StudentStats } from '@/lib/attendance-utils';
+import { getLastNWeeks } from '@/lib/attendance';
+
+const parseDate = (dateStr: string | Date): Date => {
+  if (dateStr instanceof Date) return dateStr;
+  const [day, month, year] = dateStr.split('.');
+  return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+};
 
 interface ExportButtonsProps {
   data: [string, StudentStats][];
@@ -38,7 +45,9 @@ const ExportButtons = ({
   weeklyStats,
   selectedWeeks,
   isReportView = false,
-  detailedData = {}
+  detailedData = {},
+  expandedStudents,
+  activeFilters
 }: ExportButtonsProps) => {
   const formatDate = (datum: Date | string) => {
     if (typeof datum === 'string') {
