@@ -18,7 +18,7 @@ interface DetailedStats {
 }
 
 interface NormalViewProps {
-  getFilteredStudents: () => [string, StudentStats][];  // Update to function type
+  filteredStudents: [string, StudentStats][];
   detailedData: Record<string, DetailedStats>;
   schoolYearDetailedData: Record<string, DetailedStats>;
   weeklyDetailedData: Record<string, DetailedStats>;
@@ -38,10 +38,6 @@ interface NormalViewProps {
   availableClasses: string[];
   selectedClasses: string[];
   onClassesChange: (classes: string[]) => void;
-  expandedStudents: Set<string>;
-  setExpandedStudents: (value: Set<string>) => void; 
-  activeFilters: Map<string, string>;
-  setActiveFilters: (value: Map<string, string>) => void;
 }
 
 type SortField = 'name' | 'klasse' | 
@@ -60,8 +56,8 @@ interface SortState {
 }
 
 const NormalView = ({ 
-  getFilteredStudents,  // Update parameter name to reflect it's a function
-  detailedData,
+  filteredStudents, 
+  detailedData, 
   schoolYearDetailedData,
   weeklyDetailedData,
   startDate, 
@@ -73,12 +69,10 @@ const NormalView = ({
   onSearchChange,
   availableClasses,
   selectedClasses,
-  onClassesChange,
-  expandedStudents,
-  setExpandedStudents,
-  activeFilters,
-  setActiveFilters
+  onClassesChange
 }: NormalViewProps) => {
+  const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
+  const [activeFilters, setActiveFilters] = useState<Map<string, string>>(new Map());
   const [isAllExpanded, setIsAllExpanded] = useState(false);
   const [sortStates, setSortStates] = useState<Map<SortField, SortState>>(new Map());
 
@@ -221,14 +215,14 @@ const NormalView = ({
     if (!isAllExpanded) {
       const newExpandedStudents = new Set<string>();
       const newActiveFilters = new Map<string, string>();
-  
-      getFilteredStudents().forEach(([student, stats]) => {
+
+      filteredStudents.forEach(([student, stats]) => {
         if (stats.verspaetungen_unentsch > 0 || stats.fehlzeiten_unentsch > 0) {
           newExpandedStudents.add(student);
           newActiveFilters.set(student, 'details');
         }
       });
-  
+
       setExpandedStudents(newExpandedStudents);
       setActiveFilters(newActiveFilters);
     } else {
@@ -316,7 +310,7 @@ const NormalView = ({
   };
 
   const getSortedStudents = () => {
-    return [...getFilteredStudents()].sort((a, b) => {
+    return [...filteredStudents].sort((a, b) => {
       const sortEntries = Array.from(sortStates.values())
         .sort((x, y) => x.order - y.order);
 
