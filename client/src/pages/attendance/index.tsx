@@ -739,7 +739,8 @@ const AttendanceAnalyzer = () => {
                       .filter(([student]) => student)
                       .map(([student]) => [student, 'details']))}
                   />
-                
+                </div>
+
                 {isReportView ? (
                   <ReportView
                     filteredStudents={getFilteredStudents()}
