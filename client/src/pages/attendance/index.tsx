@@ -701,7 +701,7 @@ const AttendanceAnalyzer = () => {
                     Zurücksetzen
                   </Button>
                   <ExportButtons 
-                    data={getSortedStudents()}
+                    data={getFilteredStudents()}
                     startDate={startDate}
                     endDate={endDate}
                     schoolYearStats={schoolYearStats}
