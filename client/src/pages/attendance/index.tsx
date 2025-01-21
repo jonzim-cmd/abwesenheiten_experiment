@@ -55,8 +55,6 @@ const AttendanceAnalyzer = () => {
   const [schoolYearStats, setSchoolYearStats] = useState<any>({});
   const [weeklyStats, setWeeklyStats] = useState<any>({});
   const [weeklyDetailedData, setWeeklyDetailedData] = useState<Record<string, DetailedStats>>({});
-  const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
-  const [activeFilters, setActiveFilters] = useState<Map<string, string>>(new Map());
 
   const resetAll = () => {
     setRawData(null);
@@ -79,8 +77,6 @@ const AttendanceAnalyzer = () => {
     setSchoolYearStats({});
     setWeeklyStats({});
     setWeeklyDetailedData({});
-    setExpandedStudents(new Set());
-    setActiveFilters(new Map());
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -705,7 +701,7 @@ const AttendanceAnalyzer = () => {
                     Zurücksetzen
                   </Button>
                   <ExportButtons 
-                    data={filteredStudents}
+                    data={getFilteredStudents()}
                     startDate={startDate}
                     endDate={endDate}
                     schoolYearStats={schoolYearStats}
@@ -713,8 +709,6 @@ const AttendanceAnalyzer = () => {
                     selectedWeeks={selectedWeeks}
                     isReportView={isReportView}
                     detailedData={isReportView ? detailedData : {}}
-                    expandedStudents={expandedStudents}
-                    activeFilters={activeFilters}
                   />
                 </div>
                 
@@ -732,7 +726,7 @@ const AttendanceAnalyzer = () => {
                   />
                 ) : (
                   <NormalView
-                    filteredStudents={filteredStudents}
+                    filteredStudents={getFilteredStudents()}
                     detailedData={detailedData}
                     schoolYearDetailedData={schoolYearDetailedData}
                     weeklyDetailedData={weeklyDetailedData}
@@ -746,10 +740,6 @@ const AttendanceAnalyzer = () => {
                     availableClasses={availableClasses}
                     selectedClasses={selectedClasses}
                     onClassesChange={setSelectedClasses}
-                    expandedStudents={expandedStudents}
-                    setExpandedStudents={setExpandedStudents}
-                    activeFilters={activeFilters}
-                    setActiveFilters={setActiveFilters}
                   />
                 )}
               </>
