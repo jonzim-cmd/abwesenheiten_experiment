@@ -55,6 +55,8 @@ const AttendanceAnalyzer = () => {
   const [schoolYearStats, setSchoolYearStats] = useState<any>({});
   const [weeklyStats, setWeeklyStats] = useState<any>({});
   const [weeklyDetailedData, setWeeklyDetailedData] = useState<Record<string, DetailedStats>>({});
+  const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
+  const [activeFilters, setActiveFilters] = useState<Map<string, string>>(new Map());
 
   const resetAll = () => {
     setRawData(null);
@@ -701,7 +703,7 @@ const AttendanceAnalyzer = () => {
                     Zurücksetzen
                   </Button>
                   <ExportButtons 
-                    data={getFilteredStudents()}
+                    data={filteredStudents}
                     startDate={startDate}
                     endDate={endDate}
                     schoolYearStats={schoolYearStats}
@@ -709,6 +711,8 @@ const AttendanceAnalyzer = () => {
                     selectedWeeks={selectedWeeks}
                     isReportView={isReportView}
                     detailedData={isReportView ? detailedData : {}}
+                    expandedStudents={expandedStudents}
+                    activeFilters={activeFilters}
                   />
                 </div>
                 
