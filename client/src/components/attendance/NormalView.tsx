@@ -7,6 +7,7 @@ import StudentDetailsRow from './table/StudentDetailsRow';
 import { StudentStats, AbsenceEntry, getLastNWeeks } from '@/lib/attendance-utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ClassFilter } from './ClassFilter';
+import ExportButtons from './ExportButtons';
 
 interface DetailedStats {
   verspaetungen_entsch: AbsenceEntry[];
@@ -368,6 +369,21 @@ const NormalView = ({
             </Tooltip>
           </TooltipProvider>
         </div>
+      
+      <div className="mt-4 flex gap-4 items-center">
+        <ExportButtons 
+          data={getSortedStudents()}
+          startDate={startDate}
+          endDate={endDate}
+          schoolYearStats={schoolYearStats}
+          weeklyStats={weeklyStats}
+          selectedWeeks={selectedWeeks}
+          isReportView={false}
+          detailedData={detailedData}
+          expandedStudents={expandedStudents}
+          activeFilters={activeFilters}
+        />
+      </div>
 
       <div className="relative h-[500px]">
         <div className="absolute inset-0 overflow-x-auto overflow-y-auto">
