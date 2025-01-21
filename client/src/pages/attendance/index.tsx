@@ -13,6 +13,29 @@ import { getWeekNumber, getLastNWeeks, getCurrentSchoolYear } from '@/lib/attend
 import * as XLSX from 'xlsx';
 import ExportButtons from '@/components/attendance/ExportButtons';
 
+interface ExportButtonsProps {
+  data: [string, StudentStats][];
+  startDate: string;
+  endDate: string;
+  schoolYearStats: {
+    [key: string]: {
+      verspaetungen_unentsch: number;
+      fehlzeiten_unentsch: number;
+    };
+  };
+  weeklyStats: {
+    [key: string]: {
+      verspaetungen: { total: number; weekly: number[] };
+      fehlzeiten: { total: number; weekly: number[] };
+    };
+  };
+  selectedWeeks: string;
+  isReportView?: boolean;
+  detailedData?: Record<string, any>;
+  expandedStudents?: Set<string>;
+  activeFilters?: Map<string, string>;
+}
+
 interface AbsenceEntry {
   datum: Date;
   art: string;
@@ -708,9 +731,14 @@ const AttendanceAnalyzer = () => {
                     weeklyStats={weeklyStats}
                     selectedWeeks={selectedWeeks}
                     isReportView={isReportView}
-                    detailedData={isReportView ? detailedData : {}}
+                    detailedData={detailedData}
+                    expandedStudents={new Set(Object.entries(detailedData)
+                      .filter(([student]) => student)
+                      .map(([student]) => student))}
+                    activeFilters={new Map(Object.entries(detailedData)
+                      .filter(([student]) => student)
+                      .map(([student]) => [student, 'details']))}
                   />
-                </div>
                 
                 {isReportView ? (
                   <ReportView
