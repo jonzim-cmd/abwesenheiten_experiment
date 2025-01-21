@@ -708,9 +708,14 @@ const AttendanceAnalyzer = () => {
                     weeklyStats={weeklyStats}
                     selectedWeeks={selectedWeeks}
                     isReportView={isReportView}
-                    detailedData={isReportView ? detailedData : {}}
+                    detailedData={detailedData}
+                    expandedStudents={new Set(Object.entries(detailedData)
+                      .filter(([student]) => student)
+                      .map(([student]) => student))}
+                    activeFilters={new Map(Object.entries(detailedData)
+                      .filter(([student]) => student)
+                      .map(([student]) => [student, 'details']))}
                   />
-                </div>
                 
                 {isReportView ? (
                   <ReportView
