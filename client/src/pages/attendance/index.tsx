@@ -55,7 +55,6 @@ const AttendanceAnalyzer = () => {
   const [schoolYearStats, setSchoolYearStats] = useState<any>({});
   const [weeklyStats, setWeeklyStats] = useState<any>({});
   const [weeklyDetailedData, setWeeklyDetailedData] = useState<Record<string, DetailedStats>>({});
-  const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
 
   const resetAll = () => {
     setRawData(null);
@@ -78,7 +77,6 @@ const AttendanceAnalyzer = () => {
     setSchoolYearStats({});
     setWeeklyStats({});
     setWeeklyDetailedData({});
-    setExpandedStudents(new Set());
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -693,7 +691,6 @@ const AttendanceAnalyzer = () => {
                 <div className="flex gap-4 items-center">
                   <Button variant={isReportView ? "outline" : "default"}
                     onClick={() => setIsReportView(false)}>
-                 ```jsx
                     Normale Ansicht
                   </Button>
                   <Button variant={isReportView ? "default" : "outline"}
@@ -711,8 +708,7 @@ const AttendanceAnalyzer = () => {
                     weeklyStats={weeklyStats}
                     selectedWeeks={selectedWeeks}
                     isReportView={isReportView}
-                    detailedData={detailedData}
-                    expandedStudents={expandedStudents}
+                    detailedData={isReportView ? detailedData : {}}
                   />
                 </div>
                 
@@ -727,16 +723,6 @@ const AttendanceAnalyzer = () => {
                     availableClasses={availableClasses}
                     selectedClasses={selectedClasses}
                     onClassesChange={setSelectedClasses}
-                    expandedStudents={expandedStudents}
-                    onToggleExpand={(student) => {
-                      const newExpandedStudents = new Set(expandedStudents);
-                      if (newExpandedStudents.has(student)) {
-                        newExpandedStudents.delete(student);
-                      } else {
-                        newExpandedStudents.add(student);
-                      }
-                      setExpandedStudents(newExpandedStudents);
-                    }}
                   />
                 ) : (
                   <NormalView
