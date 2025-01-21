@@ -25,6 +25,9 @@ interface ExportButtonsProps {
   selectedWeeks: string;
   isReportView?: boolean;
   detailedData?: Record<string, any>;
+  // NEU:
+  expandedStudents: Set<string>;
+  activeFilters: Map<string, string>;
 }
 
 const ExportButtons = ({ 
@@ -164,104 +167,174 @@ const ExportButtons = ({
   };
 
   const exportToPDF = () => {
-    const formattedData = formatData();
-    const doc = new jsPDF({
-      orientation: isReportView ? 'portrait' : 'landscape',
-      unit: 'mm',
-      format: 'a4'
-    });
+  const formattedData = formatData();
+  const doc = new jsPDF({
+    orientation: isReportView ? 'portrait' : 'landscape',
+    unit: 'mm',
+    format: 'a4'
+  });
 
-    // Set minimum margins (in mm)
-    const margin = {
-      left: 15,
-      right: 15,
-      top: 20,
-      bottom: 20
-    };
-
-    // Calculate available width for content
-    const pageWidth = doc.internal.pageSize.width;
-    const pageHeight = doc.internal.pageSize.height;
-    const contentWidth = pageWidth - margin.left - margin.right;
-
-    // Add title
-    doc.setFontSize(16);
-    doc.text('Anwesenheitsstatistik', margin.left, margin.top);
-    doc.setFontSize(12);
-    doc.text(`Zeitraum: ${new Date(startDate).toLocaleDateString('de-DE')} - ${new Date(endDate).toLocaleDateString('de-DE')}`, margin.left, margin.top + 10);
-
-    // Add table
-    autoTable(doc, {
-      head: [Object.keys(formattedData[0])],
-      body: formattedData.map(Object.values),
-      startY: margin.top + 20,
-      margin: margin,
-      styles: {
-        fontSize: 8,
-        cellPadding: 1.5,
-        overflow: 'linebreak',
-        cellWidth: 'wrap',
-        minCellHeight: 3
-      },
-      headStyles: {
-        fillColor: [66, 66, 66],
-        textColor: [255, 255, 255],
-        fontStyle: 'bold'
-      },
-      columnStyles: isReportView ? {
-        0: { cellWidth: 8 }, // Nr
-        1: { cellWidth: 25 }, // Nachname
-        2: { cellWidth: 25 }, // Vorname
-        3: { cellWidth: 12 }, // Klasse
-        4: { cellWidth: 55 }, // Unentschuldigte Verspätungen
-        5: { cellWidth: 55 }, // Unentschuldigte Fehlzeiten
-      } : {
-        0: { cellWidth: 20 }, // Nachname
-        1: { cellWidth: 20 }, // Vorname
-        2: { cellWidth: 12 }, // Klasse
-        3: { cellWidth: 15 }, // Verspätungen (E)
-        4: { cellWidth: 15 }, // Verspätungen (U)
-        5: { cellWidth: 15 }, // Verspätungen (O)
-        6: { cellWidth: 15 }, // Fehlzeiten (E)
-        7: { cellWidth: 15 }, // Fehlzeiten (U)
-        8: { cellWidth: 15 }, // Fehlzeiten (O)
-        9: { cellWidth: 12 }, // ∑SJ V
-        10: { cellWidth: 12 }, // ∑SJ F
-        11: { cellWidth: 18 }, // Øx() V
-        12: { cellWidth: 18 }, // Øx() F
-        13: { cellWidth: 18 }, // ∑x() V
-        14: { cellWidth: 18 }, // ∑x() F
-      },
-    });
-
-    doc.save(`Anwesenheitsstatistik_${startDate}_${endDate}.pdf`);
+  // Set minimum margins (in mm)
+  const margin = {
+    left: 15,
+    right: 15,
+    top: 20,
+    bottom: 20
   };
 
-  return (
-    <div className="flex gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={exportToExcel}
-      >
-        Als Excel exportieren
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={exportToCSV}
-      >
-        Als CSV exportieren
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={exportToPDF}
-      >
-        Als PDF exportieren
-      </Button>
-    </div>
-  );
-};
+  // Calculate available width for content
+  const pageWidth = doc.internal.pageSize.width;
+  const pageHeight = doc.internal.pageSize.height;
+  const contentWidth = pageWidth - margin.left - margin.right;
 
-export default ExportButtons;
+  // Add title
+  doc.setFontSize(16);
+  doc.text('Anwesenheitsstatistik', margin.left, margin.top);
+  doc.setFontSize(12);
+  doc.text(`Zeitraum: ${new Date(startDate).toLocaleDateString('de-DE')} - ${new Date(endDate).toLocaleDateString('de-DE')}`, margin.left, margin.top + 10);
+
+  // Process data with details
+  const enrichedData = formattedData.map(row => {
+    // Erstelle den Schülernamen für den Vergleich
+    let studentName;
+    if (isReportView) {
+      // In der Berichtsansicht sind Vor- und Nachname getrennt
+      studentName = `${row['Nachname']}, ${row['Vorname']}`;
+    } else {
+      // In der normalen Ansicht den Schülernamen rekonstruieren
+      studentName = `${row['Nachname']}, ${row['Vorname']}`;
+    }
+
+    // Wenn der Student nicht expandiert ist, original Daten zurückgeben
+    if (!expandedStudents.has(studentName)) {
+      return row;
+    }
+
+    const filterType = activeFilters.get(studentName);
+    if (!filterType) return row;
+
+    // Details basierend auf dem Filtertyp sammeln
+    let details = [];
+    const studentData = detailedData[studentName];
+    
+    if (studentData) {
+      switch(filterType) {
+        case 'verspaetungen_entsch':
+        case 'verspaetungen_unentsch':
+        case 'verspaetungen_offen':
+        case 'fehlzeiten_entsch':
+        case 'fehlzeiten_unentsch':
+        case 'fehlzeiten_offen':
+          details = studentData[filterType] || [];
+          break;
+        case 'sj_verspaetungen':
+          details = studentData.verspaetungen_unentsch || [];
+          break;
+        case 'sj_fehlzeiten':
+          details = studentData.fehlzeiten_unentsch || [];
+          break;
+        case 'weekly_verspaetungen':
+        case 'sum_verspaetungen':
+          details = studentData.verspaetungen_unentsch.filter(entry => {
+            const date = typeof entry.datum === 'string' ? parseDate(entry.datum) : entry.datum;
+            const weeks = getLastNWeeks(parseInt(selectedWeeks));
+            return weeks.some(week => date >= week.startDate && date <= week.endDate);
+          });
+          break;
+        case 'weekly_fehlzeiten':
+        case 'sum_fehlzeiten':
+          details = studentData.fehlzeiten_unentsch.filter(entry => {
+            const date = typeof entry.datum === 'string' ? parseDate(entry.datum) : entry.datum;
+            const weeks = getLastNWeeks(parseInt(selectedWeeks));
+            return weeks.some(week => date >= week.startDate && date <= week.endDate);
+          });
+          break;
+        case 'details':
+          // Kombiniere unentschuldigte Verspätungen und Fehlzeiten
+          details = [
+            ...(studentData.verspaetungen_unentsch || []),
+            ...(studentData.fehlzeiten_unentsch || [])
+          ];
+          break;
+      }
+    }
+
+    // Details formatieren
+    const formattedDetails = details
+      .sort((a, b) => {
+        const dateA = typeof a.datum === 'string' ? parseDate(a.datum) : a.datum;
+        const dateB = typeof b.datum === 'string' ? parseDate(b.datum) : b.datum;
+        return dateB.getTime() - dateA.getTime();
+      })
+      .map(entry => {
+        const date = formatDate(entry.datum);
+        const type = entry.art;
+        const time = entry.beginnZeit ? ` (${entry.beginnZeit}${entry.endZeit ? ` - ${entry.endZeit}` : ''} Uhr)` : '';
+        const reason = entry.grund ? ` - ${entry.grund}` : '';
+        const status = entry.status ? ` [${entry.status}]` : '';
+        return `${date}${time}: ${type}${reason}${status}`;
+      });
+
+    // Füge die Details als neue Spalte hinzu
+    return {
+      ...row,
+      'Details': formattedDetails.length > 0 ? formattedDetails.join('\n') : '-'
+    };
+  });
+
+  // Get column definitions based on view type and presence of details
+  const hasDetails = enrichedData.some(row => row['Details']);
+  const baseColumnStyles = isReportView ? {
+    0: { cellWidth: 8 }, // Nr
+    1: { cellWidth: 25 }, // Nachname
+    2: { cellWidth: 25 }, // Vorname
+    3: { cellWidth: 12 }, // Klasse
+    4: { cellWidth: 55 }, // Unentschuldigte Verspätungen
+    5: { cellWidth: 55 }, // Unentschuldigte Fehlzeiten
+  } : {
+    0: { cellWidth: 20 }, // Nachname
+    1: { cellWidth: 20 }, // Vorname
+    2: { cellWidth: 12 }, // Klasse
+    3: { cellWidth: 15 }, // Verspätungen (E)
+    4: { cellWidth: 15 }, // Verspätungen (U)
+    5: { cellWidth: 15 }, // Verspätungen (O)
+    6: { cellWidth: 15 }, // Fehlzeiten (E)
+    7: { cellWidth: 15 }, // Fehlzeiten (U)
+    8: { cellWidth: 15 }, // Fehlzeiten (O)
+    9: { cellWidth: 12 }, // ∑SJ V
+    10: { cellWidth: 12 }, // ∑SJ F
+    11: { cellWidth: 18 }, // Øx() V
+    12: { cellWidth: 18 }, // Øx() F
+    13: { cellWidth: 18 }, // ∑x() V
+    14: { cellWidth: 18 }, // ∑x() F
+  };
+
+  // Add styles for details column if needed
+  const columnStyles = hasDetails ? {
+    ...baseColumnStyles,
+    'Details': { cellWidth: 60 }
+  } : baseColumnStyles;
+
+  // Add table
+  autoTable(doc, {
+    head: [Object.keys(enrichedData[0])],
+    body: enrichedData.map(Object.values),
+    startY: margin.top + 20,
+    margin: margin,
+    styles: {
+      fontSize: 8,
+      cellPadding: 1.5,
+      overflow: 'linebreak',
+      cellWidth: 'wrap',
+      minCellHeight: 3
+    },
+    headStyles: {
+      fillColor: [66, 66, 66],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold'
+    },
+    columnStyles: columnStyles,
+  });
+
+  doc.save(`Anwesenheitsstatistik_${startDate}_${endDate}.pdf`);
+};
