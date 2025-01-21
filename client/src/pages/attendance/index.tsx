@@ -705,7 +705,7 @@ const AttendanceAnalyzer = () => {
                     Zurücksetzen
                   </Button>
                   <ExportButtons 
-                    data={getFilteredStudents()}
+                    data={getFilteredStudents()}  // Keep calling the function here since we need the actual data
                     startDate={startDate}
                     endDate={endDate}
                     schoolYearStats={schoolYearStats}
@@ -720,7 +720,7 @@ const AttendanceAnalyzer = () => {
                 
                 {isReportView ? (
                   <ReportView
-                    filteredStudents={getFilteredStudents()}
+                    getFilteredStudents={getFilteredStudents}  // Pass the function instead of its result
                     detailedData={detailedData}
                     startDate={startDate}
                     endDate={endDate}
@@ -732,7 +732,7 @@ const AttendanceAnalyzer = () => {
                   />
                 ) : (
                   <NormalView
-                    filteredStudents={getFilteredStudents()}
+                    getFilteredStudents={getFilteredStudents}  // Pass the function instead of its result
                     detailedData={detailedData}
                     schoolYearDetailedData={schoolYearDetailedData}
                     weeklyDetailedData={weeklyDetailedData}
@@ -746,7 +746,7 @@ const AttendanceAnalyzer = () => {
                     availableClasses={availableClasses}
                     selectedClasses={selectedClasses}
                     onClassesChange={setSelectedClasses}
-                    expandedStudents={expandedStudents} 
+                    expandedStudents={expandedStudents}
                     setExpandedStudents={setExpandedStudents}
                     activeFilters={activeFilters}
                     setActiveFilters={setActiveFilters}
