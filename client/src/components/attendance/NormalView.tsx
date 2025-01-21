@@ -18,7 +18,7 @@ interface DetailedStats {
 }
 
 interface NormalViewProps {
-  filteredStudents: [string, StudentStats][];
+  getFilteredStudents: () => [string, StudentStats][];  // Update to function type
   detailedData: Record<string, DetailedStats>;
   schoolYearDetailedData: Record<string, DetailedStats>;
   weeklyDetailedData: Record<string, DetailedStats>;
@@ -60,8 +60,8 @@ interface SortState {
 }
 
 const NormalView = ({ 
-  filteredStudents, 
-  detailedData, 
+  getFilteredStudents,  // Update parameter name to reflect it's a function
+  detailedData,
   schoolYearDetailedData,
   weeklyDetailedData,
   startDate, 
@@ -221,14 +221,14 @@ const NormalView = ({
     if (!isAllExpanded) {
       const newExpandedStudents = new Set<string>();
       const newActiveFilters = new Map<string, string>();
-
-      filteredStudents.forEach(([student, stats]) => {
+  
+      getFilteredStudents().forEach(([student, stats]) => {
         if (stats.verspaetungen_unentsch > 0 || stats.fehlzeiten_unentsch > 0) {
           newExpandedStudents.add(student);
           newActiveFilters.set(student, 'details');
         }
       });
-
+  
       setExpandedStudents(newExpandedStudents);
       setActiveFilters(newActiveFilters);
     } else {
@@ -316,7 +316,7 @@ const NormalView = ({
   };
 
   const getSortedStudents = () => {
-    return [...filteredStudents].sort((a, b) => {
+    return [...getFilteredStudents()].sort((a, b) => {
       const sortEntries = Array.from(sortStates.values())
         .sort((x, y) => x.order - y.order);
 
