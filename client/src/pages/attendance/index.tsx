@@ -707,10 +707,8 @@ const AttendanceAnalyzer = () => {
                     schoolYearStats={schoolYearStats}
                     weeklyStats={weeklyStats}
                     selectedWeeks={selectedWeeks}
-                    isReportView={false}
-                    detailedData={detailedData}
-                    expandedStudents={expandedStudents}
-                    activeFilters={activeFilters}
+                    isReportView={isReportView}
+                    detailedData={isReportView ? detailedData : {}}
                   />
                 </div>
                 
