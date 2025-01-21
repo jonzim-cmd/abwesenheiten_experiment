@@ -38,6 +38,10 @@ interface NormalViewProps {
   availableClasses: string[];
   selectedClasses: string[];
   onClassesChange: (classes: string[]) => void;
+  expandedStudents: Set<string>;
+  setExpandedStudents: (value: Set<string>) => void; 
+  activeFilters: Map<string, string>;
+  setActiveFilters: (value: Map<string, string>) => void;
 }
 
 type SortField = 'name' | 'klasse' | 
@@ -69,10 +73,12 @@ const NormalView = ({
   onSearchChange,
   availableClasses,
   selectedClasses,
-  onClassesChange
+  onClassesChange,
+  expandedStudents,
+  setExpandedStudents,
+  activeFilters,
+  setActiveFilters
 }: NormalViewProps) => {
-  const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
-  const [activeFilters, setActiveFilters] = useState<Map<string, string>>(new Map());
   const [isAllExpanded, setIsAllExpanded] = useState(false);
   const [sortStates, setSortStates] = useState<Map<SortField, SortState>>(new Map());
 
