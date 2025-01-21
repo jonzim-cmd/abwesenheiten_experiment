@@ -705,14 +705,14 @@ const AttendanceAnalyzer = () => {
                     Zurücksetzen
                   </Button>
                   <ExportButtons 
-                    data={getFilteredStudents()}  // Keep calling the function here since we need the actual data
+                    getFilteredStudents={getFilteredStudents}  // neu
                     startDate={startDate}
                     endDate={endDate}
                     schoolYearStats={schoolYearStats}
                     weeklyStats={weeklyStats}
                     selectedWeeks={selectedWeeks}
                     isReportView={isReportView}
-                    detailedData={isReportView ? detailedData : {}}
+                    detailedData={detailedData}  // Entfernen der isReportView-Bedingung
                     expandedStudents={expandedStudents}
                     activeFilters={activeFilters}
                   />
