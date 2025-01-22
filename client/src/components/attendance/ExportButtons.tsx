@@ -75,6 +75,36 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
   expandedStudents,
   activeFilters
 }) => {
+  const getDetailHeader = (filterType: string): string => {
+    switch(filterType) {
+      case 'verspaetungen_entsch':
+        return 'Entschuldigte Verspätungen';
+      case 'verspaetungen_unentsch':
+        return 'Unentschuldigte Verspätungen';
+      case 'verspaetungen_offen':
+        return 'Noch zu entschuldigende Verspätungen (Frist läuft noch)';
+      case 'fehlzeiten_entsch':
+        return 'Entschuldigte Fehlzeiten';
+      case 'fehlzeiten_unentsch':
+        return 'Unentschuldigte Fehlzeiten';
+      case 'fehlzeiten_offen':
+        return 'Noch zu entschuldigende Fehlzeiten (Frist läuft noch)';
+      case 'sj_verspaetungen':
+        return 'Unentschuldigte Verspätungen im Schuljahr';
+      case 'sj_fehlzeiten':
+        return 'Unentschuldigte Fehlzeiten im Schuljahr';
+      case 'weekly_verspaetungen':
+      case 'sum_verspaetungen':
+        return 'Unentschuldigte Verspätungen in den letzten ' + selectedWeeks + ' Wochen';
+      case 'weekly_fehlzeiten':
+      case 'sum_fehlzeiten':
+        return 'Unentschuldigte Fehlzeiten in den letzten ' + selectedWeeks + ' Wochen';
+      case 'details':
+        return 'Unentschuldigte Verspätungen und Fehlzeiten';
+      default:
+        return '';
+    }
+  };
   const formatDate = (datum: Date | string) => {
     if (typeof datum === 'string') {
       const [day, month, year] = datum.split('.');
@@ -291,9 +321,10 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
 
       // Nur wenn Details vorhanden sind, diese als separate Spalte hinzufügen
       if (formattedDetails.length > 0) {
+        const header = getDetailHeader(filterType);
         return {
           ...row,
-          'Details': formattedDetails.join('\n')
+          'Details': `${header}\n${formattedDetails.join('\n')}`
         };
       }
       return row;
