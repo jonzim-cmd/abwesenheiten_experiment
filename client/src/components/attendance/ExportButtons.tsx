@@ -1,13 +1,43 @@
+Export
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import * as XLSX from 'xlsx';
 import { unparse } from 'papaparse';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { StudentStats } from '@/lib/attendance-utils';
+import { getLastNWeeks } from '@/lib/attendance';
+
+interface AbsenceEntry {
+  datum: Date | string;
+  art: string;
+  beginnZeit?: string;
+  endZeit?: string;
+  grund?: string;
+  status: string;
+}
+
+interface DetailedStats {
+  verspaetungen_entsch: AbsenceEntry[];
+  verspaetungen_unentsch: AbsenceEntry[];
+  verspaetungen_offen: AbsenceEntry[];
+  fehlzeiten_entsch: AbsenceEntry[];
+  fehlzeiten_unentsch: AbsenceEntry[];
+  fehlzeiten_offen: AbsenceEntry[];
+}
+
+interface StudentStats {
+  verspaetungen_entsch: number;
+  verspaetungen_unentsch: number;
+  verspaetungen_offen: number;
+  fehlzeiten_entsch: number;
+  fehlzeiten_unentsch: number;
+  fehlzeiten_offen: number;
+  klasse: string;
+}
 
 interface ExportButtonsProps {
-  data: [string, StudentStats][];
+  getFilteredStudents: () => [string, StudentStats][];
   startDate: string;
   endDate: string;
   schoolYearStats: {
@@ -24,19 +54,29 @@ interface ExportButtonsProps {
   };
   selectedWeeks: string;
   isReportView?: boolean;
-  detailedData?: Record<string, any>;
+  detailedData: Record<string, DetailedStats>;
+  expandedStudents: Set<string>;
+  activeFilters: Map<string, string>;
 }
 
-const ExportButtons = ({ 
-  data, 
+const parseDate = (dateStr: string | Date): Date => {
+  if (dateStr instanceof Date) return dateStr;
+  const [day, month, year] = dateStr.split('.');
+  return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+};
+
+const ExportButtons: React.FC<ExportButtonsProps> = ({ 
+  getFilteredStudents, 
   startDate, 
   endDate, 
   schoolYearStats,
   weeklyStats,
   selectedWeeks,
   isReportView = false,
-  detailedData = {}
-}: ExportButtonsProps) => {
+  detailedData,
+  expandedStudents,
+  activeFilters
+}) => {
   const formatDate = (datum: Date | string) => {
     if (typeof datum === 'string') {
       const [day, month, year] = datum.split('.');
@@ -57,24 +97,21 @@ const ExportButtons = ({
   };
 
   const formatData = () => {
+    const data = getFilteredStudents();
     if (isReportView) {
-      // Format data for report view
       return data.map(([student, stats], index) => {
         const studentData = detailedData[student];
         const lateEntries = studentData?.verspaetungen_unentsch || [];
         const absenceEntries = studentData?.fehlzeiten_unentsch || [];
 
-        // Format late entries
-        const formattedLates = lateEntries.map((entry: any) => 
+        const formattedLates = lateEntries.map((entry: AbsenceEntry) => 
           `${formatDate(entry.datum)} (${entry.beginnZeit} - ${entry.endZeit} Uhr)`
         ).join('\n');
 
-        // Format absence entries
-        const formattedAbsences = absenceEntries.map((entry: any) => 
+        const formattedAbsences = absenceEntries.map((entry: AbsenceEntry) => 
           `${formatDate(entry.datum)} - ${entry.art}${entry.grund ? ` (${entry.grund})` : ''}`
         ).join('\n');
 
-        // Split student name into Nachname and Vorname
         const [nachname = "", vorname = ""] = student.split(",").map(s => s.trim());
 
         return {
@@ -87,7 +124,6 @@ const ExportButtons = ({
         };
       });
     } else {
-      // Format data for normal view
       return data.map(([student, stats]) => {
         const weeklyData = weeklyStats[student] || {
           verspaetungen: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) },
@@ -108,7 +144,6 @@ const ExportButtons = ({
           fehlzeiten_unentsch: 0 
         };
 
-        // Split student name into Nachname and Vorname
         const [nachname = "", vorname = ""] = student.split(",").map(s => s.trim());
 
         return {
@@ -138,10 +173,9 @@ const ExportButtons = ({
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Anwesenheitsstatistik");
 
-    // Adjust column widths for better readability
     const colWidths = isReportView ? 
-      [10, 30, 30, 15, 60, 60] : // Report view column widths
-      [25, 25, 15, 15, 15, 15, 15, 15, 15, 15, 15, 20, 20, 20, 20]; // Normal view column widths
+      [10, 30, 30, 15, 60, 60] : 
+      [25, 25, 15, 15, 15, 15, 15, 15, 15, 15, 15, 20, 20, 20, 20];
 
     worksheet['!cols'] = colWidths.map(width => ({ width }));
 
@@ -152,8 +186,8 @@ const ExportButtons = ({
   const exportToCSV = () => {
     const formattedData = formatData();
     const csv = unparse(formattedData, {
-      quotes: true, // Force quotes around all fields
-      newline: '\n', // Use Unix-style line endings
+      quotes: true,
+      newline: '\n',
     });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -171,7 +205,6 @@ const ExportButtons = ({
       format: 'a4'
     });
 
-    // Set minimum margins (in mm)
     const margin = {
       left: 15,
       right: 15,
@@ -179,21 +212,146 @@ const ExportButtons = ({
       bottom: 20
     };
 
-    // Calculate available width for content
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     const contentWidth = pageWidth - margin.left - margin.right;
 
-    // Add title
     doc.setFontSize(16);
     doc.text('Anwesenheitsstatistik', margin.left, margin.top);
     doc.setFontSize(12);
     doc.text(`Zeitraum: ${new Date(startDate).toLocaleDateString('de-DE')} - ${new Date(endDate).toLocaleDateString('de-DE')}`, margin.left, margin.top + 10);
 
-    // Add table
+    const enrichedData = formattedData.map(row => {
+      const studentName = `${row['Nachname']}, ${row['Vorname']}`;
+
+      // Nur für expandierte Schüler Details hinzufügen
+      if (!expandedStudents.has(studentName)) {
+        return row;
+      }
+
+      const filterType = activeFilters.get(studentName);
+      if (!filterType) return row;
+
+      let details: AbsenceEntry[] = [];
+      const studentData = detailedData[studentName];
+      
+      // Genau die Details holen, die aktuell angezeigt werden
+      if (studentData) {
+        switch(filterType) {
+          case 'verspaetungen_entsch':
+          case 'verspaetungen_unentsch':
+          case 'verspaetungen_offen':
+          case 'fehlzeiten_entsch':
+          case 'fehlzeiten_unentsch':
+          case 'fehlzeiten_offen':
+            details = studentData[filterType as keyof DetailedStats] || [];
+            break;
+          case 'sj_verspaetungen':
+          case 'sj_fehlzeiten':
+            details = filterType === 'sj_verspaetungen' 
+              ? studentData.verspaetungen_unentsch 
+              : studentData.fehlzeiten_unentsch;
+            break;
+          case 'weekly_verspaetungen':
+          case 'sum_verspaetungen':
+          case 'weekly_fehlzeiten':
+          case 'sum_fehlzeiten': {
+            const isVerspaetung = filterType.includes('verspaetungen');
+            const entries = isVerspaetung 
+              ? studentData.verspaetungen_unentsch 
+              : studentData.fehlzeiten_unentsch;
+            const weeks = getLastNWeeks(parseInt(selectedWeeks));
+            details = entries.filter(entry => {
+              const date = typeof entry.datum === 'string' ? parseDate(entry.datum) : entry.datum;
+              return weeks.some(week => date >= week.startDate && date <= week.endDate);
+            });
+            break;
+          }
+          case 'details':
+            details = [
+              ...studentData.verspaetungen_unentsch,
+              ...studentData.fehlzeiten_unentsch
+            ];
+            break;
+        }
+      }
+
+      const formattedDetails = details
+        .sort((a, b) => {
+          const dateA = typeof a.datum === 'string' ? parseDate(a.datum) : a.datum;
+          const dateB = typeof b.datum === 'string' ? parseDate(b.datum) : b.datum;
+          return dateB.getTime() - dateA.getTime();
+        })
+        .map(entry => {
+          const date = formatDate(entry.datum);
+          const type = entry.art;
+          const time = entry.beginnZeit ? ` (${entry.beginnZeit}${entry.endZeit ? ` - ${entry.endZeit}` : ''} Uhr)` : '';
+          const reason = entry.grund ? ` - ${entry.grund}` : '';
+          const status = entry.status ? ` [${entry.status}]` : '';
+          return `${date}${time}: ${type}${reason}${status}`;
+        });
+
+      // Nur wenn Details vorhanden sind, diese als separate Spalte hinzufügen
+      if (formattedDetails.length > 0) {
+        return {
+          ...row,
+          'Details': formattedDetails.join('\n')
+        };
+      }
+      return row;
+    });
+
+    const hasDetails = enrichedData.some(row => row['Details']);
+    
+    // Spaltenbreiten anpassen - bestehende Breiten plus Details-Spalte wenn nötig
+    const baseColumnStyles = isReportView ? {
+      0: { cellWidth: 8 },
+      1: { cellWidth: 25 },
+      2: { cellWidth: 25 },
+      3: { cellWidth: 12 },
+      4: { cellWidth: 55 },
+      5: { cellWidth: 55 },
+    } : {
+      0: { cellWidth: 20 },
+      1: { cellWidth: 20 },
+      2: { cellWidth: 12 },
+      3: { cellWidth: 15 },
+      4: { cellWidth: 15 },
+      5: { cellWidth: 15 },
+      6: { cellWidth: 15 },
+      7: { cellWidth: 15 },
+      8: { cellWidth: 15 },
+      9: { cellWidth: 12 },
+      10: { cellWidth: 12 },
+      11: { cellWidth: 18 },
+      12: { cellWidth: 18 },
+      13: { cellWidth: 18 },
+      14: { cellWidth: 18 },
+    };
+
+    const columnStyles = hasDetails ? {
+      ...baseColumnStyles,
+      'Details': { cellWidth: 60 }
+    } : baseColumnStyles;
+
+    // PDF Tabelle mit Detail-Zeilen erstellen
     autoTable(doc, {
-      head: [Object.keys(formattedData[0])],
-      body: formattedData.map(Object.values),
+      head: [Object.keys(enrichedData[0])],
+      body: enrichedData.flatMap(row => {
+        if (row['Details']) {
+          // Hauptzeile (alle Daten außer Details)
+          const mainRow = Object.entries(row)
+            .filter(([key]) => key !== 'Details')
+            .map(([_, value]) => value);
+          
+          // Detailzeile (leere Zellen + Details in letzter Spalte)
+          const detailRow = Array(mainRow.length).fill('');
+          detailRow[detailRow.length - 1] = row['Details'];
+          
+          return [mainRow, detailRow];
+        }
+        return [Object.values(row)];
+      }),
       startY: margin.top + 20,
       margin: margin,
       styles: {
@@ -208,35 +366,23 @@ const ExportButtons = ({
         textColor: [255, 255, 255],
         fontStyle: 'bold'
       },
-      columnStyles: isReportView ? {
-        0: { cellWidth: 8 }, // Nr
-        1: { cellWidth: 25 }, // Nachname
-        2: { cellWidth: 25 }, // Vorname
-        3: { cellWidth: 12 }, // Klasse
-        4: { cellWidth: 55 }, // Unentschuldigte Verspätungen
-        5: { cellWidth: 55 }, // Unentschuldigte Fehlzeiten
-      } : {
-        0: { cellWidth: 20 }, // Nachname
-        1: { cellWidth: 20 }, // Vorname
-        2: { cellWidth: 12 }, // Klasse
-        3: { cellWidth: 15 }, // Verspätungen (E)
-        4: { cellWidth: 15 }, // Verspätungen (U)
-        5: { cellWidth: 15 }, // Verspätungen (O)
-        6: { cellWidth: 15 }, // Fehlzeiten (E)
-        7: { cellWidth: 15 }, // Fehlzeiten (U)
-        8: { cellWidth: 15 }, // Fehlzeiten (O)
-        9: { cellWidth: 12 }, // ∑SJ V
-        10: { cellWidth: 12 }, // ∑SJ F
-        11: { cellWidth: 18 }, // Øx() V
-        12: { cellWidth: 18 }, // Øx() F
-        13: { cellWidth: 18 }, // ∑x() V
-        14: { cellWidth: 18 }, // ∑x() F
-      },
+      columnStyles: columnStyles,
+      // Styling für Detail-Zeilen
+      rowStyles: (row) => {
+        if (row.raw[row.raw.length - 1] && typeof row.raw[0] === 'string' && row.raw[0] === '') {
+          return {
+            fillColor: [245, 245, 245],
+            textColor: [100, 100, 100],
+            fontSize: 7
+          };
+        }
+        return {};
+      }
     });
 
     doc.save(`Anwesenheitsstatistik_${startDate}_${endDate}.pdf`);
   };
-
+  
   return (
     <div className="flex gap-2">
       <Button
@@ -262,6 +408,6 @@ const ExportButtons = ({
       </Button>
     </div>
   );
-};
+}; // Ende der ExportButtons-Komponente
 
 export default ExportButtons;
