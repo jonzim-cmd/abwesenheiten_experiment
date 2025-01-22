@@ -1,5 +1,3 @@
-Export
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import * as XLSX from 'xlsx';
