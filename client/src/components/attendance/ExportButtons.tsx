@@ -340,15 +340,22 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       body: enrichedData.flatMap(row => {
         if (row['Details']) {
           // Hauptzeile (alle Daten außer Details)
-          const mainRow = Object.entries(row)
-            .filter(([key]) => key !== 'Details')
-            .map(([_, value]) => value);
+          const mainRow = Object.values(row).slice(0, -1); // Alles außer Details
           
-          // Detailzeile (leere Zellen + Details in letzter Spalte)
-          const detailRow = Array(mainRow.length).fill('');
-          detailRow[detailRow.length - 1] = row['Details'];
-          
-          return [mainRow, detailRow];
+          // Detail-Zeile mit colspan
+          return [
+            mainRow,
+            [{ 
+              content: row['Details'], 
+              colSpan: mainRow.length, 
+              styles: { 
+                fillColor: [245, 245, 245],
+                textColor: [100, 100, 100],
+                fontSize: 7,
+                cellPadding: 3
+              }
+            }]
+          ];
         }
         return [Object.values(row)];
       }),
