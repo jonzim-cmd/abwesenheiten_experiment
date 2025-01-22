@@ -14,7 +14,7 @@ interface SortState {
 }
 
 interface ReportViewProps {
-  filteredStudents: [string, any][];
+  getFilteredStudents: () => [string, any][];
   detailedData: Record<string, any>;
   startDate: string;
   endDate: string;
@@ -26,8 +26,8 @@ interface ReportViewProps {
 }
 
 const ReportView = ({ 
-  filteredStudents, 
-  detailedData, 
+  getFilteredStudents, 
+  detailedData,
   startDate, 
   endDate,
   searchQuery,
@@ -98,7 +98,7 @@ const ReportView = ({
   };
 
   const getSortedStudents = () => {
-    return [...filteredStudents].sort((a, b) => {
+    return [...getFilteredStudents()].sort((a, b) => {
       // Erst nach den benutzerdefinierten Sortierungen sortieren
       const sortEntries = Array.from(sortStates.values())
         .sort((x, y) => x.order - y.order);
