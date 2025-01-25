@@ -99,7 +99,7 @@ const AttendanceAnalyzer = () => {
       if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
       const [day, month, year] = row.Beginndatum.split('.');
-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 12);
       const studentName = `${row.Langname}, ${row.Vorname}`;
 
       if (!stats[studentName]) {
@@ -136,7 +136,7 @@ const AttendanceAnalyzer = () => {
       if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
       const [day, month, year] = row.Beginndatum.split('.');
-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 12);
       const studentName = `${row.Langname}, ${row.Vorname}`;
 
       const weekIndex = weeks.findIndex(w => {
@@ -190,7 +190,7 @@ const AttendanceAnalyzer = () => {
         if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
         const [day, month, year] = row.Beginndatum.split('.');
-        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 12);
         const studentName = `${row.Langname}, ${row.Vorname}`;
 
         if (!studentStats[studentName]) {
