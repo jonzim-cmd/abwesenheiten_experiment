@@ -88,8 +88,8 @@ const AttendanceAnalyzer = () => {
 
   const calculateSchoolYearStats = useCallback((data: any[]) => {
     const schoolYear = getCurrentSchoolYear();
-    const sjStartDate = new Date(schoolYear.start, 8, 1);
-    const sjEndDate = new Date(schoolYear.end, 7, 31);
+    const sjStartDate = new Date(schoolYear.start + '-09-01T00:00:00');
+    const sjEndDate = new Date(schoolYear.end + '-07-31T23:59:59');
     const today = new Date();
 
     const stats: Record<string, { verspaetungen_unentsch: number; fehlzeiten_unentsch: number }> = {};
@@ -99,7 +99,7 @@ const AttendanceAnalyzer = () => {
       if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
       const [day, month, year] = row.Beginndatum.split('.');
-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      const date = new Date(year + '-' + month.padStart(2, '0') + '-' + day.padStart(2, '0') + 'T12:00:00');
       const studentName = `${row.Langname}, ${row.Vorname}`;
 
       if (!stats[studentName]) {
@@ -136,7 +136,7 @@ const AttendanceAnalyzer = () => {
       if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
       const [day, month, year] = row.Beginndatum.split('.');
-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      const date = new Date(year + '-' + month.padStart(2, '0') + '-' + day.padStart(2, '0') + 'T12:00:00');
       const studentName = `${row.Langname}, ${row.Vorname}`;
 
       const weekIndex = weeks.findIndex(w => {
@@ -182,15 +182,15 @@ const AttendanceAnalyzer = () => {
       const schoolYearDetails: Record<string, DetailedStats> = {};
       const weeklyDetails: Record<string, DetailedStats> = {};
       const schoolYear = getCurrentSchoolYear();
-      const sjStartDate = new Date(schoolYear.start, 8, 1);
-      const sjEndDate = new Date(schoolYear.end, 7, 31);
+      const sjStartDate = new Date(schoolYear.start + '-09-01T00:00:00');
+      const sjEndDate = new Date(schoolYear.end + '-07-31T23:59:59');
 
       data.forEach(row => {
         if (!row.Beginndatum || !row.Langname || !row.Vorname) return;
         if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
         const [day, month, year] = row.Beginndatum.split('.');
-        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        const date = new Date(year + '-' + month.padStart(2, '0') + '-' + day.padStart(2, '0') + 'T12:00:00');
         const studentName = `${row.Langname}, ${row.Vorname}`;
 
         if (!studentStats[studentName]) {
@@ -400,8 +400,8 @@ const AttendanceAnalyzer = () => {
 
   React.useEffect(() => {
     if (rawData && startDate && endDate) {
-      const startDateTime = new Date(startDate);
-      const endDateTime = new Date(endDate);
+      const startDateTime = new Date(startDate + 'T00:00:00');
+      const endDateTime = new Date(endDate + 'T23:59:59');
 
       if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
         setError('Ungültiges Datum');
@@ -422,8 +422,8 @@ const AttendanceAnalyzer = () => {
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth();
-      const start = new Date(currentYear, currentMonth, 1);
-      const end = new Date(currentYear, currentMonth + 1, 0);
+      const start = new Date(currentYear + '-' + String(currentMonth + 1).padStart(2, '0') + '-01T00:00:00');
+      const end = new Date(currentYear + '-' + String(currentMonth + 1).padStart(2, '0') + '-' + String(new Date(currentYear, currentMonth + 1, 0).getDate()).padStart(2, '0') + 'T23:59:59');
       
       setStartDate(start.toLocaleDateString('sv').split('T')[0]);
       setEndDate(end.toLocaleDateString('sv').split('T')[0]);
@@ -523,46 +523,52 @@ const AttendanceAnalyzer = () => {
                       case 'thisWeek': {
                         const currentDay = now.getDay();
                         const diff = currentDay === 0 ? 6 : currentDay - 1;
-                        start = new Date(now);
-                        start.setDate(now.getDate() - diff);
-                        end = new Date(start);
-                        end.setDate(start.getDate() + 6);
+                        const startDate = new Date(now);
+                        startDate.setDate(now.getDate() - diff);
+                        const endDate = new Date(startDate);
+                        endDate.setDate(startDate.getDate() + 6);
+                        start = new Date(startDate.getFullYear() + '-' + String(startDate.getMonth() + 1).padStart(2, '0') + '-' + String(startDate.getDate()).padStart(2, '0') + 'T00:00:00');
+                        end = new Date(endDate.getFullYear() + '-' + String(endDate.getMonth() + 1).padStart(2, '0') + '-' + String(endDate.getDate()).padStart(2, '0') + 'T23:59:59');
                         break;
                       }
                       case 'lastWeek': {
                         const currentDay = now.getDay();
                         const diff = currentDay === 0 ? 6 : currentDay - 1;
-                        start = new Date(now);
-                        start.setDate(now.getDate() - diff - 7);
-                        end = new Date(start);
-                        end.setDate(start.getDate() + 6);
+                        const startDate = new Date(now);
+                        startDate.setDate(now.getDate() - diff - 7);
+                        const endDate = new Date(startDate);
+                        endDate.setDate(startDate.getDate() + 6);
+                        start = new Date(startDate.getFullYear() + '-' + String(startDate.getMonth() + 1).padStart(2, '0') + '-' + String(startDate.getDate()).padStart(2, '0') + 'T00:00:00');
+                        end = new Date(endDate.getFullYear() + '-' + String(endDate.getMonth() + 1).padStart(2, '0') + '-' + String(endDate.getDate()).padStart(2, '0') + 'T23:59:59');
                         break;
                       }
                       case 'lastTwoWeeks': {
                         const currentDay = now.getDay();
                         const diff = currentDay === 0 ? 6 : currentDay - 1;
-                        start = new Date(now);
-                        start.setDate(now.getDate() - diff - 14);  // 2 Wochen + Tage bis Montag zurück
-                        end = new Date(start);
-                        end.setDate(start.getDate() + 13);         // 14 Tage (2 volle Wochen) vorwärts
+                        const startDate = new Date(now);
+                        startDate.setDate(now.getDate() - diff - 14);
+                        const endDate = new Date(startDate);
+                        endDate.setDate(startDate.getDate() + 13);
+                        start = new Date(startDate.getFullYear() + '-' + String(startDate.getMonth() + 1).padStart(2, '0') + '-' + String(startDate.getDate()).padStart(2, '0') + 'T00:00:00');
+                        end = new Date(endDate.getFullYear() + '-' + String(endDate.getMonth() + 1).padStart(2, '0') + '-' + String(endDate.getDate()).padStart(2, '0') + 'T23:59:59');
                         break;
                       }
                       case 'thisMonth': {
-                        start = new Date(currentYear, currentMonth, 1);
-                        end = new Date(currentYear, currentMonth + 1, 0);
+                        start = new Date(currentYear + '-' + String(currentMonth + 1).padStart(2, '0') + '-01T00:00:00');
+                        end = new Date(currentYear + '-' + String(currentMonth + 1).padStart(2, '0') + '-' + String(new Date(currentYear, currentMonth + 1, 0).getDate()).padStart(2, '0') + 'T23:59:59');
                         break;
                       }
                       case 'lastMonth': {
                         const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
                         const yearOfLastMonth = currentMonth === 0 ? currentYear - 1 : currentYear;
-                        start = new Date(yearOfLastMonth, lastMonth, 1);
-                        end = new Date(yearOfLastMonth, lastMonth + 1, 0);
+                       start = new Date(yearOfLastMonth + '-' + String(lastMonth + 1).padStart(2, '0') + '-01T00:00:00');
+                        end = new Date(yearOfLastMonth + '-' + String(lastMonth + 1).padStart(2, '0') + '-' + String(new Date(yearOfLastMonth, lastMonth + 1, 0).getDate()).padStart(2, '0') + 'T23:59:59');
                         break;
                       }
                       case 'schoolYear': {
                         const schoolYear = getCurrentSchoolYear();
-                        start = new Date(schoolYear.start, 8, 1);
-                        end = new Date(schoolYear.end, 7, 31);
+                        start = new Date(schoolYear.start + '-09-01T00:00:00');
+                        end = new Date(schoolYear.end + '-07-31T23:59:59');
                         break;
                       }
                       default:
