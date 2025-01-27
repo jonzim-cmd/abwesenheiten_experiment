@@ -99,7 +99,7 @@ const AttendanceAnalyzer = () => {
       if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
       const [day, month, year] = row.Beginndatum.split('.');
-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 12);
+      const date = new Date(year + '-' + month.padStart(2, '0') + '-' + day.padStart(2, '0') + 'T12:00:00');
       const studentName = `${row.Langname}, ${row.Vorname}`;
 
       if (!stats[studentName]) {
@@ -136,7 +136,7 @@ const AttendanceAnalyzer = () => {
       if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
       const [day, month, year] = row.Beginndatum.split('.');
-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 12);
+      const date = new Date(year + '-' + month.padStart(2, '0') + '-' + day.padStart(2, '0') + 'T12:00:00');
       const studentName = `${row.Langname}, ${row.Vorname}`;
 
       const weekIndex = weeks.findIndex(w => {
@@ -190,7 +190,7 @@ const AttendanceAnalyzer = () => {
         if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
         const [day, month, year] = row.Beginndatum.split('.');
-        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 12);
+        const date = new Date(year + '-' + month.padStart(2, '0') + '-' + day.padStart(2, '0') + 'T12:00:00');
         const studentName = `${row.Langname}, ${row.Vorname}`;
 
         if (!studentStats[studentName]) {
@@ -400,8 +400,8 @@ const AttendanceAnalyzer = () => {
 
   React.useEffect(() => {
     if (rawData && startDate && endDate) {
-      const startDateTime = new Date(startDate);
-      const endDateTime = new Date(endDate);
+      const startDateTime = new Date(startDate + 'T00:00:00');
+      const endDateTime = new Date(endDate + 'T23:59:59');
 
       if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
         setError('Ungültiges Datum');
