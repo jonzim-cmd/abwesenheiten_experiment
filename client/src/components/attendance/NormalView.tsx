@@ -391,8 +391,9 @@ const NormalView = ({
             <StudentTableHeader onSort={handleSort} sortStates={sortStates} />
             <tbody>
               {getSortedStudents().map(([student, stats], index) => {
-                const rowColor = index % 2 === 0 ? 'bg-white' : 'bg-gray-100';
-                const finalRowColor = checkedStudents.has(student) ? 'bg-gray-200' : rowColor;
+                const baseRowColor = index % 2 === 0 ? 'bg-white' : 'bg-gray-100';
+                // Hier wird zusätzlich die Opacity (und ein sanfter Übergang) gesetzt, wenn der Schüler geprüft ist.
+                const finalRowClass = `${baseRowColor} transition-opacity duration-300 ${checkedStudents.has(student) ? 'opacity-50' : 'opacity-100'}`;
                 const schoolYearData = schoolYearStats[student] || { verspaetungen_unentsch: 0, fehlzeiten_unentsch: 0 };
                 const weeklyData = weeklyStats[student] || {
                   verspaetungen: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) },
@@ -408,7 +409,7 @@ const NormalView = ({
                       schoolYearData={schoolYearData}
                       weeklyData={weeklyData}
                       selectedWeeks={selectedWeeks}
-                      rowColor={finalRowColor}
+                      rowColor={finalRowClass}
                       onToggleDetails={() => toggleDetails(student)}
                       onShowFilteredDetails={showFilteredDetails}
                       isChecked={checkedStudents.has(student)}
@@ -418,7 +419,7 @@ const NormalView = ({
                       <StudentDetailsRow
                         student={student}
                         detailedData={getFilteredDetailData(student)}
-                        rowColor={finalRowColor}
+                        rowColor={finalRowClass}
                         isVisible={true}
                         filterType={activeFilters.get(student)}
                       />
