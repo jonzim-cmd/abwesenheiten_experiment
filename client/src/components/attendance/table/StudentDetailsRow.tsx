@@ -25,19 +25,19 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
       case 'fehlzeiten_unentsch':
         return 'Unentschuldigte Fehlzeiten im ausgewählten Zeitraum';
       case 'fehlzeiten_offen':
-        return 'Noch zu entschuldigende Fehlzeiten (Frist läuft noch)';
+        return 'Noch zu entschuldigende Fehlzeiten im ausgewählten Zeitraum (Frist läuft noch)';
       case 'sj_verspaetungen':
-        return 'Unentschuldigte Verspätungen im gesamten Schuljahr';
+        return 'Unentschuldigte, entschuldigte und offene Verspätungen im gesamten Schuljahr';
       case 'sj_fehlzeiten':
-        return 'Unentschuldigte Fehlzeiten im gesamten Schuljahr';
+        return 'Unentschuldigte, entschuldigte und offene Fehlzeiten im gesamten Schuljahr';
       default:
         if (filterType?.startsWith('weekly_')) {
           const isVerspaetung = filterType.includes('verspaetungen');
-          return `Unentschuldigte ${isVerspaetung ? 'Verspätungen' : 'Fehlzeiten'} (Wochendurchschnitt)`;
+          return `Unentschuldigte, entschuldigte und offene ${isVerspaetung ? 'Verspätungen' : 'Fehlzeiten'} (Wochendurchschnitt)`;
         }
         if (filterType?.startsWith('sum_')) {
           const isVerspaetung = filterType.includes('verspaetungen');
-          return `Unentschuldigte ${isVerspaetung ? 'Verspätungen' : 'Fehlzeiten'} (Gesamtsumme)`;
+          return `Unentschuldigte, entschuldigte und offene ${isVerspaetung ? 'Verspätungen' : 'Fehlzeiten'} (Gesamtsumme)`;
         }
         return 'Abwesenheitsdetails';
     }
