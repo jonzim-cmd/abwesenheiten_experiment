@@ -6,6 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import ResetCheckboxButton from './ResetCheckboxButton';
 
 type SortField = 'name' | 'klasse' | 
   'verspaetungen_entsch' | 'verspaetungen_unentsch' | 'verspaetungen_offen' |
@@ -25,9 +26,10 @@ interface SortState {
 interface StudentTableHeaderProps {
   onSort: (field: SortField) => void;
   sortStates: Map<SortField, SortState>;
+  onResetSelection: () => void;
 }
 
-const StudentTableHeader = ({ onSort, sortStates }: StudentTableHeaderProps) => {
+const StudentTableHeader = ({ onSort, sortStates, onResetSelection }: StudentTableHeaderProps) => {
   const renderSortIndicator = (field: SortField) => {
     const state = sortStates.get(field);
     if (!state) return null;
@@ -99,7 +101,16 @@ const StudentTableHeader = ({ onSort, sortStates }: StudentTableHeaderProps) => 
         </tr>
         <tr className="bg-white">
           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-r border-gray-200"></th>
-          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-r border-gray-200"></th>
+          
+          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-r border-gray-200">
+            <ResetCheckboxButton 
+              onReset={onResetSelection}
+              className="text-xs h-6 px-2"
+              variant="ghost"
+              size="xs"
+            />
+          </th>
+
           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-r border-gray-200"></th>
           <th 
             onClick={() => onSort('verspaetungen_entsch')}
@@ -207,7 +218,7 @@ const StudentTableHeader = ({ onSort, sortStates }: StudentTableHeaderProps) => 
             <Tooltip>
               <TooltipTrigger>∑x() F</TooltipTrigger>
               <TooltipContent className="text-xs">
-                <p className="text-xs">Vor (): ∑ Fehlz. pro vollständige Woche (je nach Auswahl 1–4 W). In (): ∑Fehlz. in W4, W3, W2, W1.</p>
+                <p className="text-xs">Vor (): ∑ Fehlz. pro vollständige Woche (je nach Auswahl 1–4 W). In (): ∑Fehlz. W4, W3, W2, W1.</p>
               </TooltipContent>
             </Tooltip> {renderSortIndicator('sum_fehlzeiten')}
           </th>
