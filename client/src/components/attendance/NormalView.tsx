@@ -7,6 +7,7 @@ import StudentDetailsRow from './table/StudentDetailsRow';
 import { StudentStats, AbsenceEntry, getLastNWeeks } from '@/lib/attendance-utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ClassFilter } from './ClassFilter';
+import ResetCheckboxButton from './ResetCheckboxButton';
 
 interface DetailedStats {
   verspaetungen_entsch: AbsenceEntry[];
@@ -18,34 +19,41 @@ interface DetailedStats {
 }
 
 interface NormalViewProps {
-  filteredStudents: [string, StudentStats][];
+  getFilteredStudents: () => [string, StudentStats][];
   detailedData: Record<string, DetailedStats>;
   schoolYearDetailedData: Record<string, DetailedStats>;
   weeklyDetailedData: Record<string, DetailedStats>;
   startDate: string;
   endDate: string;
-  schoolYearStats: Record<string, {
-    verspaetungen_unentsch: number;
-    fehlzeiten_unentsch: number;
-  }>;
-  weeklyStats: Record<string, {
-    verspaetungen: { total: number; weekly: number[] };
-    fehlzeiten: { total: number; weekly: number[] };
-  }>;
+  schoolYearStats: Record<string, { verspaetungen_unentsch: number; fehlzeiten_unentsch: number }>;
+  weeklyStats: Record<string, { verspaetungen: { total: number; weekly: number[] }; fehlzeiten: { total: number; weekly: number[] } }>;
   selectedWeeks: string;
   searchQuery: string;
   onSearchChange: (value: string) => void;
   availableClasses: string[];
   selectedClasses: string[];
   onClassesChange: (classes: string[]) => void;
+  expandedStudents: Set<string>;
+  setExpandedStudents: (value: Set<string>) => void;
+  activeFilters: Map<string, string>;
+  setActiveFilters: (value: Map<string, string>) => void;
 }
 
-type SortField = 'name' | 'klasse' | 
-  'verspaetungen_entsch' | 'verspaetungen_unentsch' | 'verspaetungen_offen' |
-  'fehlzeiten_entsch' | 'fehlzeiten_unentsch' | 'fehlzeiten_offen' |
-  'sj_verspaetungen' | 'sj_fehlzeiten' |
-  'weekly_verspaetungen' | 'weekly_fehlzeiten' |
-  'sum_verspaetungen' | 'sum_fehlzeiten';
+type SortField =
+  | 'name'
+  | 'klasse'
+  | 'verspaetungen_entsch'
+  | 'verspaetungen_unentsch'
+  | 'verspaetungen_offen'
+  | 'fehlzeiten_entsch'
+  | 'fehlzeiten_unentsch'
+  | 'fehlzeiten_offen'
+  | 'sj_verspaetungen'
+  | 'sj_fehlzeiten'
+  | 'weekly_verspaetungen'
+  | 'weekly_fehlzeiten'
+  | 'sum_verspaetungen'
+  | 'sum_fehlzeiten';
 
 type SortDirection = 'asc' | 'desc';
 
@@ -55,26 +63,29 @@ interface SortState {
   order: number;
 }
 
-const NormalView = ({ 
-  filteredStudents, 
-  detailedData, 
+const NormalView = ({
+  getFilteredStudents,
+  detailedData,
   schoolYearDetailedData,
   weeklyDetailedData,
-  startDate, 
-  endDate, 
-  schoolYearStats, 
+  startDate,
+  endDate,
+  schoolYearStats,
   weeklyStats,
   selectedWeeks,
   searchQuery,
   onSearchChange,
   availableClasses,
   selectedClasses,
-  onClassesChange
+  onClassesChange,
+  expandedStudents,
+  setExpandedStudents,
+  activeFilters,
+  setActiveFilters
 }: NormalViewProps) => {
-  const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
-  const [activeFilters, setActiveFilters] = useState<Map<string, string>>(new Map());
   const [isAllExpanded, setIsAllExpanded] = useState(false);
   const [sortStates, setSortStates] = useState<Map<SortField, SortState>>(new Map());
+  const [checkedStudents, setCheckedStudents] = useState<Set<string>>(new Set());
 
   const parseDate = (dateStr: string | Date): Date => {
     if (dateStr instanceof Date) return dateStr;
@@ -118,45 +129,47 @@ const NormalView = ({
           ...addOverdueEntries(studentData.fehlzeiten_offen)
         ];
 
-        return [...unexcusedEntries, ...overdueEntries]
-          .sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
+        return [...unexcusedEntries, ...overdueEntries].sort(
+          (a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime()
+        );
       }
 
       case 'sj_verspaetungen':
       case 'sj_fehlzeiten': {
-        const entries = filterType === 'sj_verspaetungen' 
-          ? studentSchoolYearData.verspaetungen_unentsch
-          : studentSchoolYearData.fehlzeiten_unentsch;
+        const entries =
+          filterType === 'sj_verspaetungen'
+            ? studentSchoolYearData.verspaetungen_unentsch
+            : studentSchoolYearData.fehlzeiten_unentsch;
 
-        return entries.sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
+        return entries.sort(
+          (a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime()
+        );
       }
 
       case 'weekly_verspaetungen':
       case 'sum_verspaetungen': {
         const weeks = getLastNWeeks(parseInt(selectedWeeks));
-        const entries = studentWeeklyData.verspaetungen_unentsch
-          .filter(entry => {
-            const date = parseDate(entry.datum);
-            return weeks.some(week => 
-              date >= week.startDate && date <= week.endDate
-            );
-          });
+        const entries = studentWeeklyData.verspaetungen_unentsch.filter(entry => {
+          const date = parseDate(entry.datum);
+          return weeks.some(week => date >= week.startDate && date <= week.endDate);
+        });
 
-        return entries.sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
+        return entries.sort(
+          (a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime()
+        );
       }
 
       case 'weekly_fehlzeiten':
       case 'sum_fehlzeiten': {
         const weeks = getLastNWeeks(parseInt(selectedWeeks));
-        const entries = studentWeeklyData.fehlzeiten_unentsch
-          .filter(entry => {
-            const date = parseDate(entry.datum);
-            return weeks.some(week => 
-              date >= week.startDate && date <= week.endDate
-            );
-          });
+        const entries = studentWeeklyData.fehlzeiten_unentsch.filter(entry => {
+          const date = parseDate(entry.datum);
+          return weeks.some(week => date >= week.startDate && date <= week.endDate);
+        });
 
-        return entries.sort((a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime());
+        return entries.sort(
+          (a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime()
+        );
       }
 
       default: {
@@ -216,7 +229,7 @@ const NormalView = ({
       const newExpandedStudents = new Set<string>();
       const newActiveFilters = new Map<string, string>();
 
-      filteredStudents.forEach(([student, stats]) => {
+      getFilteredStudents().forEach(([student, stats]) => {
         if (stats.verspaetungen_unentsch > 0 || stats.fehlzeiten_unentsch > 0) {
           newExpandedStudents.add(student);
           newActiveFilters.set(student, 'details');
@@ -235,31 +248,26 @@ const NormalView = ({
     setSortStates(prevStates => {
       const newStates = new Map(prevStates);
       const currentState = newStates.get(field);
-      
+
       if (!currentState) {
-        // First click: Add ascending sort
         newStates.set(field, {
           field,
           direction: 'asc',
           order: newStates.size
         });
       } else if (currentState.direction === 'asc') {
-        // Second click: Change to descending
         newStates.set(field, {
           ...currentState,
           direction: 'desc'
         });
       } else {
-        // Third click: Remove sort
         newStates.delete(field);
-        
-        // Reorder remaining sorts
         let order = 0;
         newStates.forEach(state => {
           state.order = order++;
         });
       }
-      
+
       return newStates;
     });
   };
@@ -287,32 +295,25 @@ const NormalView = ({
       case 'fehlzeiten_offen':
         return multiplier * (statsA.fehlzeiten_offen - statsB.fehlzeiten_offen);
       case 'sj_verspaetungen':
-        return multiplier * ((schoolYearStats[studentA]?.verspaetungen_unentsch || 0) - 
-                           (schoolYearStats[studentB]?.verspaetungen_unentsch || 0));
+        return multiplier * ((schoolYearStats[studentA]?.verspaetungen_unentsch || 0) - (schoolYearStats[studentB]?.verspaetungen_unentsch || 0));
       case 'sj_fehlzeiten':
-        return multiplier * ((schoolYearStats[studentA]?.fehlzeiten_unentsch || 0) - 
-                           (schoolYearStats[studentB]?.fehlzeiten_unentsch || 0));
+        return multiplier * ((schoolYearStats[studentA]?.fehlzeiten_unentsch || 0) - (schoolYearStats[studentB]?.fehlzeiten_unentsch || 0));
       case 'weekly_verspaetungen':
-        return multiplier * ((weeklyStats[studentA]?.verspaetungen.total / parseInt(selectedWeeks) || 0) - 
-                           (weeklyStats[studentB]?.verspaetungen.total / parseInt(selectedWeeks) || 0));
+        return multiplier * (((weeklyStats[studentA]?.verspaetungen.total / parseInt(selectedWeeks)) || 0) - ((weeklyStats[studentB]?.verspaetungen.total / parseInt(selectedWeeks)) || 0));
       case 'weekly_fehlzeiten':
-        return multiplier * ((weeklyStats[studentA]?.fehlzeiten.total / parseInt(selectedWeeks) || 0) - 
-                           (weeklyStats[studentB]?.fehlzeiten.total / parseInt(selectedWeeks) || 0));
+        return multiplier * (((weeklyStats[studentA]?.fehlzeiten.total / parseInt(selectedWeeks)) || 0) - ((weeklyStats[studentB]?.fehlzeiten.total / parseInt(selectedWeeks)) || 0));
       case 'sum_verspaetungen':
-        return multiplier * ((weeklyStats[studentA]?.verspaetungen.total || 0) - 
-                           (weeklyStats[studentB]?.verspaetungen.total || 0));
+        return multiplier * ((weeklyStats[studentA]?.verspaetungen.total || 0) - (weeklyStats[studentB]?.verspaetungen.total || 0));
       case 'sum_fehlzeiten':
-        return multiplier * ((weeklyStats[studentA]?.fehlzeiten.total || 0) - 
-                           (weeklyStats[studentB]?.fehlzeiten.total || 0));
+        return multiplier * ((weeklyStats[studentA]?.fehlzeiten.total || 0) - (weeklyStats[studentB]?.fehlzeiten.total || 0));
       default:
         return 0;
     }
   };
 
   const getSortedStudents = () => {
-    return [...filteredStudents].sort((a, b) => {
-      const sortEntries = Array.from(sortStates.values())
-        .sort((x, y) => x.order - y.order);
+    return [...getFilteredStudents()].sort((a, b) => {
+      const sortEntries = Array.from(sortStates.values()).sort((x, y) => x.order - y.order);
 
       for (const sortState of sortEntries) {
         if (sortState.direction) {
@@ -320,7 +321,7 @@ const NormalView = ({
           if (comparison !== 0) return comparison;
         }
       }
-      
+
       const [studentA, statsA] = a;
       const [studentB, statsB] = b;
       const classComparison = statsA.klasse.localeCompare(statsB.klasse);
@@ -329,36 +330,49 @@ const NormalView = ({
     });
   };
 
+  const toggleCheckedStudent = (student: string) => {
+    setCheckedStudents(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(student)) {
+        newSet.delete(student);
+      } else {
+        newSet.add(student);
+      }
+      return newSet;
+    });
+  };
+
+  const resetCheckedStudents = () => {
+    setCheckedStudents(new Set());
+  };
+
   return (
     <div className="mt-6 space-y-6">
       <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-4 flex-1">
-            <h3 className="text-lg font-semibold">
-              Ergebnisse für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
-            </h3>
-            <div className="w-72">
-              <Input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Namen eingeben..."
-                className="w-full"
-              />
-            </div>
-            <ClassFilter
-              availableClasses={availableClasses}
-              selectedClasses={selectedClasses}
-              onChange={onClassesChange}
+        <div className="flex items-center gap-4 flex-1">
+          <h3 className="text-lg font-semibold">
+            Ergebnisse für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
+          </h3>
+          <div className="w-72">
+            <Input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Namen eingeben..."
+              className="w-full"
             />
           </div>
+          <ClassFilter
+            availableClasses={availableClasses}
+            selectedClasses={selectedClasses}
+            onChange={onClassesChange}
+          />
+        </div>
+        <div className="flex items-center gap-2">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleAllDetails}
-                >
+                <Button variant="outline" size="sm" onClick={toggleAllDetails}>
                   {isAllExpanded ? 'Alle Details einklappen' : 'Alle Details ausklappen'}
                 </Button>
               </TooltipTrigger>
@@ -367,23 +381,21 @@ const NormalView = ({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          <ResetCheckboxButton onReset={resetCheckedStudents} />
         </div>
+      </div>
 
       <div className="relative h-[500px]">
         <div className="absolute inset-0 overflow-x-auto overflow-y-auto">
           <table className="min-w-full border-collapse bg-white">
-            <StudentTableHeader 
-              onSort={handleSort}
-              sortStates={sortStates}
-            />
+            <StudentTableHeader onSort={handleSort} sortStates={sortStates} />
             <tbody>
               {getSortedStudents().map(([student, stats], index) => {
-                const rowColor = index % 2 === 0 ? 'bg-white' : 'bg-gray-100';
-                const schoolYearData = schoolYearStats[student] || { 
-                  verspaetungen_unentsch: 0, 
-                  fehlzeiten_unentsch: 0 
-                };
-                const weeklyData = weeklyStats[student] || { 
+                const baseRowColor = index % 2 === 0 ? 'bg-white' : 'bg-gray-100';
+                // Hier wird zusätzlich die Opacity (und ein sanfter Übergang) gesetzt, wenn der Schüler geprüft ist.
+                const finalRowClass = `${baseRowColor} transition-opacity duration-300 ${checkedStudents.has(student) ? 'opacity-50' : 'opacity-100'}`;
+                const schoolYearData = schoolYearStats[student] || { verspaetungen_unentsch: 0, fehlzeiten_unentsch: 0 };
+                const weeklyData = weeklyStats[student] || {
                   verspaetungen: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) },
                   fehlzeiten: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) }
                 };
@@ -397,15 +409,17 @@ const NormalView = ({
                       schoolYearData={schoolYearData}
                       weeklyData={weeklyData}
                       selectedWeeks={selectedWeeks}
-                      rowColor={rowColor}
+                      rowColor={finalRowClass}
                       onToggleDetails={() => toggleDetails(student)}
                       onShowFilteredDetails={showFilteredDetails}
+                      isChecked={checkedStudents.has(student)}
+                      onToggleChecked={() => toggleCheckedStudent(student)}
                     />
                     {expandedStudents.has(student) && (
                       <StudentDetailsRow
                         student={student}
                         detailedData={getFilteredDetailData(student)}
-                        rowColor={rowColor}
+                        rowColor={finalRowClass}
                         isVisible={true}
                         filterType={activeFilters.get(student)}
                       />

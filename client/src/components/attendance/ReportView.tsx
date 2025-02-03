@@ -14,7 +14,7 @@ interface SortState {
 }
 
 interface ReportViewProps {
-  filteredStudents: [string, any][];
+  getFilteredStudents: () => [string, any][];
   detailedData: Record<string, any>;
   startDate: string;
   endDate: string;
@@ -26,8 +26,8 @@ interface ReportViewProps {
 }
 
 const ReportView = ({ 
-  filteredStudents, 
-  detailedData, 
+  getFilteredStudents, 
+  detailedData,
   startDate, 
   endDate,
   searchQuery,
@@ -98,7 +98,7 @@ const ReportView = ({
   };
 
   const getSortedStudents = () => {
-    return [...filteredStudents].sort((a, b) => {
+    return [...getFilteredStudents()].sort((a, b) => {
       // Erst nach den benutzerdefinierten Sortierungen sortieren
       const sortEntries = Array.from(sortStates.values())
         .sort((x, y) => x.order - y.order);
@@ -219,22 +219,26 @@ const ReportView = ({
               const studentData = detailedData[student];
               const lateEntries = studentData?.verspaetungen_unentsch || [];
               const absenceEntries = studentData?.fehlzeiten_unentsch || [];
-              const formattedLates = lateEntries.map(entry => 
-                `${new Date(entry.datum).toLocaleDateString('de-DE', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit'
-                })} (${entry.beginnZeit} - ${entry.endZeit} Uhr)`
-              );
-              const formattedAbsences = absenceEntries.map(entry => 
-                `${new Date(entry.datum).toLocaleDateString('de-DE', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit'
-                })} - ${entry.art}${entry.grund ? ` (${entry.grund})` : ''}`
-              );
+              const formattedLates = lateEntries
+                .sort((a, b) => new Date(b.datum).getTime() - new Date(a.datum).getTime())
+                .map((entry, idx) => 
+                  `${lateEntries.length - idx}. ${new Date(entry.datum).toLocaleDateString('de-DE', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                  })} (${entry.beginnZeit} - ${entry.endZeit} Uhr)`
+                );
+              const formattedAbsences = absenceEntries
+                .sort((a, b) => new Date(b.datum).getTime() - new Date(a.datum).getTime())
+                .map((entry, idx) => 
+                  `${absenceEntries.length - idx}. ${new Date(entry.datum).toLocaleDateString('de-DE', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                  })} - ${entry.art}${entry.grund ? ` (${entry.grund})` : ''}`
+                );
               return (
                 <tr 
                   key={student} 

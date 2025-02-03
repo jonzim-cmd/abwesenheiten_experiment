@@ -24,6 +24,8 @@ interface StudentTableRowProps {
   rowColor: string;
   onToggleDetails: () => void;
   onShowFilteredDetails: (student: string, type: string, weekData?: number[]) => void;
+  isChecked: boolean;
+  onToggleChecked: () => void;
 }
 
 const StudentTableRow = ({
@@ -35,7 +37,9 @@ const StudentTableRow = ({
   selectedWeeks,
   rowColor,
   onToggleDetails,
-  onShowFilteredDetails
+  onShowFilteredDetails,
+  isChecked,
+  onToggleChecked
 }: StudentTableRowProps) => {
   const verspaetungenAvg = (weeklyData.verspaetungen.total / parseInt(selectedWeeks)).toFixed(2);
   const fehlzeitenAvg = (weeklyData.fehlzeiten.total / parseInt(selectedWeeks)).toFixed(2);
@@ -46,10 +50,8 @@ const StudentTableRow = ({
   const verspaetungenSum = `${weeklyData.verspaetungen.total}(${weeklyData.verspaetungen.weekly.join(',')})`;
   const fehlzeitenSum = `${weeklyData.fehlzeiten.total}(${weeklyData.fehlzeiten.weekly.join(',')})`;
 
-  const hasRelevantCases = stats.verspaetungen_unentsch > 0 || stats.fehlzeiten_unentsch > 0;
-
   const createClickableCell = (value: number, type: string, className: string = "") => (
-    <span 
+    <span
       className={`cursor-pointer hover:underline ${className}`}
       onClick={() => onShowFilteredDetails(student, type)}
     >
@@ -58,7 +60,7 @@ const StudentTableRow = ({
   );
 
   const createClickableWeeklyCell = (displayText: string, weeklyData: number[], type: string) => (
-    <span 
+    <span
       className="cursor-pointer hover:underline"
       onClick={() => onShowFilteredDetails(student, type, weeklyData)}
     >
@@ -72,21 +74,29 @@ const StudentTableRow = ({
         {index + 1}
       </td>
       <td className="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200 truncate">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span 
-                className="cursor-pointer hover:underline"
-                onClick={onToggleDetails}
-              >
-                {student}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>zeige unent. V./F. Zeitr.: {stats.verspaetungen_unentsch}/{stats.fehlzeiten_unentsch}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={isChecked}
+            onChange={onToggleChecked}
+            className="form-checkbox h-4 w-4"
+            title="Schüler als geprüft markieren"
+          />
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="cursor-pointer hover:underline" onClick={onToggleDetails}>
+                  {student}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>
+                  zeige unent. V./F. Zeitr.: {stats.verspaetungen_unentsch}/{stats.fehlzeiten_unentsch}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </td>
       <td className="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200">
         {stats.klasse}

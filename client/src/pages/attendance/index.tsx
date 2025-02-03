@@ -33,9 +33,31 @@ interface DetailedStats {
   fehlzeiten_offen: AbsenceEntry[];
 }
 
+// Hilfsfunktion: Wandelt eine Zeitangabe (z. B. "16:50") in Minuten um
+const parseTimeToMinutes = (timeStr: string): number => {
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+// Angepasste Funktion zur Erkennung von Verspätung ausschließlich basierend auf Abwesenheitsgrund und Endzeit
+const isVerspaetungFunc = (row: any): boolean => {
+  // Nutze ausschließlich Abwesenheitsgrund zur Klassifizierung
+  const absenceReason = row.Abwesenheitsgrund ? row.Abwesenheitsgrund.trim() : '';
+  const isTardyByReason = absenceReason === 'Verspätung';
+  
+  // Falls kein Abwesenheitsgrund vorliegt, dann prüfe die Endzeit
+  const expectedMinutes = parseTimeToMinutes('16:50');
+  const isTardyByEndzeit =
+    (!absenceReason || absenceReason === '') &&
+    row.Endzeit &&
+    parseTimeToMinutes(row.Endzeit) < expectedMinutes;
+  
+  return isTardyByReason || isTardyByEndzeit;
+};
+
 const AttendanceAnalyzer = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [rawData, setRawData] = useState(null);
+  const [rawData, setRawData] = useState<any>(null);
   const [results, setResults] = useState<any>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -51,10 +73,12 @@ const AttendanceAnalyzer = () => {
   const [availableStudents, setAvailableStudents] = useState<string[]>([]);
   const [availableClasses, setAvailableClasses] = useState<string[]>([]);
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
-  const [selectedWeeks, setSelectedWeeks] = useState('1');
+  const [selectedWeeks, setSelectedWeeks] = useState('4');
   const [schoolYearStats, setSchoolYearStats] = useState<any>({});
   const [weeklyStats, setWeeklyStats] = useState<any>({});
   const [weeklyDetailedData, setWeeklyDetailedData] = useState<Record<string, DetailedStats>>({});
+  const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
+  const [activeFilters, setActiveFilters] = useState<Map<string, string>>(new Map());
 
   const resetAll = () => {
     setRawData(null);
@@ -73,10 +97,12 @@ const AttendanceAnalyzer = () => {
     setAvailableStudents([]);
     setAvailableClasses([]);
     setSelectedClasses([]);
-    setSelectedWeeks('1');
+    setSelectedWeeks('4');
     setSchoolYearStats({});
     setWeeklyStats({});
     setWeeklyDetailedData({});
+    setExpandedStudents(new Set());
+    setActiveFilters(new Map());
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -84,8 +110,8 @@ const AttendanceAnalyzer = () => {
 
   const calculateSchoolYearStats = useCallback((data: any[]) => {
     const schoolYear = getCurrentSchoolYear();
-    const sjStartDate = new Date(schoolYear.start, 8, 1);
-    const sjEndDate = new Date(schoolYear.end, 7, 31);
+    const sjStartDate = new Date(schoolYear.start + '-09-01T00:00:00');
+    const sjEndDate = new Date(schoolYear.end + '-07-31T23:59:59');
     const today = new Date();
 
     const stats: Record<string, { verspaetungen_unentsch: number; fehlzeiten_unentsch: number }> = {};
@@ -95,7 +121,7 @@ const AttendanceAnalyzer = () => {
       if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
       const [day, month, year] = row.Beginndatum.split('.');
-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      const date = new Date(year + '-' + month.padStart(2, '0') + '-' + day.padStart(2, '0') + 'T12:00:00');
       const studentName = `${row.Langname}, ${row.Vorname}`;
 
       if (!stats[studentName]) {
@@ -105,10 +131,13 @@ const AttendanceAnalyzer = () => {
         };
       }
 
+      const effectiveStatus = row.Status ? row.Status.trim() : '';
+      // Für die Klassifizierung der Verspätung nutzen wir ausschließlich Abwesenheitsgrund/Endzeit:
+      const isVerspaetung = isVerspaetungFunc(row);
+
       if (date >= sjStartDate && date <= sjEndDate) {
-        const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
-        const isUnentschuldigt = row.Status === 'nicht entsch.' || row.Status === 'nicht akzep.';
-        const isUeberfaellig = !row.Status && (today > new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
+        const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || effectiveStatus === 'nicht akzep.';
+        const isUeberfaellig = !effectiveStatus && (today > new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
 
         if (isUnentschuldigt || isUeberfaellig) {
           if (isVerspaetung) {
@@ -132,7 +161,7 @@ const AttendanceAnalyzer = () => {
       if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
       const [day, month, year] = row.Beginndatum.split('.');
-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      const date = new Date(year + '-' + month.padStart(2, '0') + '-' + day.padStart(2, '0') + 'T12:00:00');
       const studentName = `${row.Langname}, ${row.Vorname}`;
 
       const weekIndex = weeks.findIndex(w => {
@@ -150,11 +179,14 @@ const AttendanceAnalyzer = () => {
         };
       }
 
-      const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
+      const effectiveStatus = row.Status ? row.Status.trim() : '';
+      const isVerspaetung = isVerspaetungFunc(row);
+
       const today = new Date();
-      const isUnentschuldigt = row.Status === 'nicht entsch.' || 
-                              row.Status === 'nicht akzep.' || 
-                              (!row.Status && today > new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
+      const deadline = new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const isUnentschuldigt = effectiveStatus === 'nicht entsch.' ||
+                                effectiveStatus === 'nicht akzep.' ||
+                                (!effectiveStatus && today > deadline);
 
       if (isUnentschuldigt) {
         if (isVerspaetung) {
@@ -178,15 +210,15 @@ const AttendanceAnalyzer = () => {
       const schoolYearDetails: Record<string, DetailedStats> = {};
       const weeklyDetails: Record<string, DetailedStats> = {};
       const schoolYear = getCurrentSchoolYear();
-      const sjStartDate = new Date(schoolYear.start, 8, 1);
-      const sjEndDate = new Date(schoolYear.end, 7, 31);
+      const sjStartDate = new Date(schoolYear.start + '-09-01T00:00:00');
+      const sjEndDate = new Date(schoolYear.end + '-07-31T23:59:59');
 
       data.forEach(row => {
         if (!row.Beginndatum || !row.Langname || !row.Vorname) return;
         if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
         const [day, month, year] = row.Beginndatum.split('.');
-        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        const date = new Date(year + '-' + month.padStart(2, '0') + '-' + day.padStart(2, '0') + 'T12:00:00');
         const studentName = `${row.Langname}, ${row.Vorname}`;
 
         if (!studentStats[studentName]) {
@@ -234,8 +266,10 @@ const AttendanceAnalyzer = () => {
           };
         }
 
-        const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
-        let effectiveStatus = row.Status ? row.Status.trim() : '';
+        const effectiveStatus = row.Status ? row.Status.trim() : '';
+        // Klassifizierung der Verspätung ausschließlich über Abwesenheitsgrund/Endzeit:
+        const isVerspaetung = isVerspaetungFunc(row);
+
         const isAttest = effectiveStatus === 'Attest' || effectiveStatus === 'Attest Amtsarzt';
         const isEntschuldigt = effectiveStatus === 'entsch.' || isAttest;
         const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || effectiveStatus === 'nicht akzep.';
@@ -280,24 +314,16 @@ const AttendanceAnalyzer = () => {
 
         if (date >= sjStartDate && date <= sjEndDate) {
           if (isVerspaetung) {
-            if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
-              schoolYearDetails[studentName].verspaetungen_unentsch.push(entry);
-            }
+            schoolYearDetails[studentName].verspaetungen_unentsch.push(entry);
           } else {
-            if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
-              schoolYearDetails[studentName].fehlzeiten_unentsch.push(entry);
-            }
+            schoolYearDetails[studentName].fehlzeiten_unentsch.push(entry);
           }
         }
 
         if (isVerspaetung) {
-          if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
-            weeklyDetails[studentName].verspaetungen_unentsch.push(entry);
-          }
+          weeklyDetails[studentName].verspaetungen_unentsch.push(entry);
         } else {
-          if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
-            weeklyDetails[studentName].fehlzeiten_unentsch.push(entry);
-          }
+          weeklyDetails[studentName].fehlzeiten_unentsch.push(entry);
         }
       });
 
@@ -396,8 +422,8 @@ const AttendanceAnalyzer = () => {
 
   React.useEffect(() => {
     if (rawData && startDate && endDate) {
-      const startDateTime = new Date(startDate);
-      const endDateTime = new Date(endDate);
+      const startDateTime = new Date(startDate + 'T00:00:00');
+      const endDateTime = new Date(endDate + 'T23:59:59');
 
       if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
         setError('Ungültiges Datum');
@@ -414,6 +440,19 @@ const AttendanceAnalyzer = () => {
   }, [startDate, endDate, rawData, processData]);
 
   React.useEffect(() => {
+    if (!startDate && !endDate) {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      const start = new Date(currentYear + '-' + String(currentMonth + 1).padStart(2, '0') + '-01T00:00:00');
+      const end = new Date(currentYear + '-' + String(currentMonth + 1).padStart(2, '0') + '-' + String(new Date(currentYear, currentMonth + 1, 0).getDate()).padStart(2, '0') + 'T23:59:59');
+      
+      setStartDate(start.toLocaleDateString('sv').split('T')[0]);
+      setEndDate(end.toLocaleDateString('sv').split('T')[0]);
+    }
+  }, []);
+  
+  React.useEffect(() => {
     if (rawData) {
       calculateSchoolYearStats(rawData);
       calculateWeeklyStats(rawData);
@@ -421,46 +460,46 @@ const AttendanceAnalyzer = () => {
   }, [rawData, selectedWeeks, calculateSchoolYearStats, calculateWeeklyStats]);
 
   React.useEffect(() => {
-  // Force re-render when selectedClasses changes
+    // Force re-render when selectedClasses changes
     if (results) {
       setResults({...results});
     }
   }, [selectedClasses]);
 
   const getFilteredStudents = () => {
-  if (!results) return [];
+    if (!results) return [];
 
-  return Object.entries(results)
-    .filter(([student, stats]: [string, any]) => {
-      const matchesSearch = student.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesClass = selectedClasses.length === 0 || selectedClasses.includes(stats.klasse);
-      
-      // Separate Bedingungen für unentschuldigte Verspätungen und Fehlzeiten
-      let meetsUnexcusedCriteria = true;
-      if (filterUnexcusedLate || filterUnexcusedAbsent) {
-        meetsUnexcusedCriteria = false;
-        if (filterUnexcusedLate && stats.verspaetungen_unentsch > 0) {
-          meetsUnexcusedCriteria = true;
+    return Object.entries(results)
+      .filter(([student, stats]: [string, any]) => {
+        const matchesSearch = student.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesClass = selectedClasses.length === 0 || selectedClasses.includes(stats.klasse);
+        
+        // Separate Bedingungen für unentschuldigte Verspätungen und Fehlzeiten
+        let meetsUnexcusedCriteria = true;
+        if (filterUnexcusedLate || filterUnexcusedAbsent) {
+          meetsUnexcusedCriteria = false;
+          if (filterUnexcusedLate && stats.verspaetungen_unentsch > 0) {
+            meetsUnexcusedCriteria = true;
+          }
+          if (filterUnexcusedAbsent && stats.fehlzeiten_unentsch > 0) {
+            meetsUnexcusedCriteria = true;
+          }
         }
-        if (filterUnexcusedAbsent && stats.fehlzeiten_unentsch > 0) {
-          meetsUnexcusedCriteria = true;
-        }
-      }
 
-      const meetsMinUnexcusedLates = minUnexcusedLates === '' || 
-        stats.verspaetungen_unentsch >= parseInt(minUnexcusedLates);
-      const meetsMinUnexcusedAbsences = minUnexcusedAbsences === '' || 
-        stats.fehlzeiten_unentsch >= parseInt(minUnexcusedAbsences);
+        const meetsMinUnexcusedLates = minUnexcusedLates === '' || 
+          stats.verspaetungen_unentsch >= parseInt(minUnexcusedLates);
+        const meetsMinUnexcusedAbsences = minUnexcusedAbsences === '' || 
+          stats.fehlzeiten_unentsch >= parseInt(minUnexcusedAbsences);
 
-      return matchesSearch && 
-             matchesClass && 
-             meetsUnexcusedCriteria && 
-             meetsMinUnexcusedLates && 
-             meetsMinUnexcusedAbsences;
-    })
-    .sort(([a], [b]) => a.localeCompare(b));
-};
- 
+        return matchesSearch && 
+               matchesClass && 
+               meetsUnexcusedCriteria && 
+               meetsMinUnexcusedLates && 
+               meetsMinUnexcusedAbsences;
+      })
+      .sort(([a], [b]) => a.localeCompare(b));
+  };
+   
   return (
     <div className="container mx-auto py-6 px-4">
       <Card className="w-full bg-white">
@@ -506,37 +545,52 @@ const AttendanceAnalyzer = () => {
                       case 'thisWeek': {
                         const currentDay = now.getDay();
                         const diff = currentDay === 0 ? 6 : currentDay - 1;
-                        start = new Date(now);
-                        start.setDate(now.getDate() - diff);
-                        end = new Date(start);
-                        end.setDate(start.getDate() + 6);
+                        const startDate = new Date(now);
+                        startDate.setDate(now.getDate() - diff);
+                        const endDate = new Date(startDate);
+                        endDate.setDate(startDate.getDate() + 6);
+                        start = new Date(startDate.getFullYear() + '-' + String(startDate.getMonth() + 1).padStart(2, '0') + '-' + String(startDate.getDate()).padStart(2, '0') + 'T00:00:00');
+                        end = new Date(endDate.getFullYear() + '-' + String(endDate.getMonth() + 1).padStart(2, '0') + '-' + String(endDate.getDate()).padStart(2, '0') + 'T23:59:59');
                         break;
                       }
                       case 'lastWeek': {
                         const currentDay = now.getDay();
                         const diff = currentDay === 0 ? 6 : currentDay - 1;
-                        start = new Date(now);
-                        start.setDate(now.getDate() - diff - 7);
-                        end = new Date(start);
-                        end.setDate(start.getDate() + 6);
+                        const startDate = new Date(now);
+                        startDate.setDate(now.getDate() - diff - 7);
+                        const endDate = new Date(startDate);
+                        endDate.setDate(startDate.getDate() + 6);
+                        start = new Date(startDate.getFullYear() + '-' + String(startDate.getMonth() + 1).padStart(2, '0') + '-' + String(startDate.getDate()).padStart(2, '0') + 'T00:00:00');
+                        end = new Date(endDate.getFullYear() + '-' + String(endDate.getMonth() + 1).padStart(2, '0') + '-' + String(endDate.getDate()).padStart(2, '0') + 'T23:59:59');
+                        break;
+                      }
+                      case 'lastTwoWeeks': {
+                        const currentDay = now.getDay();
+                        const diff = currentDay === 0 ? 6 : currentDay - 1;
+                        const startDate = new Date(now);
+                        startDate.setDate(now.getDate() - diff - 14);
+                        const endDate = new Date(startDate);
+                        endDate.setDate(startDate.getDate() + 13);
+                        start = new Date(startDate.getFullYear() + '-' + String(startDate.getMonth() + 1).padStart(2, '0') + '-' + String(startDate.getDate()).padStart(2, '0') + 'T00:00:00');
+                        end = new Date(endDate.getFullYear() + '-' + String(endDate.getMonth() + 1).padStart(2, '0') + '-' + String(endDate.getDate()).padStart(2, '0') + 'T23:59:59');
                         break;
                       }
                       case 'thisMonth': {
-                        start = new Date(currentYear, currentMonth, 1);
-                        end = new Date(currentYear, currentMonth + 1, 0);
+                        start = new Date(currentYear + '-' + String(currentMonth + 1).padStart(2, '0') + '-01T00:00:00');
+                        end = new Date(currentYear + '-' + String(currentMonth + 1).padStart(2, '0') + '-' + String(new Date(currentYear, currentMonth + 1, 0).getDate()).padStart(2, '0') + 'T23:59:59');
                         break;
                       }
                       case 'lastMonth': {
                         const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
                         const yearOfLastMonth = currentMonth === 0 ? currentYear - 1 : currentYear;
-                        start = new Date(yearOfLastMonth, lastMonth, 1);
-                        end = new Date(yearOfLastMonth, lastMonth + 1, 0);
+                        start = new Date(yearOfLastMonth + '-' + String(lastMonth + 1).padStart(2, '0') + '-01T00:00:00');
+                        end = new Date(yearOfLastMonth + '-' + String(lastMonth + 1).padStart(2, '0') + '-' + String(new Date(yearOfLastMonth, lastMonth + 1, 0).getDate()).padStart(2, '0') + 'T23:59:59');
                         break;
                       }
                       case 'schoolYear': {
                         const schoolYear = getCurrentSchoolYear();
-                        start = new Date(schoolYear.start, 8, 1);
-                        end = new Date(schoolYear.end, 7, 31);
+                        start = new Date(schoolYear.start + '-09-01T00:00:00');
+                        end = new Date(schoolYear.end + '-07-31T23:59:59');
                         break;
                       }
                       default:
@@ -548,12 +602,13 @@ const AttendanceAnalyzer = () => {
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Zeitraum auswählen" />
+                    <SelectValue placeholder="Dieser Monat" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="custom">Benutzerdefiniert</SelectItem>
                     <SelectItem value="thisWeek">Diese Woche</SelectItem>
                     <SelectItem value="lastWeek">Letzte Woche</SelectItem>
+                    <SelectItem value="lastTwoWeeks">Letzte zwei Wochen</SelectItem>
                     <SelectItem value="thisMonth">Dieser Monat</SelectItem>
                     <SelectItem value="lastMonth">Letzter Monat</SelectItem>
                     <SelectItem value="schoolYear">Gesamtes Schuljahr</SelectItem>
@@ -678,20 +733,22 @@ const AttendanceAnalyzer = () => {
                     Zurücksetzen
                   </Button>
                   <ExportButtons 
-                    data={getFilteredStudents()}
+                    getFilteredStudents={getFilteredStudents}
                     startDate={startDate}
                     endDate={endDate}
                     schoolYearStats={schoolYearStats}
                     weeklyStats={weeklyStats}
                     selectedWeeks={selectedWeeks}
                     isReportView={isReportView}
-                    detailedData={isReportView ? detailedData : {}}
+                    detailedData={detailedData}
+                    expandedStudents={expandedStudents}
+                    activeFilters={activeFilters}
                   />
                 </div>
                 
                 {isReportView ? (
                   <ReportView
-                    filteredStudents={getFilteredStudents()}
+                    getFilteredStudents={getFilteredStudents}
                     detailedData={detailedData}
                     startDate={startDate}
                     endDate={endDate}
@@ -703,7 +760,7 @@ const AttendanceAnalyzer = () => {
                   />
                 ) : (
                   <NormalView
-                    filteredStudents={getFilteredStudents()}
+                    getFilteredStudents={getFilteredStudents}
                     detailedData={detailedData}
                     schoolYearDetailedData={schoolYearDetailedData}
                     weeklyDetailedData={weeklyDetailedData}
@@ -717,6 +774,10 @@ const AttendanceAnalyzer = () => {
                     availableClasses={availableClasses}
                     selectedClasses={selectedClasses}
                     onClassesChange={setSelectedClasses}
+                    expandedStudents={expandedStudents}
+                    setExpandedStudents={setExpandedStudents}
+                    activeFilters={activeFilters}
+                    setActiveFilters={setActiveFilters}
                   />
                 )}
               </>
