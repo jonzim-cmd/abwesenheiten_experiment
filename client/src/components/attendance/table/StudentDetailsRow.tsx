@@ -62,26 +62,43 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     return 'text-yellow-600';
   };
 
-  // Prüft, ob ein Eintrag unentschuldigt ist
-  const isUnexcused = (entry: AbsenceEntry) => {
-    const status = entry.status || '';
-    const isUnentschuldigt = status === 'nicht entsch.' || status === 'nicht akzep.';
-    if (!status.trim()) {
-      const today = new Date();
-      const dateParts = (typeof entry.datum === 'string'
-        ? entry.datum
-        : entry.datum.toLocaleDateString('de-DE')
-      ).split('.');
-      const entryDate = new Date(parseInt(dateParts[2]), parseInt(dateParts[1]) - 1, parseInt(dateParts[0]));
+  // Partitioniert die Einträge in die drei Kategorien: unentschuldigt, entschuldigt und offen
+  const partitionEntries = (entries: AbsenceEntry[]) => {
+    const unexcused: AbsenceEntry[] = [];
+    const excused: AbsenceEntry[] = [];
+    const open: AbsenceEntry[] = [];
+    const today = new Date();
+
+    entries.forEach(entry => {
+      const status = (entry.status || '').trim();
+      // Berechne die Frist (7 Tage) zum Eintragsdatum:
+      const entryDate = typeof entry.datum === 'string'
+        ? new Date(entry.datum.split('.').reverse().join('-'))
+        : entry.datum;
       const deadlineDate = new Date(entryDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-      return today > deadlineDate;
-    }
-    return isUnentschuldigt;
+
+      if (status === 'entsch.' || status === 'Attest' || status === 'Attest Amtsarzt') {
+        excused.push(entry);
+      } else if (status === 'nicht entsch.' || status === 'nicht akzep.' || (!status && today > deadlineDate)) {
+        unexcused.push(entry);
+      } else if (!status && today <= deadlineDate) {
+        open.push(entry);
+      }
+    });
+
+    // Sortiere jede Kategorie absteigend nach Datum (neueste Einträge oben)
+    const sortFn = (a: AbsenceEntry, b: AbsenceEntry) =>
+      parseDateValue(b.datum) - parseDateValue(a.datum);
+    unexcused.sort(sortFn);
+    excused.sort(sortFn);
+    open.sort(sortFn);
+
+    return { unexcused, excused, open };
   };
 
-  // Rendert einen einzelnen Detail-Eintrag (Nummerierung, Datum, Zeiten/Art, ggf. Status)
+  // Rendert einen einzelnen Detail-Eintrag (mit Nummerierung, Datum, Zeiten/Art und ggf. Status)
   const renderEntry = (entry: AbsenceEntry, idx: number, total: number) => {
-    const number = total - idx; // Größte Zahl ganz oben
+    const number = total - idx; // Nummerierung: Neueste Einträge erhalten die höchste Zahl
     const statusColor = getStatusColor(entry.status || '', entry.datum);
     return (
       <div key={idx} className={`${statusColor} hover:bg-gray-50 p-1 rounded`}>
@@ -107,46 +124,15 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     );
   };
 
-  // Rendert den Inhalt der Details
   const renderDetailsContent = () => {
     if (!detailedData || detailedData.length === 0) {
       return <div className="text-gray-500 italic">Keine Daten verfügbar</div>;
     }
 
-    // Bei Filtertyp "details" soll eine Tabelle mit drei Spalten dargestellt werden
     if (filterType === 'details') {
-      // Aufteilen in die drei Kategorien:
-      // Unentschuldigt: Entsprechende Einträge (unabhängig von der Art)
-      const unexcusedEntries = detailedData
-        .filter(entry => isUnexcused(entry))
-        .sort((a, b) => parseDateValue(b.datum) - parseDateValue(a.datum));
-
-      // Entschuldigt: Einträge, bei denen ein Status (z. B. "entsch.", "Attest", "Attest Amtsarzt") vorhanden ist
-      const excusedEntries = detailedData
-        .filter(entry => {
-          const status = entry.status || '';
-          return status.trim() !== '' && (status === 'entsch.' || status === 'Attest' || status === 'Attest Amtsarzt');
-        })
-        .sort((a, b) => parseDateValue(b.datum) - parseDateValue(a.datum));
-
-      // Offen: Einträge ohne Status, bei denen die Frist (7 Tage) noch nicht abgelaufen ist
-      const openEntries = detailedData
-        .filter(entry => {
-          const status = entry.status || '';
-          if (status.trim()) return false;
-          const today = new Date();
-          const [day, month, year] = (typeof entry.datum === 'string'
-            ? entry.datum
-            : entry.datum.toLocaleDateString('de-DE')
-          ).split('.');
-          const entryDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-          const deadlineDate = new Date(entryDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-          return today <= deadlineDate;
-        })
-        .sort((a, b) => parseDateValue(b.datum) - parseDateValue(a.datum));
-
-      // Bestimme die maximale Anzahl an Einträgen, um die Zeilenanzahl der Tabelle festzulegen
-      const maxRows = Math.max(unexcusedEntries.length, excusedEntries.length, openEntries.length);
+      // Partitioniere alle Einträge in unentschuldigt, entschuldigt und offen
+      const { unexcused, excused, open } = partitionEntries(detailedData);
+      const maxRows = Math.max(unexcused.length, excused.length, open.length);
 
       return (
         <div className="overflow-x-auto">
@@ -162,13 +148,13 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
               {Array.from({ length: maxRows }).map((_, rowIndex) => (
                 <tr key={rowIndex}>
                   <td className="px-2 py-1 border-b border-gray-200 align-top">
-                    {unexcusedEntries[rowIndex] && renderEntry(unexcusedEntries[rowIndex], rowIndex, unexcusedEntries.length)}
+                    {unexcused[rowIndex] && renderEntry(unexcused[rowIndex], rowIndex, unexcused.length)}
                   </td>
                   <td className="px-2 py-1 border-b border-gray-200 align-top">
-                    {excusedEntries[rowIndex] && renderEntry(excusedEntries[rowIndex], rowIndex, excusedEntries.length)}
+                    {excused[rowIndex] && renderEntry(excused[rowIndex], rowIndex, excused.length)}
                   </td>
                   <td className="px-2 py-1 border-b border-gray-200 align-top">
-                    {openEntries[rowIndex] && renderEntry(openEntries[rowIndex], rowIndex, openEntries.length)}
+                    {open[rowIndex] && renderEntry(open[rowIndex], rowIndex, open.length)}
                   </td>
                 </tr>
               ))}
@@ -178,11 +164,10 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
       );
     }
 
-    // Für alle anderen Filtertypen: Bestehende Darstellung (sortiert nach Datum absteigend)
-    const sortedData = [...detailedData].sort((a, b) => 
-      parseDateValue(b.datum) - parseDateValue(a.datum)
+    // Für alle anderen Filtertypen: Standarddarstellung (sortiert nach Datum absteigend)
+    const sortedData = [...detailedData].sort(
+      (a, b) => parseDateValue(b.datum) - parseDateValue(a.datum)
     );
-
     return (
       <div className="space-y-1">
         {sortedData.length > 0 ? (
@@ -194,11 +179,10 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     );
   };
 
-  // Titel der Detailanzeige, basierend auf dem Filtertyp
   const getFilterTitle = () => {
     switch (filterType) {
       case 'details':
-        return 'Detaillierte Übersicht der unentschuldigten, entschuldigten und offenen Abwesenheiten';
+        return 'Detaillierte Übersicht aller Abwesenheiten (unentschuldigt, entschuldigt und offen)';
       case 'verspaetungen_entsch':
         return 'Entschuldigte Verspätungen im ausgewählten Zeitraum';
       case 'verspaetungen_unentsch':
@@ -229,7 +213,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
   };
 
   return (
-    <tr 
+    <tr
       id={`details-${student}`}
       style={{ display: isVisible ? 'table-row' : 'none' }}
       className={rowColor}
@@ -237,9 +221,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
       <td colSpan={14} className="px-4 py-2 text-sm">
         <div className="space-y-2">
           <h4 className="font-medium text-gray-900">{getFilterTitle()}</h4>
-          <div className="pl-4">
-            {renderDetailsContent()}
-          </div>
+          <div className="pl-4">{renderDetailsContent()}</div>
         </div>
       </td>
     </tr>
