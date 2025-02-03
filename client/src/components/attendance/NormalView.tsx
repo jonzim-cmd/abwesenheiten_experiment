@@ -110,26 +110,16 @@ const NormalView = ({
 
     switch (filterType) {
       case 'details': {
-        const unexcusedEntries = [
+        // Alle Einträge zusammenführen:
+        const allEntries = [
           ...studentData.verspaetungen_unentsch,
-          ...studentData.fehlzeiten_unentsch
+          ...studentData.fehlzeiten_unentsch,
+          ...studentData.verspaetungen_entsch,
+          ...studentData.fehlzeiten_entsch,
+          ...studentData.verspaetungen_offen,
+          ...studentData.fehlzeiten_offen
         ];
-
-        const today = new Date();
-        const addOverdueEntries = (entries: AbsenceEntry[]) => {
-          return entries.filter(entry => {
-            const entryDate = parseDate(entry.datum);
-            const deadlineDate = new Date(entryDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-            return today > deadlineDate;
-          });
-        };
-
-        const overdueEntries = [
-          ...addOverdueEntries(studentData.verspaetungen_offen),
-          ...addOverdueEntries(studentData.fehlzeiten_offen)
-        ];
-
-        return [...unexcusedEntries, ...overdueEntries].sort(
+        return allEntries.sort(
           (a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime()
         );
       }
@@ -140,7 +130,6 @@ const NormalView = ({
           filterType === 'sj_verspaetungen'
             ? studentSchoolYearData.verspaetungen_unentsch
             : studentSchoolYearData.fehlzeiten_unentsch;
-
         return entries.sort(
           (a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime()
         );
@@ -153,7 +142,6 @@ const NormalView = ({
           const date = parseDate(entry.datum);
           return weeks.some(week => date >= week.startDate && date <= week.endDate);
         });
-
         return entries.sort(
           (a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime()
         );
@@ -166,7 +154,6 @@ const NormalView = ({
           const date = parseDate(entry.datum);
           return weeks.some(week => date >= week.startDate && date <= week.endDate);
         });
-
         return entries.sort(
           (a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime()
         );
