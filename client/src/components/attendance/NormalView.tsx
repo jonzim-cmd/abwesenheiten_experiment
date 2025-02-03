@@ -350,7 +350,7 @@ const NormalView = ({
     <div className="mt-6 space-y-6">
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-4 flex-1">
-          <h3 className="text-lg font-semibold">
+          <h3 className="text-base font-semibold">
             Ergebnisse für den Zeitraum {new Date(startDate).toLocaleDateString('de-DE')} - {new Date(endDate).toLocaleDateString('de-DE')}
           </h3>
           <div className="w-72">
