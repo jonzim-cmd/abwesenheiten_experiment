@@ -9,176 +9,11 @@ interface StudentDetailsRowProps {
   filterType?: string;
 }
 
-const StudentDetailsRow = ({
-  student,
-  detailedData,
-  rowColor,
-  isVisible,
-  filterType,
-}: StudentDetailsRowProps) => {
-  // Hilfsfunktion zur Formatierung von Datumsangaben
-  const formatDate = (datum: Date | string) => {
-    if (typeof datum === 'string') {
-      const [day, month, year] = datum.split('.');
-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      return date.toLocaleDateString('de-DE', {
-        weekday: 'long',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      });
-    }
-    return datum.toLocaleDateString('de-DE', {
-      weekday: 'long',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-  };
-
-  // Hilfsfunktion zur Datumsumrechnung (in Millisekunden)
-  const parseDateValue = (datum: string | Date): number => {
-    if (datum instanceof Date) return datum.getTime();
-    const [day, month, year] = datum.split('.');
-    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day)).getTime();
-  };
-
-  // Bestimmt die Textfarbe für einen Eintrag anhand des Status und Datums
-  const getStatusColor = (status: string, datum: Date | string) => {
-    if (status === 'entsch.' || status === 'Attest' || status === 'Attest Amtsarzt') {
-      return 'text-green-600';
-    }
-    if (status === 'nicht entsch.' || status === 'nicht akzep.') {
-      return 'text-red-600';
-    }
-    if (!status || status.trim() === '') {
-      const today = new Date();
-      let abwesenheitsDatum: Date;
-      if (typeof datum === 'string') {
-        const [day, month, year] = datum.split('.');
-        abwesenheitsDatum = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      } else {
-        abwesenheitsDatum = new Date(datum);
-      }
-      const deadlineDate = new Date(abwesenheitsDatum.getTime() + 7 * 24 * 60 * 60 * 1000);
-      if (today > deadlineDate) {
-        return 'text-red-600';
-      }
-    }
-    return 'text-yellow-600';
-  };
-
-  // Partitioniert die Einträge in die drei Kategorien: unentschuldigt, entschuldigt und offen
-  const partitionEntries = (entries: AbsenceEntry[]) => {
-    const unexcused: AbsenceEntry[] = [];
-    const excused: AbsenceEntry[] = [];
-    const open: AbsenceEntry[] = [];
-    const today = new Date();
-
-    entries.forEach((entry) => {
-      const status = (entry.status || '').trim();
-      // Frist: 7 Tage ab dem Eintragsdatum
-      const entryDate =
-        typeof entry.datum === 'string'
-          ? new Date(entry.datum.split('.').reverse().join('-'))
-          : entry.datum;
-      const deadlineDate = new Date(entryDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-      if (status === 'entsch.' || status === 'Attest' || status === 'Attest Amtsarzt') {
-        excused.push(entry);
-      } else if (status === 'nicht entsch.' || status === 'nicht akzep.' || (!status && today > deadlineDate)) {
-        unexcused.push(entry);
-      } else if (!status && today <= deadlineDate) {
-        open.push(entry);
-      }
-    });
-
-    // Sortiere jede Kategorie absteigend nach Datum (neueste Einträge oben)
-    const sortFn = (a: AbsenceEntry, b: AbsenceEntry) => parseDateValue(b.datum) - parseDateValue(a.datum);
-    unexcused.sort(sortFn);
-    excused.sort(sortFn);
-    open.sort(sortFn);
-
-    return { unexcused, excused, open };
-  };
-
-  // Rendert einen einzelnen Detail-Eintrag mit Nummerierung, Datum, Zeiten/Art und ggf. Status
-  // Die Nummerierung erfolgt jeweils separat pro Spalte, basierend auf der Länge des entsprechenden Arrays.
-  const renderEntry = (entry: AbsenceEntry, idx: number, total: number) => {
-    const number = total - idx; // Neueste Einträge erhalten die höchste Nummer in der jeweiligen Spalte
-    const statusColor = getStatusColor(entry.status || '', entry.datum);
-    return (
-      <div key={idx} className={`${statusColor} hover:bg-gray-50 p-1 rounded`}>
-        <span className="font-medium">
-          {number}. {formatDate(entry.datum)}
-        </span>
-        {entry.art === 'Verspätung' ? (
-          <span className="ml-2">
-            {entry.beginnZeit} - {entry.endZeit} Uhr{entry.grund && ` (${entry.grund})`}
-          </span>
-        ) : (
-          <span className="ml-2">
-            {entry.art}
-            {entry.grund && ` - ${entry.grund}`}
-          </span>
-        )}
-        {entry.status && (
-          <span className="ml-2 italic">[{entry.status}]</span>
-        )}
-      </div>
-    );
-  };
-
-  // Baut die Detail-Tabelle mit drei Spalten auf
-  const renderDetailsContent = () => {
-    if (!detailedData || detailedData.length === 0) {
-      return <div className="text-gray-500 italic">Keine Daten verfügbar</div>;
-    }
-
-    // Nutze den "details"-Filtertyp zur Partitionierung (unentschuldigt, entschuldigt, offen)
-    const { unexcused, excused, open } = partitionEntries(detailedData);
-
-    return (
-      <div className="overflow-x-auto">
-        <table className="min-w-full border border-gray-300">
-          <thead>
-            <tr>
-              <th className="px-2 py-1 border-b border-gray-300 text-left">Unentschuldigt</th>
-              <th className="px-2 py-1 border-b border-gray-300 text-left">Entschuldigt</th>
-              <th className="px-2 py-1 border-b border-gray-300 text-left">Offen</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(() => {
-              const maxRows = Math.max(unexcused.length, excused.length, open.length);
-              const rows = [];
-              for (let i = 0; i < maxRows; i++) {
-                rows.push(
-                  <tr key={i}>
-                    <td className="px-2 py-1 border-b border-gray-200 align-top">
-                      {unexcused[i] ? renderEntry(unexcused[i], i, unexcused.length) : null}
-                    </td>
-                    <td className="px-2 py-1 border-b border-gray-200 align-top">
-                      {excused[i] ? renderEntry(excused[i], i, excused.length) : null}
-                    </td>
-                    <td className="px-2 py-1 border-b border-gray-200 align-top">
-                      {open[i] ? renderEntry(open[i], i, open.length) : null}
-                    </td>
-                  </tr>
-                );
-              }
-              return rows;
-            })()}
-          </tbody>
-        </table>
-      </div>
-    );
-  };
-
+const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterType }: StudentDetailsRowProps) => {
   const getFilterTitle = () => {
     switch (filterType) {
       case 'details':
-        return 'Detaillierte Übersicht aller Abwesenheiten (unentschuldigt, entschuldigt und offen)';
+        return 'Detaillierte Übersicht der unentschuldigten Abwesenheiten';
       case 'verspaetungen_entsch':
         return 'Entschuldigte Verspätungen im ausgewählten Zeitraum';
       case 'verspaetungen_unentsch':
@@ -208,17 +43,194 @@ const StudentDetailsRow = ({
     }
   };
 
+  const formatDate = (datum: Date | string) => {
+    if (typeof datum === 'string') {
+      const [day, month, year] = datum.split('.');
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      return date.toLocaleDateString('de-DE', {
+        weekday: 'long',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+    }
+    return datum.toLocaleDateString('de-DE', {
+      weekday: 'long',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
+
+  const getStatusColor = (status: string, datum: Date | string) => {
+    if (status === 'entsch.' || status === 'Attest' || status === 'Attest Amtsarzt') {
+      return 'text-green-600';
+    }
+    if (status === 'nicht entsch.' || status === 'nicht akzep.') {
+      return 'text-red-600';
+    }
+    if (!status || status.trim() === '') {
+      const today = new Date();
+      let abwesenheitsDatum: Date;
+
+      if (typeof datum === 'string') {
+        const [day, month, year] = datum.split('.');
+        abwesenheitsDatum = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      } else {
+        abwesenheitsDatum = new Date(datum);
+      }
+
+      const deadlineDate = new Date(abwesenheitsDatum.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      if (today > deadlineDate) {
+        return 'text-red-600';
+      }
+    }
+    return 'text-yellow-600';
+  };
+
+  const renderDetailSection = (entries: AbsenceEntry[], title: string) => {
+    if (!entries || entries.length === 0) return null;
+
+    return (
+      <div className="mb-4">
+        <h5 className="font-medium text-gray-700 mb-2">{title}</h5>
+        <div className="space-y-1 pl-4">
+          {entries.map((entry, i) => {
+            const statusColor = getStatusColor(entry.status || '', entry.datum);
+            const reverseIndex = entries.length - i;
+            return (
+              <div 
+                key={i}
+                className={`${statusColor} hover:bg-gray-50 p-1 rounded`}
+              >
+                <span className="font-medium">{reverseIndex}. {formatDate(entry.datum)}</span>
+                {entry.art === 'Verspätung' ? (
+                  <span className="ml-2">
+                    {entry.beginnZeit} - {entry.endZeit} Uhr
+                    {entry.grund && ` (${entry.grund})`}
+                  </span>
+                ) : (
+                  <span className="ml-2">
+                    {entry.art}
+                    {entry.grund && ` - ${entry.grund}`}
+                  </span>
+                )}
+                {entry.status && (
+                  <span className="ml-2 italic">
+                    [{entry.status}]
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const isUnexcused = (entry: AbsenceEntry) => {
+    const status = entry.status || '';
+    const isUnentschuldigt = status === 'nicht entsch.' || status === 'nicht akzep.';
+
+    if (!status.trim()) {
+      const today = new Date();
+      const dateParts = (typeof entry.datum === 'string' ? entry.datum : entry.datum.toLocaleDateString('de-DE')).split('.');
+      const entryDate = new Date(parseInt(dateParts[2]), parseInt(dateParts[1]) - 1, parseInt(dateParts[0]));
+      const deadlineDate = new Date(entryDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+      return today > deadlineDate;
+    }
+
+    return isUnentschuldigt;
+  };
+
+  const parseDateString = (datum: string | Date): Date => {
+    if (typeof datum === 'string') {
+      const [day, month, year] = datum.split('.');
+      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    }
+    return datum;
+  };
+
+  const renderDetailsContent = () => {
+    if (!detailedData) return (
+      <div className="text-gray-500 italic">Keine Daten verfügbar</div>
+    );
+
+    if (filterType === 'details') {
+      const unexcusedLates = detailedData
+        .filter(entry => entry.art === 'Verspätung' && isUnexcused(entry))
+        .sort((a, b) => parseDateString(b.datum).getTime() - parseDateString(a.datum).getTime());
+      const unexcusedAbsences = detailedData
+        .filter(entry => entry.art !== 'Verspätung' && isUnexcused(entry));
+
+      return (
+        <>
+          {renderDetailSection(unexcusedLates, 'Unentschuldigte Verspätungen')}
+          {renderDetailSection(unexcusedAbsences, 'Unentschuldigte Fehlzeiten')}
+          {(!unexcusedLates?.length && !unexcusedAbsences?.length) && (
+            <div className="text-gray-500 italic">Keine unentschuldigten Einträge für den ausgewählten Zeitraum gefunden</div>
+          )}
+        </>
+      );
+    }
+
+    const sortedData = [...detailedData].sort((a, b) => 
+      parseDateString(b.datum).getTime() - parseDateString(a.datum).getTime()
+    );
+
+    return (
+      <div className="space-y-1">
+        {sortedData.length > 0 ? (
+          <div className="space-y-1">
+            {sortedData.map((entry, i) => {
+              const statusColor = getStatusColor(entry.status || '', entry.datum);
+              const reverseIndex = sortedData.length - i;
+              return (
+                <div 
+                  key={i}
+                  className={`${statusColor} hover:bg-gray-50 p-1 rounded`}
+                >
+                  <span className="font-medium">{reverseIndex}. {formatDate(entry.datum)}</span>
+                  {entry.art === 'Verspätung' ? (
+                    <span className="ml-2">
+                      {entry.beginnZeit} - {entry.endZeit} Uhr
+                      {entry.grund && ` (${entry.grund})`}
+                    </span>
+                  ) : (
+                    <span className="ml-2">
+                      {entry.art}
+                      {entry.grund && ` - ${entry.grund}`}
+                    </span>
+                  )}
+                  {entry.status && (
+                    <span className="ml-2 italic">
+                      [{entry.status}]
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-gray-500 italic">Keine Einträge für den ausgewählten Zeitraum gefunden</div>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <tr
+    <tr 
       id={`details-${student}`}
       style={{ display: isVisible ? 'table-row' : 'none' }}
       className={rowColor}
     >
-      {/* Der colSpan bleibt unverändert (14), sofern auch deine Tabelle in der NormalView 14 Spalten verwendet – ansonsten anpassen */}
       <td colSpan={14} className="px-4 py-2 text-sm">
         <div className="space-y-2">
           <h4 className="font-medium text-gray-900">{getFilterTitle()}</h4>
-          <div className="pl-4">{renderDetailsContent()}</div>
+          <div className="pl-4">
+            {renderDetailsContent()}
+          </div>
         </div>
       </td>
     </tr>
