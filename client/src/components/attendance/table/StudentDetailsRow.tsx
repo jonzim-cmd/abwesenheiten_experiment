@@ -71,7 +71,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
 
     entries.forEach(entry => {
       const status = (entry.status || '').trim();
-      // Berechne die Frist (7 Tage) zum Eintragsdatum:
+      // Frist: 7 Tage ab dem Eintragsdatum
       const entryDate = typeof entry.datum === 'string'
         ? new Date(entry.datum.split('.').reverse().join('-'))
         : entry.datum;
@@ -96,9 +96,9 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     return { unexcused, excused, open };
   };
 
-  // Rendert einen einzelnen Detail-Eintrag (mit Nummerierung, Datum, Zeiten/Art und ggf. Status)
+  // Rendert einen einzelnen Detail-Eintrag mit Nummerierung, Datum, Zeiten/Art und ggf. Status
   const renderEntry = (entry: AbsenceEntry, idx: number, total: number) => {
-    const number = total - idx; // Nummerierung: Neueste Einträge erhalten die höchste Zahl
+    const number = total - idx; // Neueste Einträge erhalten die höchste Nummer
     const statusColor = getStatusColor(entry.status || '', entry.datum);
     return (
       <div key={idx} className={`${statusColor} hover:bg-gray-50 p-1 rounded`}>
@@ -130,13 +130,16 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     }
 
     if (filterType === 'details') {
-      // Partitioniere alle Einträge in unentschuldigt, entschuldigt und offen
-      const { unexcused, excused, open } = partitionEntries(detailedData);
+      // Debug-Ausgabe: Welche Partitionen werden gefunden?
+      const partitions = partitionEntries(detailedData);
+      console.log(`Student ${student}:`, partitions);
+
+      const { unexcused, excused, open } = partitions;
       const maxRows = Math.max(unexcused.length, excused.length, open.length);
 
       return (
         <div className="overflow-x-auto">
-          <table className="min-w-full">
+          <table className="min-w-full border border-gray-300">
             <thead>
               <tr>
                 <th className="px-2 py-1 border-b border-gray-300 text-left">Unentschuldigt</th>
@@ -164,7 +167,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
       );
     }
 
-    // Für alle anderen Filtertypen: Standarddarstellung (sortiert nach Datum absteigend)
+    // Für andere Filtertypen: Standardansicht (sortiert nach Datum absteigend)
     const sortedData = [...detailedData].sort(
       (a, b) => parseDateValue(b.datum) - parseDateValue(a.datum)
     );
