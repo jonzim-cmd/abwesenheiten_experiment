@@ -380,7 +380,6 @@ const NormalView = ({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <ResetCheckboxButton onReset={resetCheckedStudents} />
         </div>
       </div>
 
