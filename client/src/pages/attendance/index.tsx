@@ -35,7 +35,7 @@ interface DetailedStats {
 
 const AttendanceAnalyzer = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [rawData, setRawData] = useState(null);
+  const [rawData, setRawData] = useState<any>(null);
   const [results, setResults] = useState<any>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -109,10 +109,15 @@ const AttendanceAnalyzer = () => {
         };
       }
 
+      // Neue Logik zur Erkennung von Verspätungen:
+      const effectiveStatus = row.Status ? row.Status.trim() : '';
+      const isLateByStatus = effectiveStatus === 'Verspätung';
+      const isLateByEndzeit = (!effectiveStatus || effectiveStatus === '') && row.Endzeit && row.Endzeit < '16:50';
+      const isVerspaetung = isLateByStatus || isLateByEndzeit;
+
       if (date >= sjStartDate && date <= sjEndDate) {
-        const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
-        const isUnentschuldigt = row.Status === 'nicht entsch.' || row.Status === 'nicht akzep.';
-        const isUeberfaellig = !row.Status && (today > new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
+        const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || effectiveStatus === 'nicht akzep.';
+        const isUeberfaellig = !effectiveStatus && (today > new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
 
         if (isUnentschuldigt || isUeberfaellig) {
           if (isVerspaetung) {
@@ -154,11 +159,16 @@ const AttendanceAnalyzer = () => {
         };
       }
 
-      const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
+      const effectiveStatus = row.Status ? row.Status.trim() : '';
+      const isLateByStatus = effectiveStatus === 'Verspätung';
+      const isLateByEndzeit = (!effectiveStatus || effectiveStatus === '') && row.Endzeit && row.Endzeit < '16:50';
+      const isVerspaetung = isLateByStatus || isLateByEndzeit;
+
       const today = new Date();
-      const isUnentschuldigt = row.Status === 'nicht entsch.' || 
-                              row.Status === 'nicht akzep.' || 
-                              (!row.Status && today > new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
+      const deadline = new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || 
+                              effectiveStatus === 'nicht akzep.' || 
+                              (!effectiveStatus && today > deadline);
 
       if (isUnentschuldigt) {
         if (isVerspaetung) {
@@ -238,8 +248,12 @@ const AttendanceAnalyzer = () => {
           };
         }
 
-        const isVerspaetung = row.Abwesenheitsgrund === 'Verspätung';
-        let effectiveStatus = row.Status ? row.Status.trim() : '';
+        // Neue Logik zur Erkennung von Verspätungen in processData:
+        const effectiveStatus = row.Status ? row.Status.trim() : '';
+        const isLateByStatus = effectiveStatus === 'Verspätung';
+        const isLateByEndzeit = (!effectiveStatus || effectiveStatus === '') && row.Endzeit && row.Endzeit < '16:50';
+        const isVerspaetung = isLateByStatus || isLateByEndzeit;
+
         const isAttest = effectiveStatus === 'Attest' || effectiveStatus === 'Attest Amtsarzt';
         const isEntschuldigt = effectiveStatus === 'entsch.' || isAttest;
         const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || effectiveStatus === 'nicht akzep.';
@@ -284,24 +298,16 @@ const AttendanceAnalyzer = () => {
 
         if (date >= sjStartDate && date <= sjEndDate) {
           if (isVerspaetung) {
-            if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
-              schoolYearDetails[studentName].verspaetungen_unentsch.push(entry);
-            }
+            schoolYearDetails[studentName].verspaetungen_unentsch.push(entry);
           } else {
-            if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
-              schoolYearDetails[studentName].fehlzeiten_unentsch.push(entry);
-            }
+            schoolYearDetails[studentName].fehlzeiten_unentsch.push(entry);
           }
         }
 
         if (isVerspaetung) {
-          if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
-            weeklyDetails[studentName].verspaetungen_unentsch.push(entry);
-          }
+          weeklyDetails[studentName].verspaetungen_unentsch.push(entry);
         } else {
-          if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
-            weeklyDetails[studentName].fehlzeiten_unentsch.push(entry);
-          }
+          weeklyDetails[studentName].fehlzeiten_unentsch.push(entry);
         }
       });
 
@@ -438,46 +444,46 @@ const AttendanceAnalyzer = () => {
   }, [rawData, selectedWeeks, calculateSchoolYearStats, calculateWeeklyStats]);
 
   React.useEffect(() => {
-  // Force re-render when selectedClasses changes
+    // Force re-render when selectedClasses changes
     if (results) {
       setResults({...results});
     }
   }, [selectedClasses]);
 
   const getFilteredStudents = () => {
-  if (!results) return [];
+    if (!results) return [];
 
-  return Object.entries(results)
-    .filter(([student, stats]: [string, any]) => {
-      const matchesSearch = student.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesClass = selectedClasses.length === 0 || selectedClasses.includes(stats.klasse);
-      
-      // Separate Bedingungen für unentschuldigte Verspätungen und Fehlzeiten
-      let meetsUnexcusedCriteria = true;
-      if (filterUnexcusedLate || filterUnexcusedAbsent) {
-        meetsUnexcusedCriteria = false;
-        if (filterUnexcusedLate && stats.verspaetungen_unentsch > 0) {
-          meetsUnexcusedCriteria = true;
+    return Object.entries(results)
+      .filter(([student, stats]: [string, any]) => {
+        const matchesSearch = student.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesClass = selectedClasses.length === 0 || selectedClasses.includes(stats.klasse);
+        
+        // Separate Bedingungen für unentschuldigte Verspätungen und Fehlzeiten
+        let meetsUnexcusedCriteria = true;
+        if (filterUnexcusedLate || filterUnexcusedAbsent) {
+          meetsUnexcusedCriteria = false;
+          if (filterUnexcusedLate && stats.verspaetungen_unentsch > 0) {
+            meetsUnexcusedCriteria = true;
+          }
+          if (filterUnexcusedAbsent && stats.fehlzeiten_unentsch > 0) {
+            meetsUnexcusedCriteria = true;
+          }
         }
-        if (filterUnexcusedAbsent && stats.fehlzeiten_unentsch > 0) {
-          meetsUnexcusedCriteria = true;
-        }
-      }
 
-      const meetsMinUnexcusedLates = minUnexcusedLates === '' || 
-        stats.verspaetungen_unentsch >= parseInt(minUnexcusedLates);
-      const meetsMinUnexcusedAbsences = minUnexcusedAbsences === '' || 
-        stats.fehlzeiten_unentsch >= parseInt(minUnexcusedAbsences);
+        const meetsMinUnexcusedLates = minUnexcusedLates === '' || 
+          stats.verspaetungen_unentsch >= parseInt(minUnexcusedLates);
+        const meetsMinUnexcusedAbsences = minUnexcusedAbsences === '' || 
+          stats.fehlzeiten_unentsch >= parseInt(minUnexcusedAbsences);
 
-      return matchesSearch && 
-             matchesClass && 
-             meetsUnexcusedCriteria && 
-             meetsMinUnexcusedLates && 
-             meetsMinUnexcusedAbsences;
-    })
-    .sort(([a], [b]) => a.localeCompare(b));
-};
- 
+        return matchesSearch && 
+               matchesClass && 
+               meetsUnexcusedCriteria && 
+               meetsMinUnexcusedLates && 
+               meetsMinUnexcusedAbsences;
+      })
+      .sort(([a], [b]) => a.localeCompare(b));
+  };
+   
   return (
     <div className="container mx-auto py-6 px-4">
       <Card className="w-full bg-white">
@@ -561,7 +567,7 @@ const AttendanceAnalyzer = () => {
                       case 'lastMonth': {
                         const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
                         const yearOfLastMonth = currentMonth === 0 ? currentYear - 1 : currentYear;
-                       start = new Date(yearOfLastMonth + '-' + String(lastMonth + 1).padStart(2, '0') + '-01T00:00:00');
+                        start = new Date(yearOfLastMonth + '-' + String(lastMonth + 1).padStart(2, '0') + '-01T00:00:00');
                         end = new Date(yearOfLastMonth + '-' + String(lastMonth + 1).padStart(2, '0') + '-' + String(new Date(yearOfLastMonth, lastMonth + 1, 0).getDate()).padStart(2, '0') + 'T23:59:59');
                         break;
                       }
@@ -711,14 +717,14 @@ const AttendanceAnalyzer = () => {
                     Zurücksetzen
                   </Button>
                   <ExportButtons 
-                    getFilteredStudents={getFilteredStudents}  // neu
+                    getFilteredStudents={getFilteredStudents}
                     startDate={startDate}
                     endDate={endDate}
                     schoolYearStats={schoolYearStats}
                     weeklyStats={weeklyStats}
                     selectedWeeks={selectedWeeks}
                     isReportView={isReportView}
-                    detailedData={detailedData}  // Entfernen der isReportView-Bedingung
+                    detailedData={detailedData}
                     expandedStudents={expandedStudents}
                     activeFilters={activeFilters}
                   />
@@ -726,7 +732,7 @@ const AttendanceAnalyzer = () => {
                 
                 {isReportView ? (
                   <ReportView
-                    getFilteredStudents={getFilteredStudents}  // Pass the function instead of its result
+                    getFilteredStudents={getFilteredStudents}
                     detailedData={detailedData}
                     startDate={startDate}
                     endDate={endDate}
@@ -738,7 +744,7 @@ const AttendanceAnalyzer = () => {
                   />
                 ) : (
                   <NormalView
-                    getFilteredStudents={getFilteredStudents}  // Pass the function instead of its result
+                    getFilteredStudents={getFilteredStudents}
                     detailedData={detailedData}
                     schoolYearDetailedData={schoolYearDetailedData}
                     weeklyDetailedData={weeklyDetailedData}
