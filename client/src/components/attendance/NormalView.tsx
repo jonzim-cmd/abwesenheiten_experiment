@@ -26,7 +26,10 @@ interface NormalViewProps {
   startDate: string;
   endDate: string;
   schoolYearStats: Record<string, { verspaetungen_unentsch: number; fehlzeiten_unentsch: number }>;
-  weeklyStats: Record<string, { verspaetungen: { total: number; weekly: number[] }; fehlzeiten: { total: number; weekly: number[] } }>;
+  weeklyStats: Record<
+    string,
+    { verspaetungen: { total: number; weekly: number[] }; fehlzeiten: { total: number; weekly: number[] } }
+  >;
   selectedWeeks: string;
   searchQuery: string;
   onSearchChange: (value: string) => void;
