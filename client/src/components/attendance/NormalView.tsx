@@ -7,7 +7,6 @@ import StudentDetailsRow from './table/StudentDetailsRow';
 import { StudentStats, AbsenceEntry, getLastNWeeks } from '@/lib/attendance-utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ClassFilter } from './ClassFilter';
-import ResetCheckboxButton from './ResetCheckboxButton';
 
 interface DetailedStats {
   verspaetungen_entsch: AbsenceEntry[];
