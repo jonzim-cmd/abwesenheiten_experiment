@@ -9,7 +9,13 @@ interface StudentDetailsRowProps {
   filterType?: string;
 }
 
-const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterType }: StudentDetailsRowProps) => {
+const StudentDetailsRow = ({
+  student,
+  detailedData,
+  rowColor,
+  isVisible,
+  filterType,
+}: StudentDetailsRowProps) => {
   // Hilfsfunktion zur Formatierung von Datumsangaben
   const formatDate = (datum: Date | string) => {
     if (typeof datum === 'string') {
@@ -19,14 +25,14 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
         weekday: 'long',
         year: 'numeric',
         month: '2-digit',
-        day: '2-digit'
+        day: '2-digit',
       });
     }
     return datum.toLocaleDateString('de-DE', {
       weekday: 'long',
       year: 'numeric',
       month: '2-digit',
-      day: '2-digit'
+      day: '2-digit',
     });
   };
 
@@ -69,12 +75,13 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     const open: AbsenceEntry[] = [];
     const today = new Date();
 
-    entries.forEach(entry => {
+    entries.forEach((entry) => {
       const status = (entry.status || '').trim();
       // Frist: 7 Tage ab dem Eintragsdatum
-      const entryDate = typeof entry.datum === 'string'
-        ? new Date(entry.datum.split('.').reverse().join('-'))
-        : entry.datum;
+      const entryDate =
+        typeof entry.datum === 'string'
+          ? new Date(entry.datum.split('.').reverse().join('-'))
+          : entry.datum;
       const deadlineDate = new Date(entryDate.getTime() + 7 * 24 * 60 * 60 * 1000);
 
       if (status === 'entsch.' || status === 'Attest' || status === 'Attest Amtsarzt') {
@@ -87,8 +94,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     });
 
     // Sortiere jede Kategorie absteigend nach Datum (neueste Einträge oben)
-    const sortFn = (a: AbsenceEntry, b: AbsenceEntry) =>
-      parseDateValue(b.datum) - parseDateValue(a.datum);
+    const sortFn = (a: AbsenceEntry, b: AbsenceEntry) => parseDateValue(b.datum) - parseDateValue(a.datum);
     unexcused.sort(sortFn);
     excused.sort(sortFn);
     open.sort(sortFn);
@@ -97,8 +103,9 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
   };
 
   // Rendert einen einzelnen Detail-Eintrag mit Nummerierung, Datum, Zeiten/Art und ggf. Status
+  // Die Nummerierung erfolgt jeweils separat pro Spalte, basierend auf der Länge des entsprechenden Arrays.
   const renderEntry = (entry: AbsenceEntry, idx: number, total: number) => {
-    const number = total - idx; // Neueste Einträge erhalten die höchste Nummer
+    const number = total - idx; // Neueste Einträge erhalten die höchste Nummer in der jeweiligen Spalte
     const statusColor = getStatusColor(entry.status || '', entry.datum);
     return (
       <div key={idx} className={`${statusColor} hover:bg-gray-50 p-1 rounded`}>
@@ -116,68 +123,54 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
           </span>
         )}
         {entry.status && (
-          <span className="ml-2 italic">
-            [{entry.status}]
-          </span>
+          <span className="ml-2 italic">[{entry.status}]</span>
         )}
       </div>
     );
   };
 
+  // Baut die Detail-Tabelle mit drei Spalten auf
   const renderDetailsContent = () => {
     if (!detailedData || detailedData.length === 0) {
       return <div className="text-gray-500 italic">Keine Daten verfügbar</div>;
     }
 
-    if (filterType === 'details') {
-      // Debug-Ausgabe: Welche Partitionen werden gefunden?
-      const partitions = partitionEntries(detailedData);
-      console.log(`Student ${student}:`, partitions);
+    // Nutze den "details"-Filtertyp zur Partitionierung (unentschuldigt, entschuldigt, offen)
+    const { unexcused, excused, open } = partitionEntries(detailedData);
 
-      const { unexcused, excused, open } = partitions;
-      const maxRows = Math.max(unexcused.length, excused.length, open.length);
-
-      return (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border border-gray-300">
-            <thead>
-              <tr>
-                <th className="px-2 py-1 border-b border-gray-300 text-left">Unentschuldigt</th>
-                <th className="px-2 py-1 border-b border-gray-300 text-left">Entschuldigt</th>
-                <th className="px-2 py-1 border-b border-gray-300 text-left">Offen</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: maxRows }).map((_, rowIndex) => (
-                <tr key={rowIndex}>
-                  <td className="px-2 py-1 border-b border-gray-200 align-top">
-                    {unexcused[rowIndex] && renderEntry(unexcused[rowIndex], rowIndex, unexcused.length)}
-                  </td>
-                  <td className="px-2 py-1 border-b border-gray-200 align-top">
-                    {excused[rowIndex] && renderEntry(excused[rowIndex], rowIndex, excused.length)}
-                  </td>
-                  <td className="px-2 py-1 border-b border-gray-200 align-top">
-                    {open[rowIndex] && renderEntry(open[rowIndex], rowIndex, open.length)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
-    }
-
-    // Für andere Filtertypen: Standardansicht (sortiert nach Datum absteigend)
-    const sortedData = [...detailedData].sort(
-      (a, b) => parseDateValue(b.datum) - parseDateValue(a.datum)
-    );
     return (
-      <div className="space-y-1">
-        {sortedData.length > 0 ? (
-          sortedData.map((entry, i) => renderEntry(entry, i, sortedData.length))
-        ) : (
-          <div className="text-gray-500 italic">Keine Einträge für den ausgewählten Zeitraum gefunden</div>
-        )}
+      <div className="overflow-x-auto">
+        <table className="min-w-full border border-gray-300">
+          <thead>
+            <tr>
+              <th className="px-2 py-1 border-b border-gray-300 text-left">Unentschuldigt</th>
+              <th className="px-2 py-1 border-b border-gray-300 text-left">Entschuldigt</th>
+              <th className="px-2 py-1 border-b border-gray-300 text-left">Offen</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(() => {
+              const maxRows = Math.max(unexcused.length, excused.length, open.length);
+              const rows = [];
+              for (let i = 0; i < maxRows; i++) {
+                rows.push(
+                  <tr key={i}>
+                    <td className="px-2 py-1 border-b border-gray-200 align-top">
+                      {unexcused[i] ? renderEntry(unexcused[i], i, unexcused.length) : null}
+                    </td>
+                    <td className="px-2 py-1 border-b border-gray-200 align-top">
+                      {excused[i] ? renderEntry(excused[i], i, excused.length) : null}
+                    </td>
+                    <td className="px-2 py-1 border-b border-gray-200 align-top">
+                      {open[i] ? renderEntry(open[i], i, open.length) : null}
+                    </td>
+                  </tr>
+                );
+              }
+              return rows;
+            })()}
+          </tbody>
+        </table>
       </div>
     );
   };
@@ -221,6 +214,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
       style={{ display: isVisible ? 'table-row' : 'none' }}
       className={rowColor}
     >
+      {/* Der colSpan bleibt unverändert (14), sofern auch deine Tabelle in der NormalView 14 Spalten verwendet – ansonsten anpassen */}
       <td colSpan={14} className="px-4 py-2 text-sm">
         <div className="space-y-2">
           <h4 className="font-medium text-gray-900">{getFilterTitle()}</h4>
