@@ -33,10 +33,26 @@ interface DetailedStats {
   fehlzeiten_offen: AbsenceEntry[];
 }
 
-// Hilfsfunktion, um eine Zeit (z. B. "16:50") in Minuten umzurechnen
+// Hilfsfunktion: Wandelt eine Zeitangabe (z. B. "16:50") in Minuten um
 const parseTimeToMinutes = (timeStr: string): number => {
   const [hours, minutes] = timeStr.split(':').map(Number);
   return hours * 60 + minutes;
+};
+
+// Angepasste Funktion zur Erkennung von Verspätung ausschließlich basierend auf Abwesenheitsgrund und Endzeit
+const isVerspaetungFunc = (row: any): boolean => {
+  // Nutze ausschließlich Abwesenheitsgrund zur Klassifizierung
+  const absenceReason = row.Abwesenheitsgrund ? row.Abwesenheitsgrund.trim() : '';
+  const isTardyByReason = absenceReason === 'Verspätung';
+  
+  // Falls kein Abwesenheitsgrund vorliegt, dann prüfe die Endzeit
+  const expectedMinutes = parseTimeToMinutes('16:50');
+  const isTardyByEndzeit =
+    (!absenceReason || absenceReason === '') &&
+    row.Endzeit &&
+    parseTimeToMinutes(row.Endzeit) < expectedMinutes;
+  
+  return isTardyByReason || isTardyByEndzeit;
 };
 
 const AttendanceAnalyzer = () => {
@@ -92,19 +108,6 @@ const AttendanceAnalyzer = () => {
     }
   };
 
-  // Neue Logik zur Erkennung von Verspätungen:
-  // Wenn der Status "Verspätung" ist, oder (kein Status und Endzeit vor 16:50)
-  const isVerspaetungFunc = (row: any): boolean => {
-    const effectiveStatus = row.Status ? row.Status.trim() : '';
-    const isLateByStatus = effectiveStatus === 'Verspätung';
-    const expectedMinutes = parseTimeToMinutes('16:50');
-    const isLateByEndzeit =
-      (!effectiveStatus || effectiveStatus === '') &&
-      row.Endzeit &&
-      parseTimeToMinutes(row.Endzeit) < expectedMinutes;
-    return isLateByStatus || isLateByEndzeit;
-  };
-
   const calculateSchoolYearStats = useCallback((data: any[]) => {
     const schoolYear = getCurrentSchoolYear();
     const sjStartDate = new Date(schoolYear.start + '-09-01T00:00:00');
@@ -129,6 +132,7 @@ const AttendanceAnalyzer = () => {
       }
 
       const effectiveStatus = row.Status ? row.Status.trim() : '';
+      // Für die Klassifizierung der Verspätung nutzen wir ausschließlich Abwesenheitsgrund/Endzeit:
       const isVerspaetung = isVerspaetungFunc(row);
 
       if (date >= sjStartDate && date <= sjEndDate) {
@@ -180,9 +184,9 @@ const AttendanceAnalyzer = () => {
 
       const today = new Date();
       const deadline = new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000);
-      const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || 
-                              effectiveStatus === 'nicht akzep.' || 
-                              (!effectiveStatus && today > deadline);
+      const isUnentschuldigt = effectiveStatus === 'nicht entsch.' ||
+                                effectiveStatus === 'nicht akzep.' ||
+                                (!effectiveStatus && today > deadline);
 
       if (isUnentschuldigt) {
         if (isVerspaetung) {
@@ -263,6 +267,7 @@ const AttendanceAnalyzer = () => {
         }
 
         const effectiveStatus = row.Status ? row.Status.trim() : '';
+        // Klassifizierung der Verspätung ausschließlich über Abwesenheitsgrund/Endzeit:
         const isVerspaetung = isVerspaetungFunc(row);
 
         const isAttest = effectiveStatus === 'Attest' || effectiveStatus === 'Attest Amtsarzt';
