@@ -140,7 +140,16 @@ const NormalView = ({
           filterType === 'sj_verspaetungen'
             ? studentSchoolYearData.verspaetungen_unentsch
             : studentSchoolYearData.fehlzeiten_unentsch;
+        return entries.sort(
+          (a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime()
+        );
+      }
 
+      case 'sj_fehlzeiten_ges': {
+        const entries = [
+          ...studentSchoolYearData.fehlzeiten_unentsch,
+          ...studentSchoolYearData.fehlzeiten_entsch
+        ];
         return entries.sort(
           (a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime()
         );
