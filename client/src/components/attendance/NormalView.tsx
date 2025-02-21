@@ -7,7 +7,6 @@ import StudentDetailsRow from './table/StudentDetailsRow';
 import { StudentStats, AbsenceEntry, getLastNWeeks } from '@/lib/attendance-utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ClassFilter } from './ClassFilter';
-import ResetCheckboxButton from './ResetCheckboxButton';
 
 interface DetailedStats {
   verspaetungen_entsch: AbsenceEntry[];
@@ -381,14 +380,17 @@ const NormalView = ({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <ResetCheckboxButton onReset={resetCheckedStudents} />
         </div>
       </div>
 
       <div className="relative h-[500px]">
         <div className="absolute inset-0 overflow-x-auto overflow-y-auto">
           <table className="min-w-full border-collapse bg-white">
-            <StudentTableHeader onSort={handleSort} sortStates={sortStates} />
+            <StudentTableHeader 
+              onSort={handleSort} 
+              sortStates={sortStates}
+              onResetSelection={resetCheckedStudents} // hier wird der Reset-Handler übergeben
+            />
             <tbody>
               {getSortedStudents().map(([student, stats], index) => {
                 const baseRowColor = index % 2 === 0 ? 'bg-white' : 'bg-gray-100';
