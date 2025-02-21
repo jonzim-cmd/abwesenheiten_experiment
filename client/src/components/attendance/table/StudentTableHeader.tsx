@@ -202,7 +202,7 @@ const StudentTableHeader = ({ onSort, sortStates, onResetSelection }: StudentTab
           </th>
           <th 
             onClick={() => onSort('sj_fehlzeiten_ges')}
-            className={`px-4 py-2 text-center text-xs font-medium text-black border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('sj_fehlzeiten_ges')}`}
+            className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('sj_fehlzeiten_ges')}`}
           >
             <Tooltip>
               <TooltipTrigger>∑SJ F₍ges₎</TooltipTrigger>
