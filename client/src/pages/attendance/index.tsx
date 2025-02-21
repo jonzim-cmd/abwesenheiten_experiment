@@ -33,14 +33,19 @@ interface DetailedStats {
   fehlzeiten_offen: AbsenceEntry[];
 }
 
+// Hilfsfunktion: Wandelt eine Zeitangabe (z. B. "16:50") in Minuten um
 const parseTimeToMinutes = (timeStr: string): number => {
   const [hours, minutes] = timeStr.split(':').map(Number);
   return hours * 60 + minutes;
 };
 
+// Angepasste Funktion zur Erkennung von Verspätung ausschließlich basierend auf Abwesenheitsgrund und Endzeit
 const isVerspaetungFunc = (row: any): boolean => {
+  // Nutze ausschließlich Abwesenheitsgrund zur Klassifizierung
   const absenceReason = row.Abwesenheitsgrund ? row.Abwesenheitsgrund.trim() : '';
   const isTardyByReason = absenceReason === 'Verspätung';
+  
+  // Falls kein Abwesenheitsgrund vorliegt, dann prüfe die Endzeit
   const expectedMinutes = parseTimeToMinutes('16:50');
   const isTardyByEndzeit =
     (!absenceReason || absenceReason === '') &&
@@ -116,7 +121,7 @@ const AttendanceAnalyzer = () => {
       if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
       const [day, month, year] = row.Beginndatum.split('.');
-      const date = new Date(year + '-' + month.padStart(2, '0') + '-' + day.padStart(2, '0') + 'T12:00:00');
+      const date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T12:00:00`);
       const studentName = `${row.Langname}, ${row.Vorname}`;
 
       if (!stats[studentName]) {
@@ -132,6 +137,7 @@ const AttendanceAnalyzer = () => {
 
       if (date >= sjStartDate && date <= sjEndDate) {
         if (!isVerspaetung) {
+          // Fehlzeiten: immer zur Gesamtzahl hinzufügen
           stats[studentName].fehlzeiten_gesamt++;
           const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || effectiveStatus === 'nicht akzep.';
           const deadlineDate = new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -139,7 +145,11 @@ const AttendanceAnalyzer = () => {
             stats[studentName].fehlzeiten_unentsch++;
           }
         } else {
-          stats[studentName].verspaetungen_unentsch++;
+          // Bei Verspätungen soll als Zahl nur unentschuldigt gezählt werden.
+          const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || effectiveStatus === 'nicht akzep.' || (!effectiveStatus && today > new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
+          if (isUnentschuldigt) {
+            stats[studentName].verspaetungen_unentsch++;
+          }
         }
       }
     });
@@ -156,7 +166,7 @@ const AttendanceAnalyzer = () => {
       if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
       const [day, month, year] = row.Beginndatum.split('.');
-      const date = new Date(year + '-' + month.padStart(2, '0') + '-' + day.padStart(2, '0') + 'T12:00:00');
+      const date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T12:00:00`);
       const studentName = `${row.Langname}, ${row.Vorname}`;
 
       const weekIndex = weeks.findIndex(w => {
@@ -213,7 +223,7 @@ const AttendanceAnalyzer = () => {
         if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
         const [day, month, year] = row.Beginndatum.split('.');
-        const date = new Date(year + '-' + month.padStart(2, '0') + '-' + day.padStart(2, '0') + 'T12:00:00');
+        const date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T12:00:00`);
         const studentName = `${row.Langname}, ${row.Vorname}`;
 
         if (!studentStats[studentName]) {
@@ -308,15 +318,14 @@ const AttendanceAnalyzer = () => {
 
         if (date >= sjStartDate && date <= sjEndDate) {
           if (isVerspaetung) {
+            // Für die Details: alle Verspätungen (entschuldigt, unentschuldigt, offen) sollen in den Detaildaten erscheinen.
             schoolYearDetails[studentName].verspaetungen_unentsch.push(entry);
           } else {
-            // Für die Gesamt-Spalte: immer hinzufügen
+            // Für Fehlzeiten: immer in fehlzeiten_gesamt aufnehmen
             schoolYearDetails[studentName].fehlzeiten_gesamt.push(entry);
-            // Für die unentschuldigten Fehlzeiten: nur wenn unentschuldigt (analog zur Hauptlogik)
             if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
               schoolYearDetails[studentName].fehlzeiten_unentsch.push(entry);
             }
-            // Optional: könntest Du auch die entschuldigten separat sammeln:
             if (isEntschuldigt) {
               schoolYearDetails[studentName].fehlzeiten_entsch.push(entry);
             }
@@ -460,7 +469,7 @@ const AttendanceAnalyzer = () => {
 
   React.useEffect(() => {
     if (results) {
-      setResults({...results});
+      setResults({ ...results });
     }
   }, [selectedClasses]);
 
