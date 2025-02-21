@@ -42,6 +42,7 @@ interface ExportButtonsProps {
     [key: string]: {
       verspaetungen_unentsch: number;
       fehlzeiten_unentsch: number;
+      fehlzeiten_gesamt: number;
     };
   };
   weeklyStats: {
@@ -90,17 +91,17 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       case 'fehlzeiten_offen':
         return 'Noch zu entschuldigende Fehlzeiten (Frist läuft noch)';
       case 'sj_verspaetungen':
-        return 'Unentschuldigte Verspätungen im Schuljahr';
+        return 'Unent. Verspätungen im Schuljahr';
       case 'sj_fehlzeiten':
-        return 'Unentschuldigte Fehlzeiten im Schuljahr';
+        return 'Unent. Fehlzeiten im Schuljahr';
       case 'weekly_verspaetungen':
       case 'sum_verspaetungen':
-        return 'Unentschuldigte Verspätungen in den letzten ' + selectedWeeks + ' Wochen';
+        return 'Unent. Verspätungen in den letzten ' + selectedWeeks + ' Wochen';
       case 'weekly_fehlzeiten':
       case 'sum_fehlzeiten':
-        return 'Unentschuldigte Fehlzeiten in den letzten ' + selectedWeeks + ' Wochen';
+        return 'Unent. Fehlzeiten in den letzten ' + selectedWeeks + ' Wochen';
       case 'details':
-        return 'Unentschuldigte Verspätungen und Fehlzeiten';
+        return 'Unent. Verspätungen und Fehlzeiten';
       default:
         return '';
     }
@@ -169,7 +170,8 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
 
         const schoolYearData = schoolYearStats[student] || { 
           verspaetungen_unentsch: 0, 
-          fehlzeiten_unentsch: 0 
+          fehlzeiten_unentsch: 0,
+          fehlzeiten_gesamt: 0
         };
 
         const [nachname = "", vorname = ""] = student.split(",").map(s => s.trim());
@@ -186,6 +188,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
           'Fehlzeiten (O)': stats.fehlzeiten_offen,
           '∑SJ V': schoolYearData.verspaetungen_unentsch,
           '∑SJ F': schoolYearData.fehlzeiten_unentsch,
+          '∑SJ F₍ges₎': schoolYearData.fehlzeiten_gesamt,
           'Øx() V': verspaetungenWeekly,
           'Øx() F': fehlzeitenWeekly,
           '∑x() V': verspaetungenSum,
@@ -203,7 +206,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
 
     const colWidths = isReportView ? 
       [10, 30, 30, 15, 60, 60] : 
-      [25, 25, 15, 15, 15, 15, 15, 15, 15, 15, 15, 20, 20, 20, 20];
+      [25, 25, 15, 15, 15, 15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20];
 
     worksheet['!cols'] = colWidths.map(width => ({ width }));
 
@@ -313,7 +316,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
         .map(entry => {
           const date = formatDate(entry.datum);
           const type = entry.art;
-          const time = entry.beginnZeit ? ` (${entry.beginnZeit}${entry.endZeit ? ` - ${entry.endZeit}` : ''} Uhr)` : '';
+          const time = entry.beginnZeit ? `(${entry.beginnZeit}${entry.endZeit ? ` - ${entry.endZeit}` : ''} Uhr)` : '';
           const reason = entry.grund ? ` - ${entry.grund}` : '';
           const status = entry.status ? ` [${entry.status}]` : '';
           return `${date}${time}: ${type}${reason}${status}`;
@@ -356,6 +359,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       12: { cellWidth: 18 },
       13: { cellWidth: 18 },
       14: { cellWidth: 18 },
+      15: { cellWidth: 18 },
     };
 
     const columnStyles = hasDetails ? {
@@ -369,7 +373,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       body: enrichedData.flatMap(row => {
         if (row['Details']) {
           // Hauptzeile (alle Daten außer Details)
-          const mainRow = Object.values(row).slice(0, -1); // Alles außer Details
+          const mainRow = Object.values(row).slice(0, -1);
           
           // Detail-Zeile mit colspan
           return [
@@ -403,7 +407,6 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
         fontStyle: 'bold'
       },
       columnStyles: columnStyles,
-      // Styling für Detail-Zeilen
       rowStyles: (row) => {
         if (row.raw[row.raw.length - 1] && typeof row.raw[0] === 'string' && row.raw[0] === '') {
           return {

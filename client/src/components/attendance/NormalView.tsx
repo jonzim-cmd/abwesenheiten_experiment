@@ -24,7 +24,7 @@ interface NormalViewProps {
   weeklyDetailedData: Record<string, DetailedStats>;
   startDate: string;
   endDate: string;
-  schoolYearStats: Record<string, { verspaetungen_unentsch: number; fehlzeiten_unentsch: number }>;
+  schoolYearStats: Record<string, { verspaetungen_unentsch: number; fehlzeiten_unentsch: number; fehlzeiten_gesamt: number }>;
   weeklyStats: Record<string, { verspaetungen: { total: number; weekly: number[] }; fehlzeiten: { total: number; weekly: number[] } }>;
   selectedWeeks: string;
   searchQuery: string;
@@ -49,6 +49,7 @@ type SortField =
   | 'fehlzeiten_offen'
   | 'sj_verspaetungen'
   | 'sj_fehlzeiten'
+  | 'sj_fehlzeiten_ges'
   | 'weekly_verspaetungen'
   | 'weekly_fehlzeiten'
   | 'sum_verspaetungen'
@@ -139,7 +140,16 @@ const NormalView = ({
           filterType === 'sj_verspaetungen'
             ? studentSchoolYearData.verspaetungen_unentsch
             : studentSchoolYearData.fehlzeiten_unentsch;
+        return entries.sort(
+          (a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime()
+        );
+      }
 
+      case 'sj_fehlzeiten_ges': {
+        const entries = [
+          ...studentSchoolYearData.fehlzeiten_unentsch,
+          ...studentSchoolYearData.fehlzeiten_entsch
+        ];
         return entries.sort(
           (a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime()
         );
@@ -297,6 +307,8 @@ const NormalView = ({
         return multiplier * ((schoolYearStats[studentA]?.verspaetungen_unentsch || 0) - (schoolYearStats[studentB]?.verspaetungen_unentsch || 0));
       case 'sj_fehlzeiten':
         return multiplier * ((schoolYearStats[studentA]?.fehlzeiten_unentsch || 0) - (schoolYearStats[studentB]?.fehlzeiten_unentsch || 0));
+      case 'sj_fehlzeiten_ges':
+        return multiplier * ((schoolYearStats[studentA]?.fehlzeiten_gesamt || 0) - (schoolYearStats[studentB]?.fehlzeiten_gesamt || 0));
       case 'weekly_verspaetungen':
         return multiplier * (((weeklyStats[studentA]?.verspaetungen.total / parseInt(selectedWeeks)) || 0) - ((weeklyStats[studentB]?.verspaetungen.total / parseInt(selectedWeeks)) || 0));
       case 'weekly_fehlzeiten':
@@ -389,14 +401,13 @@ const NormalView = ({
             <StudentTableHeader 
               onSort={handleSort} 
               sortStates={sortStates}
-              onResetSelection={resetCheckedStudents} // hier wird der Reset-Handler übergeben
+              onResetSelection={resetCheckedStudents}
             />
             <tbody>
               {getSortedStudents().map(([student, stats], index) => {
                 const baseRowColor = index % 2 === 0 ? 'bg-white' : 'bg-gray-100';
-                // Hier wird zusätzlich die Opacity (und ein sanfter Übergang) gesetzt, wenn der Schüler geprüft ist.
                 const finalRowClass = `${baseRowColor} transition-opacity duration-300 ${checkedStudents.has(student) ? 'opacity-50' : 'opacity-100'}`;
-                const schoolYearData = schoolYearStats[student] || { verspaetungen_unentsch: 0, fehlzeiten_unentsch: 0 };
+                const schoolYearData = schoolYearStats[student] || { verspaetungen_unentsch: 0, fehlzeiten_unentsch: 0, fehlzeiten_gesamt: 0 };
                 const weeklyData = weeklyStats[student] || {
                   verspaetungen: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) },
                   fehlzeiten: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) }

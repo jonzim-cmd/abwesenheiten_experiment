@@ -114,7 +114,7 @@ const AttendanceAnalyzer = () => {
     const sjEndDate = new Date(schoolYear.end + '-07-31T23:59:59');
     const today = new Date();
 
-    const stats: Record<string, { verspaetungen_unentsch: number; fehlzeiten_unentsch: number }> = {};
+    const stats: Record<string, { verspaetungen_unentsch: number; fehlzeiten_unentsch: number; fehlzeiten_gesamt: number }> = {};
 
     data.forEach(row => {
       if (!row.Beginndatum || !row.Langname || !row.Vorname) return;
@@ -127,7 +127,8 @@ const AttendanceAnalyzer = () => {
       if (!stats[studentName]) {
         stats[studentName] = {
           verspaetungen_unentsch: 0,
-          fehlzeiten_unentsch: 0
+          fehlzeiten_unentsch: 0,
+          fehlzeiten_gesamt: 0
         };
       }
 
@@ -136,6 +137,10 @@ const AttendanceAnalyzer = () => {
       const isVerspaetung = isVerspaetungFunc(row);
 
       if (date >= sjStartDate && date <= sjEndDate) {
+        if (!isVerspaetung) {
+          // Hier werden ALLE Fehlzeiten gezählt (entschuldigt + unentschuldigt)
+          stats[studentName].fehlzeiten_gesamt++;
+        }
         const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || effectiveStatus === 'nicht akzep.';
         const isUeberfaellig = !effectiveStatus && (today > new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
 
