@@ -29,7 +29,8 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
       case 'sj_verspaetungen':
         return 'Unentschuldigte, entschuldigte und offene Verspätungen im gesamten Schuljahr';
       case 'sj_fehlzeiten':
-        return 'Unentschuldigte, entschuldigte und offene Fehltage im gesamten Schuljahr';
+        // Hier wird jetzt nur noch "Unentschuldigte Fehlzeiten" angezeigt
+        return 'Unentschuldigte Fehlzeiten im gesamten Schuljahr';
       default:
         if (filterType?.startsWith('weekly_')) {
           const isVerspaetung = filterType.includes('verspaetungen');
