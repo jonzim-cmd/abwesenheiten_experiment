@@ -15,6 +15,7 @@ interface StudentTableRowProps {
   schoolYearData: {
     verspaetungen_unentsch: number;
     fehlzeiten_unentsch: number;
+    fehlzeiten_gesamt: number;
   };
   weeklyData: {
     verspaetungen: { total: number; weekly: number[] };
@@ -124,6 +125,9 @@ const StudentTableRow = ({
       </td>
       <td className="px-4 py-3 text-sm text-center text-red-600 border-r border-gray-200">
         {createClickableCell(schoolYearData.fehlzeiten_unentsch, 'sj_fehlzeiten', 'text-red-600')}
+      </td>
+      <td className="px-4 py-3 text-sm text-center text-black border-r border-gray-200">
+        {createClickableCell(schoolYearData.fehlzeiten_gesamt, 'sj_fehlzeiten_ges', 'text-black')}
       </td>
       <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
         {createClickableWeeklyCell(verspaetungenSum, weeklyData.verspaetungen.weekly, 'sum_verspaetungen')}
