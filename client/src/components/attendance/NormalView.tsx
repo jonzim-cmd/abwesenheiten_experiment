@@ -20,7 +20,7 @@ interface DetailedStats {
 interface NormalViewProps {
   getFilteredStudents: () => [string, StudentStats][];
   detailedData: Record<string, DetailedStats>;
-  schoolYearDetailedData: Record<string, DetailedStats>;
+  schoolYearDetailedData: Record<string, any>;
   weeklyDetailedData: Record<string, DetailedStats>;
   startDate: string;
   endDate: string;
@@ -146,11 +146,8 @@ const NormalView = ({
       }
 
       case 'sj_fehlzeiten_ges': {
-        const entries = [
-          ...studentSchoolYearData.fehlzeiten_unentsch,
-          ...studentSchoolYearData.fehlzeiten_entsch
-        ];
-        return entries.sort(
+        // Hier werden alle Fehlzeiten (offen, entschuldigt und unentschuldigt) zurückgegeben
+        return studentSchoolYearData.fehlzeiten_gesamt.sort(
           (a, b) => parseDate(b.datum).getTime() - parseDate(a.datum).getTime()
         );
       }
