@@ -94,6 +94,8 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
         return 'Unent. Verspätungen im Schuljahr';
       case 'sj_fehlzeiten':
         return 'Unent. Fehlzeiten im Schuljahr';
+      case 'sj_fehlzeiten_ges':
+        return 'Ges. Fehlzeiten im Schuljahr (E + U)';
       case 'weekly_verspaetungen':
       case 'sum_verspaetungen':
         return 'Unent. Verspätungen in den letzten ' + selectedWeeks + ' Wochen';
@@ -162,9 +164,6 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
         const verspaetungenAvg = (weeklyData.verspaetungen.total / parseInt(selectedWeeks)).toFixed(2);
         const fehlzeitenAvg = (weeklyData.fehlzeiten.total / parseInt(selectedWeeks)).toFixed(2);
 
-        const verspaetungenWeekly = `${verspaetungenAvg}(${weeklyData.verspaetungen.weekly.join(',')})`;
-        const fehlzeitenWeekly = `${fehlzeitenAvg}(${weeklyData.fehlzeiten.weekly.join(',')})`;
-
         const verspaetungenSum = `${weeklyData.verspaetungen.total}(${weeklyData.verspaetungen.weekly.join(',')})`;
         const fehlzeitenSum = `${weeklyData.fehlzeiten.total}(${weeklyData.fehlzeiten.weekly.join(',')})`;
 
@@ -189,8 +188,6 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
           '∑SJ V': schoolYearData.verspaetungen_unentsch,
           '∑SJ F': schoolYearData.fehlzeiten_unentsch,
           '∑SJ F₍ges₎': schoolYearData.fehlzeiten_gesamt,
-          'Øx() V': verspaetungenWeekly,
-          'Øx() F': fehlzeitenWeekly,
           '∑x() V': verspaetungenSum,
           '∑x() F': fehlzeitenSum
         };
@@ -206,7 +203,8 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
 
     const colWidths = isReportView ? 
       [10, 30, 30, 15, 60, 60] : 
-      [25, 25, 15, 15, 15, 15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20];
+      [25, 25, 15, 15, 15, 15, 15, 15, 15, 15, 15, 20, 20];
+      // Anz. Spalten: Nachname, Vorname, Klasse, 3x Verspätungen, 3x Fehlzeiten, ∑SJ V, ∑SJ F, ∑SJ F₍ges₎, ∑x() V, ∑x() F
 
     worksheet['!cols'] = colWidths.map(width => ({ width }));
 
@@ -244,7 +242,6 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
     };
 
     const pageWidth = doc.internal.pageSize.width;
-    const pageHeight = doc.internal.pageSize.height;
     const contentWidth = pageWidth - margin.left - margin.right;
 
     doc.setFontSize(16);
@@ -254,19 +251,13 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
 
     const enrichedData = formattedData.map(row => {
       const studentName = `${row['Nachname']}, ${row['Vorname']}`;
-
-      // Nur für expandierte Schüler Details hinzufügen
       if (!expandedStudents.has(studentName)) {
         return row;
       }
-
       const filterType = activeFilters.get(studentName);
       if (!filterType) return row;
-
       let details: AbsenceEntry[] = [];
       const studentData = detailedData[studentName];
-      
-      // Genau die Details holen, die aktuell angezeigt werden
       if (studentData) {
         switch(filterType) {
           case 'verspaetungen_entsch':
@@ -306,7 +297,6 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
             break;
         }
       }
-
       const formattedDetails = details
         .sort((a, b) => {
           const dateA = typeof a.datum === 'string' ? parseDate(a.datum) : a.datum;
@@ -321,8 +311,6 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
           const status = entry.status ? ` [${entry.status}]` : '';
           return `${date}${time}: ${type}${reason}${status}`;
         });
-
-      // Nur wenn Details vorhanden sind, diese als separate Spalte hinzufügen
       if (formattedDetails.length > 0) {
         const header = getDetailHeader(filterType);
         return {
@@ -334,8 +322,6 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
     });
 
     const hasDetails = enrichedData.some(row => row['Details']);
-    
-    // Spaltenbreiten anpassen - bestehende Breiten plus Details-Spalte wenn nötig
     const baseColumnStyles = isReportView ? {
       0: { cellWidth: 8 },
       1: { cellWidth: 25 },
@@ -353,13 +339,10 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       6: { cellWidth: 15 },
       7: { cellWidth: 15 },
       8: { cellWidth: 15 },
-      9: { cellWidth: 12 },
-      10: { cellWidth: 12 },
-      11: { cellWidth: 18 },
-      12: { cellWidth: 18 },
-      13: { cellWidth: 18 },
-      14: { cellWidth: 18 },
-      15: { cellWidth: 18 },
+      9: { cellWidth: 15 },
+      10: { cellWidth: 15 },
+      11: { cellWidth: 20 },
+      12: { cellWidth: 20 },
     };
 
     const columnStyles = hasDetails ? {
@@ -367,15 +350,11 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       'Details': { cellWidth: 60 }
     } : baseColumnStyles;
 
-    // PDF Tabelle mit Detail-Zeilen erstellen
     autoTable(doc, {
       head: [Object.keys(enrichedData[0])],
       body: enrichedData.flatMap(row => {
         if (row['Details']) {
-          // Hauptzeile (alle Daten außer Details)
           const mainRow = Object.values(row).slice(0, -1);
-          
-          // Detail-Zeile mit colspan
           return [
             mainRow,
             [{ 
@@ -447,6 +426,6 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       </Button>
     </div>
   );
-}; // Ende der ExportButtons-Komponente
+};
 
 export default ExportButtons;

@@ -12,7 +12,6 @@ type SortField = 'name' | 'klasse' |
   'verspaetungen_entsch' | 'verspaetungen_unentsch' | 'verspaetungen_offen' |
   'fehlzeiten_entsch' | 'fehlzeiten_unentsch' | 'fehlzeiten_offen' |
   'sj_verspaetungen' | 'sj_fehlzeiten' | 'sj_fehlzeiten_ges' |
-  'weekly_verspaetungen' | 'weekly_fehlzeiten' |
   'sum_verspaetungen' | 'sum_fehlzeiten';
 
 type SortDirection = 'asc' | 'desc';
@@ -90,18 +89,17 @@ const StudentTableHeader = ({ onSort, sortStates, onResetSelection }: StudentTab
               </TooltipContent>
             </Tooltip>
           </th>
-          <th colSpan={7} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 bg-white">
+          <th colSpan={5} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 bg-white">
             <Tooltip>
               <TooltipTrigger>Statistik</TooltipTrigger>
               <TooltipContent className="text-xs">
-                <p className="text-xs">bezieht sich auf 1-4 vollständige Wochen zurück, je nach Auswahl</p>
+                <p className="text-xs">...</p>
               </TooltipContent>
             </Tooltip>
           </th>
         </tr>
         <tr className="bg-white">
           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-r border-gray-200"></th>
-          
           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-r border-gray-200">
             <ResetCheckboxButton 
               onReset={onResetSelection}
@@ -110,7 +108,6 @@ const StudentTableHeader = ({ onSort, sortStates, onResetSelection }: StudentTab
               size="xs"
             />
           </th>
-
           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-r border-gray-200"></th>
           <th 
             onClick={() => onSort('verspaetungen_entsch')}
@@ -207,7 +204,7 @@ const StudentTableHeader = ({ onSort, sortStates, onResetSelection }: StudentTab
             <Tooltip>
               <TooltipTrigger>∑SJ F₍ges₎</TooltipTrigger>
               <TooltipContent className="text-xs">
-                <p className="text-xs">Gesamt (entschuldigt + unentschuldigt) Fehlzeiten im Schuljahr</p>
+                <p className="text-xs">Gesamt (E + U) Fehlzeiten im Schuljahr</p>
               </TooltipContent>
             </Tooltip> {renderSortIndicator('sj_fehlzeiten_ges')}
           </th>
@@ -218,7 +215,7 @@ const StudentTableHeader = ({ onSort, sortStates, onResetSelection }: StudentTab
             <Tooltip>
               <TooltipTrigger>∑x() V</TooltipTrigger>
               <TooltipContent className="text-xs">
-                <p className="text-xs">Vor (): ∑ Versp. pro vollständige Woche (je nach Auswahl 1–4 W). In (): ∑Versp. in W4, W3, W2, W1.</p>
+                <p className="text-xs">∑ Versp. pro vollständige Woche</p>
               </TooltipContent>
             </Tooltip> {renderSortIndicator('sum_verspaetungen')}
           </th>
@@ -229,31 +226,9 @@ const StudentTableHeader = ({ onSort, sortStates, onResetSelection }: StudentTab
             <Tooltip>
               <TooltipTrigger>∑x() F</TooltipTrigger>
               <TooltipContent className="text-xs">
-                <p className="text-xs">Vor (): ∑ Fehlz. pro vollständige Woche (je nach Auswahl 1–4 W). In (): ∑Fehlz. W4, W3, W2, W1.</p>
+                <p className="text-xs">∑ Fehlzeiten pro vollständige Woche</p>
               </TooltipContent>
             </Tooltip> {renderSortIndicator('sum_fehlzeiten')}
-          </th>
-          <th 
-            onClick={() => onSort('weekly_verspaetungen')}
-            className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-r border-gray-200 bg-white ${getSortableHeaderClass('weekly_verspaetungen')}`}
-          >
-            <Tooltip>
-              <TooltipTrigger>Øx() V</TooltipTrigger>
-              <TooltipContent className="text-xs">
-                <p className="text-xs">Vor (): Ø Versp. pro vollständige Woche (je nach Auswahl 1–4 W). In (): ∑Versp. in W4, W3, W2, W1.</p>
-              </TooltipContent>
-            </Tooltip> {renderSortIndicator('weekly_verspaetungen')}
-          </th>
-          <th 
-            onClick={() => onSort('weekly_fehlzeiten')}
-            className={`px-4 py-2 text-center text-xs font-medium text-gray-500 border-b border-gray-200 bg-white ${getSortableHeaderClass('weekly_fehlzeiten')}`}
-          >
-            <Tooltip>
-              <TooltipTrigger>Øx() F</TooltipTrigger>
-              <TooltipContent className="text-xs">
-                <p className="text-xs">Vor (): Ø Fehlz. pro vollständige Woche (je nach Auswahl 1–4 W). In (): ∑Fehlz. in W4, W3, W2, W1.</p>
-              </TooltipContent>
-            </Tooltip> {renderSortIndicator('weekly_fehlzeiten')}
           </th>
         </tr>
       </thead>
