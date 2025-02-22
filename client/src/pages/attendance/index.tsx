@@ -636,6 +636,10 @@ const AttendanceAnalyzer = () => {
                     <SelectItem value="2">2 Wochen</SelectItem>
                     <SelectItem value="3">3 Wochen</SelectItem>
                     <SelectItem value="4">4 Wochen</SelectItem>
+                    <SelectItem value="5">5 Woche</SelectItem>
+                    <SelectItem value="6">6 Wochen</SelectItem>
+                    <SelectItem value="7">7 Wochen</SelectItem>
+                    <SelectItem value="8">8 Wochen</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
