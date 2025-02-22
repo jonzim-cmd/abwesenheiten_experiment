@@ -45,9 +45,6 @@ const StudentTableRow = ({
   const verspaetungenAvg = (weeklyData.verspaetungen.total / parseInt(selectedWeeks)).toFixed(2);
   const fehlzeitenAvg = (weeklyData.fehlzeiten.total / parseInt(selectedWeeks)).toFixed(2);
 
-  const verspaetungenWeekly = `${verspaetungenAvg}(${weeklyData.verspaetungen.weekly.join(',')})`;
-  const fehlzeitenWeekly = `${fehlzeitenAvg}(${weeklyData.fehlzeiten.weekly.join(',')})`;
-
   const verspaetungenSum = `${weeklyData.verspaetungen.total}(${weeklyData.verspaetungen.weekly.join(',')})`;
   const fehlzeitenSum = `${weeklyData.fehlzeiten.total}(${weeklyData.fehlzeiten.weekly.join(',')})`;
 
@@ -135,12 +132,7 @@ const StudentTableRow = ({
       <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
         {createClickableWeeklyCell(fehlzeitenSum, weeklyData.fehlzeiten.weekly, 'sum_fehlzeiten')}
       </td>
-      <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
-        {createClickableWeeklyCell(verspaetungenWeekly, weeklyData.verspaetungen.weekly, 'weekly_verspaetungen')}
-      </td>
-      <td className="px-4 py-3 text-sm text-center border-r border-gray-200">
-        {createClickableWeeklyCell(fehlzeitenWeekly, weeklyData.fehlzeiten.weekly, 'weekly_fehlzeiten')}
-      </td>
+      {/* Die Spalten Øx() V und Øx() F wurden entfernt */}
       <td className="px-4 py-3 text-sm text-center">
         {/* Detailbutton entfernt */}
       </td>
