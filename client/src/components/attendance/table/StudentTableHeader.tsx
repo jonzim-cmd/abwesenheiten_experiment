@@ -93,7 +93,7 @@ const StudentTableHeader = ({ onSort, sortStates, onResetSelection }: StudentTab
             <Tooltip>
               <TooltipTrigger>Statistik</TooltipTrigger>
               <TooltipContent className="text-xs">
-                <p className="text-xs">bezieht sich auf 1-4 vollständige Wochen zurück, je nach Auswahl</p>
+                <p className="text-xs">...</p>
               </TooltipContent>
             </Tooltip>
           </th>
