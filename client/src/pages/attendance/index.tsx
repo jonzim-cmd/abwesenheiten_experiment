@@ -64,7 +64,7 @@ const AttendanceAnalyzer = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState('');
   const [detailedData, setDetailedData] = useState<Record<string, DetailedStats>>({});
-  const [schoolYearDetailedData, setSchoolYearDetailedData] = useState<Record<string, DetailedStats>>({});
+  const [schoolYearDetailedData, setSchoolYearDetailedData] = useState<Record<string, any>>({});
   const [filterUnexcusedLate, setFilterUnexcusedLate] = useState(false);
   const [filterUnexcusedAbsent, setFilterUnexcusedAbsent] = useState(false);
   const [minUnexcusedLates, setMinUnexcusedLates] = useState('');
@@ -121,7 +121,7 @@ const AttendanceAnalyzer = () => {
       if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
       const [day, month, year] = row.Beginndatum.split('.');
-      const date = new Date(year + '-' + month.padStart(2, '0') + '-' + day.padStart(2, '0') + 'T12:00:00');
+      const date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T12:00:00`);
       const studentName = `${row.Langname}, ${row.Vorname}`;
 
       if (!stats[studentName]) {
@@ -133,22 +133,22 @@ const AttendanceAnalyzer = () => {
       }
 
       const effectiveStatus = row.Status ? row.Status.trim() : '';
-      // Für die Klassifizierung der Verspätung nutzen wir ausschließlich Abwesenheitsgrund/Endzeit:
       const isVerspaetung = isVerspaetungFunc(row);
 
       if (date >= sjStartDate && date <= sjEndDate) {
         if (!isVerspaetung) {
-          // Hier werden ALLE Fehlzeiten gezählt (entschuldigt + unentschuldigt)
+          // Fehlzeiten: immer zur Gesamtzahl hinzufügen
           stats[studentName].fehlzeiten_gesamt++;
-        }
-        const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || effectiveStatus === 'nicht akzep.';
-        const isUeberfaellig = !effectiveStatus && (today > new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
-
-        if (isUnentschuldigt || isUeberfaellig) {
-          if (isVerspaetung) {
-            stats[studentName].verspaetungen_unentsch++;
-          } else {
+          const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || effectiveStatus === 'nicht akzep.';
+          const deadlineDate = new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000);
+          if (isUnentschuldigt || (!effectiveStatus && today > deadlineDate)) {
             stats[studentName].fehlzeiten_unentsch++;
+          }
+        } else {
+          // Bei Verspätungen soll als Zahl nur unentschuldigt gezählt werden.
+          const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || effectiveStatus === 'nicht akzep.' || (!effectiveStatus && today > new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
+          if (isUnentschuldigt) {
+            stats[studentName].verspaetungen_unentsch++;
           }
         }
       }
@@ -166,7 +166,7 @@ const AttendanceAnalyzer = () => {
       if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
       const [day, month, year] = row.Beginndatum.split('.');
-      const date = new Date(year + '-' + month.padStart(2, '0') + '-' + day.padStart(2, '0') + 'T12:00:00');
+      const date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T12:00:00`);
       const studentName = `${row.Langname}, ${row.Vorname}`;
 
       const weekIndex = weeks.findIndex(w => {
@@ -212,7 +212,7 @@ const AttendanceAnalyzer = () => {
       const today = new Date();
       const studentStats: any = {};
       const detailedStats: Record<string, DetailedStats> = {};
-      const schoolYearDetails: Record<string, DetailedStats> = {};
+      const schoolYearDetails: Record<string, any> = {};
       const weeklyDetails: Record<string, DetailedStats> = {};
       const schoolYear = getCurrentSchoolYear();
       const sjStartDate = new Date(schoolYear.start + '-09-01T00:00:00');
@@ -223,7 +223,7 @@ const AttendanceAnalyzer = () => {
         if (row['Text/Grund']?.toLowerCase().includes('fehleintrag')) return;
 
         const [day, month, year] = row.Beginndatum.split('.');
-        const date = new Date(year + '-' + month.padStart(2, '0') + '-' + day.padStart(2, '0') + 'T12:00:00');
+        const date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T12:00:00`);
         const studentName = `${row.Langname}, ${row.Vorname}`;
 
         if (!studentStats[studentName]) {
@@ -256,7 +256,8 @@ const AttendanceAnalyzer = () => {
             verspaetungen_offen: [],
             fehlzeiten_entsch: [],
             fehlzeiten_unentsch: [],
-            fehlzeiten_offen: []
+            fehlzeiten_offen: [],
+            fehlzeiten_gesamt: []  // neu für Gesamtzahl (entschuldigt + unentschuldigt)
           };
         }
 
@@ -272,9 +273,7 @@ const AttendanceAnalyzer = () => {
         }
 
         const effectiveStatus = row.Status ? row.Status.trim() : '';
-        // Klassifizierung der Verspätung ausschließlich über Abwesenheitsgrund/Endzeit:
         const isVerspaetung = isVerspaetungFunc(row);
-
         const isAttest = effectiveStatus === 'Attest' || effectiveStatus === 'Attest Amtsarzt';
         const isEntschuldigt = effectiveStatus === 'entsch.' || isAttest;
         const isUnentschuldigt = effectiveStatus === 'nicht entsch.' || effectiveStatus === 'nicht akzep.';
@@ -319,9 +318,17 @@ const AttendanceAnalyzer = () => {
 
         if (date >= sjStartDate && date <= sjEndDate) {
           if (isVerspaetung) {
+            // Für die Details: alle Verspätungen (entschuldigt, unentschuldigt, offen) sollen in den Detaildaten erscheinen.
             schoolYearDetails[studentName].verspaetungen_unentsch.push(entry);
           } else {
-            schoolYearDetails[studentName].fehlzeiten_unentsch.push(entry);
+            // Für Fehlzeiten: immer in fehlzeiten_gesamt aufnehmen
+            schoolYearDetails[studentName].fehlzeiten_gesamt.push(entry);
+            if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
+              schoolYearDetails[studentName].fehlzeiten_unentsch.push(entry);
+            }
+            if (isEntschuldigt) {
+              schoolYearDetails[studentName].fehlzeiten_entsch.push(entry);
+            }
           }
         }
 
@@ -338,7 +345,6 @@ const AttendanceAnalyzer = () => {
       setWeeklyDetailedData(weeklyDetails);
       setAvailableStudents(Object.keys(studentStats).sort());
 
-      // Extrahiere alle einzigartigen Klassennamen
       const classes = new Set<string>();
       data.forEach(row => {
         if (row.Klasse) {
@@ -362,7 +368,6 @@ const AttendanceAnalyzer = () => {
 
       if (file.name.toLowerCase().endsWith('.csv')) {
         const text = await file.text();
-        // Versuche zuerst mit Tabulator
         Papa.parse(text, {
           header: true,
           skipEmptyLines: true,
@@ -371,7 +376,6 @@ const AttendanceAnalyzer = () => {
             if (results.data && Array.isArray(results.data) && results.data.length > 0) {
               const firstRow = results.data[0] as any;
               if (!firstRow.Langname || !firstRow.Vorname || !firstRow.Beginndatum) {
-                // Versuche es mit Komma
                 Papa.parse(text, {
                   header: true,
                   skipEmptyLines: true,
@@ -380,7 +384,6 @@ const AttendanceAnalyzer = () => {
                     if (results.data && Array.isArray(results.data) && results.data.length > 0) {
                       const firstRow = results.data[0] as any;
                       if (!firstRow.Langname || !firstRow.Vorname || !firstRow.Beginndatum) {
-                        // Als letztes mit Semikolon versuchen
                         Papa.parse(text, {
                           header: true,
                           skipEmptyLines: true,
@@ -465,9 +468,8 @@ const AttendanceAnalyzer = () => {
   }, [rawData, selectedWeeks, calculateSchoolYearStats, calculateWeeklyStats]);
 
   React.useEffect(() => {
-    // Force re-render when selectedClasses changes
     if (results) {
-      setResults({...results});
+      setResults({ ...results });
     }
   }, [selectedClasses]);
 
@@ -479,7 +481,6 @@ const AttendanceAnalyzer = () => {
         const matchesSearch = student.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesClass = selectedClasses.length === 0 || selectedClasses.includes(stats.klasse);
         
-        // Separate Bedingungen für unentschuldigte Verspätungen und Fehlzeiten
         let meetsUnexcusedCriteria = true;
         if (filterUnexcusedLate || filterUnexcusedAbsent) {
           meetsUnexcusedCriteria = false;
@@ -724,7 +725,6 @@ const AttendanceAnalyzer = () => {
                   </CardContent>
                 </Card>
 
-                {/* View Toggle und Reset */}
                 <div className="flex gap-4 items-center">
                   <Button variant={isReportView ? "outline" : "default"}
                     onClick={() => setIsReportView(false)}>
