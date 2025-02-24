@@ -28,19 +28,15 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
       case 'fehlzeiten_offen':
         return 'Noch zu entschuldigende Fehltage im ausgewählten Zeitraum (Frist läuft noch)';
       case 'sj_verspaetungen':
-        return 'Unentschuldigte, entschuldigte und offene Verspätungen im gesamten Schuljahr';
+        return 'Unentschuldigte Verspätungen im gesamten Schuljahr (der Übersichtlichkeit halber werden auch entschuldigte und offene Verspätungen mit angezeigt)';
       case 'sj_fehlzeiten':
         return 'Unentschuldigte Fehlzeiten im gesamten Schuljahr';
       case 'sj_fehlzeiten_ges':
-        return 'Gesamte Fehlzeiten im gesamten Schuljahr (entschuldigt + unentschuldigt)';
+        return 'Gesamte Fehlzeiten im gesamten Schuljahr (entschuldigt, unentschuldigt und offen)';
       default:
-        if (filterType?.startsWith('weekly_')) {
-          const isVerspaetung = filterType.includes('verspaetungen');
-          return `Unentschuldigte, entschuldigte und offene ${isVerspaetung ? 'Verspätungen' : 'Fehltage'} (Wochendurchschnitt)`;
-        }
         if (filterType?.startsWith('sum_')) {
           const isVerspaetung = filterType.includes('verspaetungen');
-          return `Unentschuldigte ${isVerspaetung ? 'Verspätungen' : 'Fehlzeiten'} (Details nach Wochen)`; // Angepasste Überschrift
+          return `Unentschuldigte ${isVerspaetung ? 'Verspätungen' : 'Fehlzeiten'} (Details nach Wochen)`;
         }
         return 'Abwesenheitsdetails';
     }
@@ -169,9 +165,9 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
 
   const renderWeeklyDetails = () => {
     const weeks = getLastNWeeks(parseInt(selectedWeeks));
-    const reversedWeeks = [...weeks].reverse(); // Wochen umdrehen, sodass neueste Woche zuerst kommt
-    const groupedEntries = groupEntriesByWeek(detailedData, weeks); // Gruppierung basiert auf ursprünglicher Reihenfolge
-    const reversedGroupedEntries = [...groupedEntries].reverse(); // Gruppierte Einträge ebenfalls umdrehen
+    const reversedWeeks = [...weeks].reverse();
+    const groupedEntries = groupEntriesByWeek(detailedData, weeks);
+    const reversedGroupedEntries = [...groupedEntries].reverse();
 
     return (
       <div className="space-y-4">
