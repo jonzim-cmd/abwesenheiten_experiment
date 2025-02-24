@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsenceEntry } from '@/lib/attendance-utils';
+import { AbsenceEntry, getLastNWeeks } from '@/lib/attendance-utils';
 
 interface StudentDetailsRowProps {
   student: string;
@@ -7,9 +7,10 @@ interface StudentDetailsRowProps {
   rowColor: string;
   isVisible: boolean;
   filterType?: string;
+  selectedWeeks: string; // Neu hinzugefügt, um Wochenanzahl zu übergeben
 }
 
-const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterType }: StudentDetailsRowProps) => {
+const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterType, selectedWeeks }: StudentDetailsRowProps) => {
   const getFilterTitle = () => {
     switch (filterType) {
       case 'details':
@@ -154,6 +155,69 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     return datum;
   };
 
+  /** Neue Funktion: Gruppierung der Einträge nach Wochen */
+  const groupEntriesByWeek = (entries: AbsenceEntry[], weeks: { startDate: Date; endDate: Date }[]) => {
+    const grouped = weeks.map(() => [] as AbsenceEntry[]);
+    entries.forEach(entry => {
+      const entryDate = parseDateString(entry.datum);
+      const weekIndex = weeks.findIndex(week => entryDate >= week.startDate && entryDate <= week.endDate);
+      if (weekIndex >= 0) {
+        grouped[weekIndex].push(entry);
+      }
+    });
+    return grouped;
+  };
+
+  /** Neue Funktion: Rendern der wöchentlichen Details mit Überschriften */
+  const renderWeeklyDetails = () => {
+    const weeks = getLastNWeeks(parseInt(selectedWeeks));
+    const groupedEntries = groupEntriesByWeek(detailedData, weeks);
+
+    return (
+      <div className="space-y-4">
+        {groupedEntries.map((weekEntries, index) => {
+          if (weekEntries.length === 0) return null;
+          const weekStart = weeks[index].startDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+          const weekEnd = weeks[index].endDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+          return (
+            <div key={index}>
+              <h5 className="font-medium text-gray-700 mb-2">Woche {index + 1} ({weekStart} - {weekEnd})</h5>
+              <div className="space-y-1 pl-4">
+                {weekEntries.map((entry, i) => {
+                  const statusColor = getStatusColor(entry.status || '', entry.datum);
+                  return (
+                    <div 
+                      key={i}
+                      className={`${statusColor} hover:bg-gray-50 p-1 rounded`}
+                    >
+                      <span className="font-medium">{formatDate(entry.datum)}</span>
+                      {entry.art === 'Verspätung' ? (
+                        <span className="ml-2">
+                          {entry.beginnZeit} - {entry.endZeit} Uhr
+                          {entry.grund && ` (${entry.grund})`}
+                        </span>
+                      ) : (
+                        <span className="ml-2">
+                          {entry.art}
+                          {entry.grund && ` - ${entry.grund}`}
+                        </span>
+                      )}
+                      {entry.status && (
+                        <span className="ml-2 italic">
+                          [{entry.status}]
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   const renderDetailsContent = () => {
     if (!detailedData) return (
       <div className="text-gray-500 italic">Keine Daten verfügbar</div>
@@ -175,6 +239,11 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
           )}
         </>
       );
+    }
+
+    /** Neue Bedingung für Wochenüberschriften */
+    if (filterType === 'sum_verspaetungen' || filterType === 'sum_fehlzeiten') {
+      return renderWeeklyDetails();
     }
 
     const sortedData = [...detailedData].sort((a, b) => 
