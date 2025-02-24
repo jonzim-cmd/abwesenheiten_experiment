@@ -40,7 +40,7 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
         }
         if (filterType?.startsWith('sum_')) {
           const isVerspaetung = filterType.includes('verspaetungen');
-          return `Unentschuldigte, entschuldigte und offene ${isVerspaetung ? 'Verspätungen' : 'Fehltage'} (Gesamtsumme)`;
+          return `Unentschuldigte ${isVerspaetung ? 'Verspätungen' : 'Fehlzeiten'} (Details nach Wochen)`; // Angepasste Überschrift
         }
         return 'Abwesenheitsdetails';
     }
