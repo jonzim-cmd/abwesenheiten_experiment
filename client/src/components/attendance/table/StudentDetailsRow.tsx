@@ -7,7 +7,7 @@ interface StudentDetailsRowProps {
   rowColor: string;
   isVisible: boolean;
   filterType?: string;
-  selectedWeeks: string; // Neu hinzugefügt, um Wochenanzahl zu übergeben
+  selectedWeeks: string;
 }
 
 const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterType, selectedWeeks }: StudentDetailsRowProps) => {
@@ -155,9 +155,8 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     return datum;
   };
 
-  /** Neue Funktion: Gruppierung der Einträge nach Wochen */
   const groupEntriesByWeek = (entries: AbsenceEntry[], weeks: { startDate: Date; endDate: Date }[]) => {
-    const grouped = weeks.map(() => [] as AbsenceEntry[]);
+    const grouped: AbsenceEntry[][] = weeks.map(() => []);
     entries.forEach(entry => {
       const entryDate = parseDateString(entry.datum);
       const weekIndex = weeks.findIndex(week => entryDate >= week.startDate && entryDate <= week.endDate);
@@ -168,48 +167,56 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
     return grouped;
   };
 
-  /** Neue Funktion: Rendern der wöchentlichen Details mit Überschriften */
   const renderWeeklyDetails = () => {
     const weeks = getLastNWeeks(parseInt(selectedWeeks));
     const groupedEntries = groupEntriesByWeek(detailedData, weeks);
 
     return (
       <div className="space-y-4">
-        {groupedEntries.map((weekEntries, index) => {
-          if (weekEntries.length === 0) return null;
-          const weekStart = weeks[index].startDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-          const weekEnd = weeks[index].endDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+        {weeks.map((week, index) => {
+          const weekEntries = groupedEntries[index];
+          const weekStart = week.startDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+          const weekEnd = week.endDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+
+          const sortedWeekEntries = weekEntries.sort((a, b) => 
+            parseDateString(b.datum).getTime() - parseDateString(a.datum).getTime()
+          );
+
           return (
             <div key={index}>
               <h5 className="font-medium text-gray-700 mb-2">Woche {index + 1} ({weekStart} - {weekEnd})</h5>
               <div className="space-y-1 pl-4">
-                {weekEntries.map((entry, i) => {
-                  const statusColor = getStatusColor(entry.status || '', entry.datum);
-                  return (
-                    <div 
-                      key={i}
-                      className={`${statusColor} hover:bg-gray-50 p-1 rounded`}
-                    >
-                      <span className="font-medium">{formatDate(entry.datum)}</span>
-                      {entry.art === 'Verspätung' ? (
-                        <span className="ml-2">
-                          {entry.beginnZeit} - {entry.endZeit} Uhr
-                          {entry.grund && ` (${entry.grund})`}
-                        </span>
-                      ) : (
-                        <span className="ml-2">
-                          {entry.art}
-                          {entry.grund && ` - ${entry.grund}`}
-                        </span>
-                      )}
-                      {entry.status && (
-                        <span className="ml-2 italic">
-                          [{entry.status}]
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
+                {sortedWeekEntries.length > 0 ? (
+                  sortedWeekEntries.map((entry, i) => {
+                    const statusColor = getStatusColor(entry.status || '', entry.datum);
+                    return (
+                      <div 
+                        key={i}
+                        className={`${statusColor} hover:bg-gray-50 p-1 rounded`}
+                      >
+                        <span className="font-medium">{formatDate(entry.datum)}</span>
+                        {entry.art === 'Verspätung' ? (
+                          <span className="ml-2">
+                            {entry.beginnZeit} - {entry.endZeit} Uhr
+                            {entry.grund && ` (${entry.grund})`}
+                          </span>
+                        ) : (
+                          <span className="ml-2">
+                            {entry.art}
+                            {entry.grund && ` - ${entry.grund}`}
+                          </span>
+                        )}
+                        {entry.status && (
+                          <span className="ml-2 italic">
+                            [{entry.status}]
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-gray-500 italic">Keine Einträge</div>
+                )}
               </div>
             </div>
           );
@@ -241,7 +248,6 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
       );
     }
 
-    /** Neue Bedingung für Wochenüberschriften */
     if (filterType === 'sum_verspaetungen' || filterType === 'sum_fehlzeiten') {
       return renderWeeklyDetails();
     }
