@@ -169,12 +169,14 @@ const StudentDetailsRow = ({ student, detailedData, rowColor, isVisible, filterT
 
   const renderWeeklyDetails = () => {
     const weeks = getLastNWeeks(parseInt(selectedWeeks));
-    const groupedEntries = groupEntriesByWeek(detailedData, weeks);
+    const reversedWeeks = [...weeks].reverse(); // Wochen umdrehen, sodass neueste Woche zuerst kommt
+    const groupedEntries = groupEntriesByWeek(detailedData, weeks); // Gruppierung basiert auf ursprünglicher Reihenfolge
+    const reversedGroupedEntries = [...groupedEntries].reverse(); // Gruppierte Einträge ebenfalls umdrehen
 
     return (
       <div className="space-y-4">
-        {weeks.map((week, index) => {
-          const weekEntries = groupedEntries[index];
+        {reversedWeeks.map((week, index) => {
+          const weekEntries = reversedGroupedEntries[index];
           const weekStart = week.startDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
           const weekEnd = week.endDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 
