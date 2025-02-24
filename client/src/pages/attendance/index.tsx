@@ -333,9 +333,21 @@ const AttendanceAnalyzer = () => {
         }
 
         if (isVerspaetung) {
-          weeklyDetails[studentName].verspaetungen_unentsch.push(entry);
+          if (isEntschuldigt) {
+            weeklyDetails[studentName].verspaetungen_entsch.push(entry);
+          } else if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
+            weeklyDetails[studentName].verspaetungen_unentsch.push(entry);
+          } else if (isOffen) {
+            weeklyDetails[studentName].verspaetungen_offen.push(entry);
+          }
         } else {
-          weeklyDetails[studentName].fehlzeiten_unentsch.push(entry);
+          if (isEntschuldigt) {
+            weeklyDetails[studentName].fehlzeiten_entsch.push(entry);
+          } else if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
+            weeklyDetails[studentName].fehlzeiten_unentsch.push(entry);
+          } else if (isOffen) {
+            weeklyDetails[studentName].fehlzeiten_offen.push(entry);
+          }
         }
       });
 
@@ -750,6 +762,8 @@ const AttendanceAnalyzer = () => {
                     selectedWeeks={selectedWeeks}
                     isReportView={isReportView}
                     detailedData={detailedData}
+                    schoolYearDetailedData={schoolYearDetailedData}
+                    weeklyDetailedData={weeklyDetailedData}
                     expandedStudents={expandedStudents}
                     activeFilters={activeFilters}
                   />
