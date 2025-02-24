@@ -54,6 +54,8 @@ interface ExportButtonsProps {
   selectedWeeks: string;
   isReportView?: boolean;
   detailedData: Record<string, DetailedStats>;
+  schoolYearDetailedData: Record<string, any>;
+  weeklyDetailedData: Record<string, DetailedStats>;
   expandedStudents: Set<string>;
   activeFilters: Map<string, string>;
 }
@@ -73,6 +75,8 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
   selectedWeeks,
   isReportView = false,
   detailedData,
+  schoolYearDetailedData,
+  weeklyDetailedData,
   expandedStudents,
   activeFilters
 }) => {
@@ -257,7 +261,14 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       const filterType = activeFilters.get(studentName);
       if (!filterType) return row;
       let details: AbsenceEntry[] = [];
-      const studentData = detailedData[studentName];
+      let studentData;
+      if (filterType.startsWith('sj_')) {
+        studentData = schoolYearDetailedData[studentName];
+      } else if (filterType.startsWith('weekly_') || filterType.startsWith('sum_')) {
+        studentData = weeklyDetailedData[studentName];
+      } else {
+        studentData = detailedData[studentName];
+      }
       if (studentData) {
         switch(filterType) {
           case 'verspaetungen_entsch':
@@ -269,10 +280,13 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
             details = studentData[filterType as keyof DetailedStats] || [];
             break;
           case 'sj_verspaetungen':
+            details = studentData.verspaetungen_unentsch;
+            break;
           case 'sj_fehlzeiten':
-            details = filterType === 'sj_verspaetungen' 
-              ? studentData.verspaetungen_unentsch 
-              : studentData.fehlzeiten_unentsch;
+            details = studentData.fehlzeiten_unentsch;
+            break;
+          case 'sj_fehlzeiten_ges':
+            details = studentData.fehlzeiten_gesamt;
             break;
           case 'weekly_verspaetungen':
           case 'sum_verspaetungen':
