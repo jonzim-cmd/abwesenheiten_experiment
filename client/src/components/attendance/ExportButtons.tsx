@@ -229,15 +229,16 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
     });
   };
 
-  // Format details for display
+  // Format details for display with numbering
   const formatDetails = (details: AbsenceEntry[]): string[] => {
-    return details.map(entry => {
+    return details.map((entry, index) => {
+      const numbering = `${index + 1}. `;
       const date = formatDate(entry.datum);
       const type = entry.art;
       const time = entry.beginnZeit ? `(${entry.beginnZeit}${entry.endZeit ? ` - ${entry.endZeit}` : ''} Uhr)` : '';
       const reason = entry.grund ? ` - ${entry.grund}` : '';
       const status = entry.status ? ` [${entry.status}]` : '';
-      return `${date}${time}: ${type}${reason}${status}`;
+      return `${numbering}${date}${time}: ${type}${reason}${status}`;
     });
   };
 
@@ -274,9 +275,6 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
           verspaetungen: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) },
           fehlzeiten: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) }
         };
-
-        const verspaetungenAvg = (weeklyData.verspaetungen.total / parseInt(selectedWeeks)).toFixed(2);
-        const fehlzeitenAvg = (weeklyData.fehlzeiten.total / parseInt(selectedWeeks)).toFixed(2);
 
         const verspaetungenSum = `${weeklyData.verspaetungen.total}(${weeklyData.verspaetungen.weekly.join(',')})`;
         const fehlzeitenSum = `${weeklyData.fehlzeiten.total}(${weeklyData.fehlzeiten.weekly.join(',')})`;
@@ -562,8 +560,8 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
               styles: { 
                 fillColor: bgColor,
                 textColor: [60, 60, 60],
-                fontSize: 7,
-                cellPadding: 3,
+                fontSize: 10,
+                cellPadding: 4,
                 fontStyle: 'normal'
               }
             }]
@@ -601,12 +599,12 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       alternateRowStyles: {
         fillColor: [248, 248, 248]
       },
-      // Apply different styles to the detail rows
       didParseCell: (data) => {
-        // If this is a detail row (rowspan of cell is the entire table width)
         if (data.cell.colSpan && data.cell.colSpan > 1) {
           data.cell.styles.fillColor = data.cell.styles.fillColor || [245, 245, 245];
           data.cell.styles.fontStyle = 'italic';
+          data.cell.styles.fontSize = 10;
+          data.cell.styles.cellPadding = 4;
         }
       }
     });
