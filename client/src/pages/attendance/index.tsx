@@ -333,9 +333,21 @@ const AttendanceAnalyzer = () => {
         }
 
         if (isVerspaetung) {
-          weeklyDetails[studentName].verspaetungen_unentsch.push(entry);
+          if (isEntschuldigt) {
+            weeklyDetails[studentName].verspaetungen_entsch.push(entry);
+          } else if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
+            weeklyDetails[studentName].verspaetungen_unentsch.push(entry);
+          } else if (isOffen) {
+            weeklyDetails[studentName].verspaetungen_offen.push(entry);
+          }
         } else {
-          weeklyDetails[studentName].fehlzeiten_unentsch.push(entry);
+          if (isEntschuldigt) {
+            weeklyDetails[studentName].fehlzeiten_entsch.push(entry);
+          } else if (isUnentschuldigt || (!effectiveStatus && isOverDeadline)) {
+            weeklyDetails[studentName].fehlzeiten_unentsch.push(entry);
+          } else if (isOffen) {
+            weeklyDetails[studentName].fehlzeiten_offen.push(entry);
+          }
         }
       });
 
@@ -636,6 +648,10 @@ const AttendanceAnalyzer = () => {
                     <SelectItem value="2">2 Wochen</SelectItem>
                     <SelectItem value="3">3 Wochen</SelectItem>
                     <SelectItem value="4">4 Wochen</SelectItem>
+                    <SelectItem value="5">5 Woche</SelectItem>
+                    <SelectItem value="6">6 Wochen</SelectItem>
+                    <SelectItem value="7">7 Wochen</SelectItem>
+                    <SelectItem value="8">8 Wochen</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -746,6 +762,8 @@ const AttendanceAnalyzer = () => {
                     selectedWeeks={selectedWeeks}
                     isReportView={isReportView}
                     detailedData={detailedData}
+                    schoolYearDetailedData={schoolYearDetailedData}
+                    weeklyDetailedData={weeklyDetailedData}
                     expandedStudents={expandedStudents}
                     activeFilters={activeFilters}
                   />

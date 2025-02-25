@@ -45,8 +45,8 @@ const StudentTableRow = ({
   const verspaetungenAvg = (weeklyData.verspaetungen.total / parseInt(selectedWeeks)).toFixed(2);
   const fehlzeitenAvg = (weeklyData.fehlzeiten.total / parseInt(selectedWeeks)).toFixed(2);
 
-  const verspaetungenSum = `${weeklyData.verspaetungen.total}(${weeklyData.verspaetungen.weekly.join(',')})`;
-  const fehlzeitenSum = `${weeklyData.fehlzeiten.total}(${weeklyData.fehlzeiten.weekly.join(',')})`;
+  const verspaetungenSum = `${weeklyData.verspaetungen.total}(${[...weeklyData.verspaetungen.weekly].reverse().join(',')})`;
+  const fehlzeitenSum = `${weeklyData.fehlzeiten.total}(${[...weeklyData.fehlzeiten.weekly].reverse().join(',')})`;
 
   const createClickableCell = (value: number, type: string, className: string = "") => (
     <span

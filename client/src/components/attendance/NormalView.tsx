@@ -432,6 +432,7 @@ const NormalView = ({
                         rowColor={finalRowClass}
                         isVisible={true}
                         filterType={activeFilters.get(student)}
+                        selectedWeeks={selectedWeeks} // Neu hinzugefügt
                       />
                     )}
                   </React.Fragment>

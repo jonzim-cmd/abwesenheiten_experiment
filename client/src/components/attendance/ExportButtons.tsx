@@ -54,6 +54,8 @@ interface ExportButtonsProps {
   selectedWeeks: string;
   isReportView?: boolean;
   detailedData: Record<string, DetailedStats>;
+  schoolYearDetailedData: Record<string, any>;
+  weeklyDetailedData: Record<string, DetailedStats>;
   expandedStudents: Set<string>;
   activeFilters: Map<string, string>;
 }
@@ -73,6 +75,8 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
   selectedWeeks,
   isReportView = false,
   detailedData,
+  schoolYearDetailedData,
+  weeklyDetailedData,
   expandedStudents,
   activeFilters
 }) => {
@@ -241,8 +245,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       bottom: 20
     };
 
-    const pageWidth = doc.internal.pageSize.width;
-    const contentWidth = pageWidth - margin.left - margin.right;
+    const maxPageWidth = doc.internal.pageSize.width - margin.left - margin.right; // 267 mm im Querformat
 
     doc.setFontSize(16);
     doc.text('Anwesenheitsstatistik', margin.left, margin.top);
@@ -257,7 +260,14 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       const filterType = activeFilters.get(studentName);
       if (!filterType) return row;
       let details: AbsenceEntry[] = [];
-      const studentData = detailedData[studentName];
+      let studentData;
+      if (filterType.startsWith('sj_')) {
+        studentData = schoolYearDetailedData[studentName];
+      } else if (filterType.startsWith('weekly_') || filterType.startsWith('sum_')) {
+        studentData = weeklyDetailedData[studentName];
+      } else {
+        studentData = detailedData[studentName];
+      }
       if (studentData) {
         switch(filterType) {
           case 'verspaetungen_entsch':
@@ -269,10 +279,13 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
             details = studentData[filterType as keyof DetailedStats] || [];
             break;
           case 'sj_verspaetungen':
+            details = studentData.verspaetungen_unentsch;
+            break;
           case 'sj_fehlzeiten':
-            details = filterType === 'sj_verspaetungen' 
-              ? studentData.verspaetungen_unentsch 
-              : studentData.fehlzeiten_unentsch;
+            details = studentData.fehlzeiten_unentsch;
+            break;
+          case 'sj_fehlzeiten_ges':
+            details = studentData.fehlzeiten_gesamt;
             break;
           case 'weekly_verspaetungen':
           case 'sum_verspaetungen':
@@ -321,28 +334,70 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       return row;
     });
 
+    // Dynamische Berechnung der Breiten für ∑x() V und ∑x() F
+    const calculateColumnWidths = () => {
+      const baseWidths = isReportView ? 
+        [8, 25, 25, 12, 55, 55] : 
+        [20, 20, 12, 15, 15, 15, 15, 15, 15, 15, 15, 20, 20]; // Standardbreiten
+
+      if (isReportView) return baseWidths;
+
+      let maxVerspaetungenLength = 0;
+      let maxFehlzeitenLength = 0;
+      enrichedData.forEach(row => {
+        const verspaetungenLength = row['∑x() V']?.length || 0;
+        const fehlzeitenLength = row['∑x() F']?.length || 0;
+        maxVerspaetungenLength = Math.max(maxVerspaetungenLength, verspaetungenLength);
+        maxFehlzeitenLength = Math.max(maxFehlzeitenLength, fehlzeitenLength);
+      });
+
+      // Schätzung: 1 Zeichen ≈ 1.5 mm bei fontSize 8 (etwas konservativer als 2 mm)
+      const minWidth = 20; // Mindestbreite für ∑x() V und ∑x() F
+      const verspaetungenWidth = Math.max(minWidth, maxVerspaetungenLength * 1.5);
+      const fehlzeitenWidth = Math.max(minWidth, maxFehlzeitenLength * 1.5);
+
+      // Summe der festen Breiten (ohne ∑x() V und ∑x() F)
+      const fixedWidthSum = baseWidths.slice(0, 11).reduce((sum, w) => sum + w, 0); // 167 mm
+
+      // Verfügbare Breite für die letzten beiden Spalten
+      const availableWidth = maxPageWidth - fixedWidthSum; // 267 - 167 = 100 mm
+      const maxDynamicWidth = availableWidth / 2; // Gleichmäßige Verteilung
+
+      // Begrenze die Breiten, falls sie zu groß werden
+      const adjustedVerspaetungenWidth = Math.min(verspaetungenWidth, maxDynamicWidth);
+      const adjustedFehlzeitenWidth = Math.min(fehlzeitenWidth, maxDynamicWidth);
+
+      // Erstelle das neue Breiten-Array
+      return [
+        ...baseWidths.slice(0, 11),
+        adjustedVerspaetungenWidth,
+        adjustedFehlzeitenWidth
+      ];
+    };
+
     const hasDetails = enrichedData.some(row => row['Details']);
+    const calculatedWidths = calculateColumnWidths();
     const baseColumnStyles = isReportView ? {
-      0: { cellWidth: 8 },
-      1: { cellWidth: 25 },
-      2: { cellWidth: 25 },
-      3: { cellWidth: 12 },
-      4: { cellWidth: 55 },
-      5: { cellWidth: 55 },
+      0: { cellWidth: calculatedWidths[0] },
+      1: { cellWidth: calculatedWidths[1] },
+      2: { cellWidth: calculatedWidths[2] },
+      3: { cellWidth: calculatedWidths[3] },
+      4: { cellWidth: calculatedWidths[4] },
+      5: { cellWidth: calculatedWidths[5] },
     } : {
-      0: { cellWidth: 20 },
-      1: { cellWidth: 20 },
-      2: { cellWidth: 12 },
-      3: { cellWidth: 15 },
-      4: { cellWidth: 15 },
-      5: { cellWidth: 15 },
-      6: { cellWidth: 15 },
-      7: { cellWidth: 15 },
-      8: { cellWidth: 15 },
-      9: { cellWidth: 15 },
-      10: { cellWidth: 15 },
-      11: { cellWidth: 20 },
-      12: { cellWidth: 20 },
+      0: { cellWidth: calculatedWidths[0] },   // Nachname
+      1: { cellWidth: calculatedWidths[1] },   // Vorname
+      2: { cellWidth: calculatedWidths[2] },   // Klasse
+      3: { cellWidth: calculatedWidths[3] },   // Verspätungen (E)
+      4: { cellWidth: calculatedWidths[4] },   // Verspätungen (U)
+      5: { cellWidth: calculatedWidths[5] },   // Verspätungen (O)
+      6: { cellWidth: calculatedWidths[6] },   // Fehlzeiten (E)
+      7: { cellWidth: calculatedWidths[7] },   // Fehlzeiten (U)
+      8: { cellWidth: calculatedWidths[8] },   // Fehlzeiten (O)
+      9: { cellWidth: calculatedWidths[9] },   // ∑SJ V
+      10: { cellWidth: calculatedWidths[10] }, // ∑SJ F
+      11: { cellWidth: calculatedWidths[11], overflow: 'hidden' }, // ∑x() V
+      12: { cellWidth: calculatedWidths[12], overflow: 'hidden' }, // ∑x() F
     };
 
     const columnStyles = hasDetails ? {
