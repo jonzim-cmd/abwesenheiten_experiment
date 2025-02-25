@@ -80,6 +80,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
   expandedStudents,
   activeFilters
 }) => {
+  // Get the friendly name for each filter type
   const getDetailHeader = (filterType: string): string => {
     switch(filterType) {
       case 'verspaetungen_entsch':
@@ -87,25 +88,25 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       case 'verspaetungen_unentsch':
         return 'Unentschuldigte Verspätungen';
       case 'verspaetungen_offen':
-        return 'Noch zu entschuldigende Verspätungen';
+        return 'Noch zu entschuldigende Verspätungen (Frist läuft noch)';
       case 'fehlzeiten_entsch':
         return 'Entschuldigte Fehlzeiten';
       case 'fehlzeiten_unentsch':
         return 'Unentschuldigte Fehlzeiten';
       case 'fehlzeiten_offen':
-        return 'Noch zu entschuldigende Fehlzeiten';
+        return 'Noch zu entschuldigende Fehlzeiten (Frist läuft noch)';
       case 'sj_verspaetungen':
         return 'Unent. Verspätungen im Schuljahr';
       case 'sj_fehlzeiten':
         return 'Unent. Fehlzeiten im Schuljahr';
       case 'sj_fehlzeiten_ges':
-        return 'Ges. Fehlzeiten im Schuljahr';
+        return 'Ges. Fehlzeiten im Schuljahr (E + U)';
       case 'weekly_verspaetungen':
       case 'sum_verspaetungen':
-        return `Unent. Verspätungen (${selectedWeeks} Wochen)`;
+        return 'Unent. Verspätungen in den letzten ' + selectedWeeks + ' Wochen';
       case 'weekly_fehlzeiten':
       case 'sum_fehlzeiten':
-        return `Unent. Fehlzeiten (${selectedWeeks} Wochen)`;
+        return 'Unent. Fehlzeiten in den letzten ' + selectedWeeks + ' Wochen';
       case 'details':
         return 'Unent. Verspätungen und Fehlzeiten';
       default:
@@ -113,6 +114,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
     }
   };
 
+  // Get the color for a filter type to use in PDF exports
   const getFilterTypeColor = (filterType: string): number[] => {
     switch(filterType) {
       case 'verspaetungen_entsch':
@@ -143,30 +145,6 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
     }
   };
 
-  const getStatusColor = (status: string, datum: Date | string): number[] => {
-    if (status === 'entsch.' || status === 'Attest' || status === 'Attest Amtsarzt') {
-      return [0, 128, 0]; // Green
-    }
-    if (status === 'nicht entsch.' || status === 'nicht akzep.') {
-      return [255, 0, 0]; // Red
-    }
-    if (!status || status.trim() === '') {
-      const today = new Date();
-      let abwesenheitsDatum: Date;
-
-      if (typeof datum === 'string') {
-        const [day, month, year] = datum.split('.');
-        abwesenheitsDatum = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      } else {
-        abwesenheitsDatum = new Date(datum);
-      }
-
-      const deadlineDate = new Date(abwesenheitsDatum.getTime() + 7 * 24 * 60 * 60 * 1000);
-      return today > deadlineDate ? [255, 0, 0] : [255, 215, 0]; // Red if overdue, Yellow if open
-    }
-    return [255, 215, 0]; // Yellow
-  };
-
   const formatDate = (datum: Date | string) => {
     if (typeof datum === 'string') {
       const [day, month, year] = datum.split('.');
@@ -186,6 +164,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
     });
   };
 
+  // Get details for a student based on the filter type
   const getStudentDetails = (studentName: string, filterType: string | undefined): AbsenceEntry[] => {
     if (!filterType) return [];
     
@@ -250,14 +229,15 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
     });
   };
 
+  // Format details for display
   const formatDetails = (details: AbsenceEntry[]): string[] => {
-    return details.map((entry, index) => {
+    return details.map(entry => {
       const date = formatDate(entry.datum);
       const type = entry.art;
       const time = entry.beginnZeit ? `(${entry.beginnZeit}${entry.endZeit ? ` - ${entry.endZeit}` : ''} Uhr)` : '';
       const reason = entry.grund ? ` - ${entry.grund}` : '';
       const status = entry.status ? ` [${entry.status}]` : '';
-      return `${index + 1}. ${date}${time}: ${type}${reason}${status}`;
+      return `${date}${time}: ${type}${reason}${status}`;
     });
   };
 
@@ -269,8 +249,13 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
         const lateEntries = studentData?.verspaetungen_unentsch || [];
         const absenceEntries = studentData?.fehlzeiten_unentsch || [];
 
-        const formattedLates = formatDetails(lateEntries);
-        const formattedAbsences = formatDetails(absenceEntries);
+        const formattedLates = lateEntries.map((entry: AbsenceEntry) => 
+          `${formatDate(entry.datum)} (${entry.beginnZeit} - ${entry.endZeit} Uhr)`
+        ).join('\n');
+
+        const formattedAbsences = absenceEntries.map((entry: AbsenceEntry) => 
+          `${formatDate(entry.datum)} - ${entry.art}${entry.grund ? ` (${entry.grund})` : ''}`
+        ).join('\n');
 
         const [nachname = "", vorname = ""] = student.split(",").map(s => s.trim());
 
@@ -279,10 +264,8 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
           'Nachname': nachname,
           'Vorname': vorname,
           'Klasse': stats.klasse,
-          'Unentschuldigte Verspätungen': formattedLates.length > 0 ? formattedLates : ['-'],
-          'Unentschuldigte Fehlzeiten': formattedAbsences.length > 0 ? formattedAbsences : ['-'],
-          '_lateEntries': lateEntries,
-          '_absenceEntries': absenceEntries
+          'Unentschuldigte Verspätungen': formattedLates || '-',
+          'Unentschuldigte Fehlzeiten': formattedAbsences || '-'
         };
       });
     } else {
@@ -291,6 +274,9 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
           verspaetungen: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) },
           fehlzeiten: { total: 0, weekly: Array(parseInt(selectedWeeks)).fill(0) }
         };
+
+        const verspaetungenAvg = (weeklyData.verspaetungen.total / parseInt(selectedWeeks)).toFixed(2);
+        const fehlzeitenAvg = (weeklyData.fehlzeiten.total / parseInt(selectedWeeks)).toFixed(2);
 
         const verspaetungenSum = `${weeklyData.verspaetungen.total}(${weeklyData.verspaetungen.weekly.join(',')})`;
         const fehlzeitenSum = `${weeklyData.fehlzeiten.total}(${weeklyData.fehlzeiten.weekly.join(',')})`;
@@ -326,9 +312,12 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
   const exportToExcel = () => {
     const formattedData = formatData();
     
+    // Enhance data with details if expanded
     const enrichedData = formattedData.map(row => {
+      // For report view, we don't modify the data
       if (isReportView) return row;
       
+      // For regular view, check if student is expanded
       const studentName = `${row['Nachname']}, ${row['Vorname']}`;
       if (!expandedStudents.has(studentName)) return row;
       
@@ -343,6 +332,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       
       const header = getDetailHeader(filterType);
       
+      // Add details as a new property
       return {
         ...row,
         'Details': `${header}\n${formattedDetailLines.join('\n')}`
@@ -353,6 +343,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Anwesenheitsstatistik");
 
+    // Set column widths - include Details column if there are details
     const hasDetails = enrichedData.some(row => row['Details']);
     const colWidths = isReportView ? 
       [10, 30, 30, 15, 60, 60] : 
@@ -360,18 +351,21 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
 
     worksheet['!cols'] = colWidths.map(width => ({ width }));
 
+    // Apply formatting - set row heights for detail rows
     if (hasDetails) {
       worksheet['!rows'] = [];
-      let rowIndex = 1;
+      let rowIndex = 1; // Start after header
       
       enrichedData.forEach(row => {
-        worksheet['!rows'][rowIndex] = { hpt: 20 };
+        worksheet['!rows'][rowIndex] = { hpt: 20 }; // Regular row height
         
         if (row['Details']) {
+          // Count lines in the details to determine row height
           const lines = (row['Details'] as string).split('\n').length;
+          // Roughly 15 points per line of text
           const detailsRowHeight = Math.max(60, lines * 15);
           worksheet['!rows'][rowIndex + 1] = { hpt: detailsRowHeight };
-          rowIndex += 2;
+          rowIndex += 2; // Skip the details row
         } else {
           rowIndex += 1;
         }
@@ -385,6 +379,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
   const exportToCSV = () => {
     const formattedData = formatData();
     
+    // Enhance data with details if expanded, similar to Excel export
     const enrichedData = formattedData.map(row => {
       if (isReportView) return row;
       
@@ -429,31 +424,37 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
     });
 
     const margin = {
-      left: 10,
-      right: 10,
+      left: 15,
+      right: 15,
       top: 20,
       bottom: 20
     };
 
     const maxPageWidth = doc.internal.pageSize.width - margin.left - margin.right;
 
-    doc.setFontSize(16);
+    // Improve PDF header formatting
+    doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.text('Anwesenheitsstatistik', margin.left, margin.top);
     
-    doc.setFontSize(10);
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
     const startDateFormatted = new Date(startDate).toLocaleDateString('de-DE');
     const endDateFormatted = new Date(endDate).toLocaleDateString('de-DE');
-    doc.text(`Zeitraum: ${startDateFormatted} - ${endDateFormatted}`, margin.left, margin.top + 7);
+    doc.text(`Zeitraum: ${startDateFormatted} - ${endDateFormatted}`, margin.left, margin.top + 10);
 
+    // Add additional header information if not in report view
     if (!isReportView) {
-      doc.text(`Wochen für Berechnung: ${selectedWeeks}`, margin.left, margin.top + 14);
+      doc.setFontSize(10);
+      doc.text(`Wochen für Berechnung: ${selectedWeeks}`, margin.left, margin.top + 16);
+      
+      // Add a legend for abbreviations
       doc.setFont('helvetica', 'italic');
       doc.text('Legende: (E) = Entschuldigt, (U) = Unentschuldigt, (O) = Offen, SJ = Schuljahr, (V) = Verspätungen, (F) = Fehlzeiten', 
-              margin.left, margin.top + 21);
+              margin.left, margin.top + 22);
     }
 
+    // Improve column headers for better readability
     const columnHeaders = isReportView ? {
       'Nr.': 'Nr.',
       'Nachname': 'Nachname',
@@ -478,6 +479,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       'Letzte Wochen (F)': `${selectedWeeks}W (F)`
     };
 
+    // Create enhanced data with details and proper styling
     const enrichedData = formattedData.map(row => {
       const studentName = `${row['Nachname']}, ${row['Vorname']}`;
       if (!expandedStudents.has(studentName)) return row;
@@ -496,20 +498,22 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       return {
         ...row,
         'Details': `${header}\n${formattedDetailLines.join('\n')}`,
-        '_filterType': filterType
+        '_filterType': filterType // Store filter type for coloring (will be removed before rendering)
       };
     });
 
+    // Calculate column widths
     const calculateColumnWidths = () => {
       const baseWidths = isReportView ? 
-        [10, 30, 30, 15, 80, 80] : 
-        [25, 25, 15, 15, 15, 15, 15, 15, 15, 20, 20, 25, 25];
+        [8, 25, 25, 12, 55, 55] : 
+        [20, 20, 12, 12, 12, 12, 12, 12, 12, 15, 15, 20, 20];
 
       if (isReportView) return baseWidths;
 
       let totalFixedWidth = baseWidths.reduce((sum, w) => sum + w, 0);
       const availableWidth = maxPageWidth - totalFixedWidth;
       
+      // Adjust the last two columns to have proportional width
       const adjustedWidths = [...baseWidths];
       adjustedWidths[11] = availableWidth / 2;
       adjustedWidths[12] = availableWidth / 2;
@@ -520,69 +524,35 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
     const hasDetails = enrichedData.some(row => row['Details']);
     const calculatedWidths = calculateColumnWidths();
     
+    // Create columnStyles object for autoTable
     const baseColumnStyles: { [key: string]: any } = {};
     Object.keys(columnHeaders).forEach((key, index) => {
       if (calculatedWidths[index]) {
         baseColumnStyles[key] = { 
           cellWidth: calculatedWidths[index],
-          halign: ['Nachname', 'Vorname', 'Klasse'].includes(key) ? 'left' : 'center',
-          fontSize: 9
+          halign: ['Nachname', 'Vorname', 'Klasse'].includes(key) ? 'left' : 'center'
         };
       }
     });
 
     const columnStyles = hasDetails ? {
       ...baseColumnStyles,
-      'Details': { cellWidth: 0, minCellWidth: 80 }
+      'Details': { cellWidth: 0, minCellWidth: 60 }
     } : baseColumnStyles;
 
+    // Transform data for autoTable - rename headers and handle details rows
     const tableData = {
       head: [Object.values(columnHeaders)],
       body: enrichedData.flatMap(row => {
+        // Create a copy without internal properties
         const displayRow = { ...row };
         const filterType = displayRow['_filterType'];
         delete displayRow['_filterType'];
-        delete displayRow['_lateEntries'];
-        delete displayRow['_absenceEntries'];
-
-        if (isReportView) {
-          const lateEntries = row['_lateEntries'] || [];
-          const absenceEntries = row['_absenceEntries'] || [];
-          
-          const lateRows = lateEntries.map((entry: AbsenceEntry, idx: number) => ({
-            content: `${idx + 1}. ${formatDate(entry.datum)} (${entry.beginnZeit} - ${entry.endZeit} Uhr)${entry.grund ? ` - ${entry.grund}` : ''}${entry.status ? ` [${entry.status}]` : ''}`,
-            styles: { textColor: getStatusColor(entry.status || '', entry.datum) }
-          }));
-          
-          const absenceRows = absenceEntries.map((entry: AbsenceEntry, idx: number) => ({
-            content: `${idx + 1}. ${formatDate(entry.datum)} - ${entry.art}${entry.grund ? ` (${entry.grund})` : ''}${entry.status ? ` [${entry.status}]` : ''}`,
-            styles: { textColor: getStatusColor(entry.status || '', entry.datum) }
-          }));
-
-          const mainRow = [
-            displayRow['Nr.'],
-            displayRow['Nachname'],
-            displayRow['Vorname'],
-            displayRow['Klasse'],
-            lateRows.length > 0 ? lateRows[0].content : '-',
-            absenceRows.length > 0 ? absenceRows[0].content : '-'
-          ];
-
-          const additionalRows = [];
-          const maxDetails = Math.max(lateRows.length, absenceRows.length);
-          for (let i = 1; i < maxDetails; i++) {
-            additionalRows.push([
-              '', '', '', '',
-              i < lateRows.length ? lateRows[i].content : '',
-              i < absenceRows.length ? absenceRows[i].content : ''
-            ]);
-          }
-
-          return [mainRow, ...additionalRows];
-        }
-
+        
         if (displayRow['Details']) {
+          // Get color for the details based on filter type
           const bgColor = filterType ? getFilterTypeColor(filterType) : [245, 245, 245];
+          
           const mainRow = Object.values(displayRow).slice(0, -1);
           return [
             mainRow,
@@ -592,9 +562,9 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
               styles: { 
                 fillColor: bgColor,
                 textColor: [60, 60, 60],
-                fontSize: 8,
+                fontSize: 7,
                 cellPadding: 3,
-                lineHeight: 1.2
+                fontStyle: 'normal'
               }
             }]
           ];
@@ -603,6 +573,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       })
     };
 
+    // Calculate appropriate starting Y position based on header content
     const headerHeight = isReportView ? 25 : 35;
 
     autoTable(doc, {
@@ -611,12 +582,11 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       startY: margin.top + headerHeight,
       margin: margin,
       styles: {
-        fontSize: 9,
-        cellPadding: 3,
+        fontSize: 8,
+        cellPadding: 2,
         overflow: 'linebreak',
         cellWidth: 'wrap',
         minCellHeight: 8,
-        lineHeight: 1.2,
         valign: 'middle'
       },
       headStyles: {
@@ -624,25 +594,19 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
         textColor: [255, 255, 255],
         fontStyle: 'bold',
         halign: 'center',
-        fontSize: 10,
-        cellPadding: 3
+        valign: 'middle',
+        fontSize: 9
       },
       columnStyles: columnStyles,
       alternateRowStyles: {
         fillColor: [248, 248, 248]
       },
+      // Apply different styles to the detail rows
       didParseCell: (data) => {
-        if (data.section === 'body' && isReportView && data.column.index >= 4) {
-          const rowData = enrichedData[data.row.index % enrichedData.length];
-          const entries = data.column.index === 4 ? rowData['_lateEntries'] : rowData['_absenceEntries'];
-          if (entries && data.row.cells[data.column.index]?.raw) {
-            const idx = data.row.cells[data.column.index].raw.split('.')[0];
-            const entryIndex = parseInt(idx) - 1;
-            if (entryIndex >= 0 && entryIndex < entries.length) {
-              const entry = entries[entryIndex];
-              data.cell.styles.textColor = getStatusColor(entry.status || '', entry.datum);
-            }
-          }
+        // If this is a detail row (rowspan of cell is the entire table width)
+        if (data.cell.colSpan && data.cell.colSpan > 1) {
+          data.cell.styles.fillColor = data.cell.styles.fillColor || [245, 245, 245];
+          data.cell.styles.fontStyle = 'italic';
         }
       }
     });
