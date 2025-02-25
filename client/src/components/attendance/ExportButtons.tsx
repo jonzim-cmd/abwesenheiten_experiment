@@ -420,164 +420,148 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       unit: 'mm',
       format: 'a4'
     });
-
+  
     const margin = {
       left: 15,
       right: 15,
       top: 20,
       bottom: 20
     };
-
+  
     const maxPageWidth = doc.internal.pageSize.width - margin.left - margin.right;
-
-    // Improve PDF header formatting
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Anwesenheitsstatistik', margin.left, margin.top);
-    
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    const startDateFormatted = new Date(startDate).toLocaleDateString('de-DE');
-    const endDateFormatted = new Date(endDate).toLocaleDateString('de-DE');
-    doc.text(`Zeitraum: ${startDateFormatted} - ${endDateFormatted}`, margin.left, margin.top + 10);
-
-    // Add additional header information if not in report view
-    if (!isReportView) {
-      doc.setFontSize(10);
-      doc.text(`Wochen für Berechnung: ${selectedWeeks}`, margin.left, margin.top + 16);
-      
-      // Add a legend for abbreviations
-      doc.setFont('helvetica', 'italic');
-      doc.text('Legende: (E) = Entschuldigt, (U) = Unentschuldigt, (O) = Offen, SJ = Schuljahr, (V) = Verspätungen, (F) = Fehlzeiten', 
-              margin.left, margin.top + 22);
-    }
-
-    // Improve column headers for better readability
-    const columnHeaders = isReportView ? {
-      'Nr.': 'Nr.',
-      'Nachname': 'Nachname',
-      'Vorname': 'Vorname',
-      'Klasse': 'Klasse',
-      'Unentschuldigte Verspätungen': 'Unentsch. Verspätungen',
-      'Unentschuldigte Fehlzeiten': 'Unentsch. Fehlzeiten'
-    } : {
-      'Nachname': 'Nachname',
-      'Vorname': 'Vorname',
-      'Klasse': 'Klasse',
-      'Verspätungen (E)': 'Versp. (E)',
-      'Verspätungen (U)': 'Versp. (U)',
-      'Verspätungen (O)': 'Versp. (O)',
-      'Fehlzeiten (E)': 'Fehlz. (E)',
-      'Fehlzeiten (U)': 'Fehlz. (U)',
-      'Fehlzeiten (O)': 'Fehlz. (O)',
-      'SJ-Verspätungen': 'SJ-Versp.',
-      'SJ-Fehlzeiten': 'SJ-Fehlz.',
-      'SJ-Fehlzeiten (Ges.)': 'SJ-Fehlz. (Ges.)',
-      'Letzte Wochen (V)': `${selectedWeeks}W (V)`,
-      'Letzte Wochen (F)': `${selectedWeeks}W (F)`
+  
+    // PDF Header
+    const addHeader = (isFirstPage = false) => {
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Anwesenheitsstatistik', margin.left, margin.top);
+  
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      const startDateFormatted = new Date(startDate).toLocaleDateString('de-DE');
+      const endDateFormatted = new Date(endDate).toLocaleDateString('de-DE');
+      doc.text(`Zeitraum: ${startDateFormatted} - ${endDateFormatted}`, margin.left, margin.top + 10);
+  
+      if (!isReportView) {
+        doc.setFontSize(10);
+        doc.text(`Wochen für Berechnung: ${selectedWeeks}`, margin.left, margin.top + 16);
+  
+        // Legende für Abkürzungen
+        doc.setFont('helvetica', 'italic');
+        doc.text(
+          'Legende: (E) = Entschuldigt, (U) = Unentschuldigt, (O) = Offen, SJ = Schuljahr, (V) = Verspätungen, (F) = Fehlzeiten',
+          margin.left,
+          margin.top + 22
+        );
+  
+        // Farblegende
+        doc.setFontSize(8);
+        doc.setFillColor(0, 150, 0); // Grün
+        doc.rect(margin.left, margin.top + 26, 3, 3, 'F');
+        doc.setTextColor(0, 150, 0);
+        doc.text('Entschuldigt', margin.left + 5, margin.top + 28);
+  
+        doc.setFillColor(200, 0, 0); // Rot
+        doc.rect(margin.left + 30, margin.top + 26, 3, 3, 'F');
+        doc.setTextColor(200, 0, 0);
+        doc.text('Unentschuldigt', margin.left + 35, margin.top + 28);
+  
+        doc.setFillColor(204, 163, 0); // Gelb
+        doc.rect(margin.left + 70, margin.top + 26, 3, 3, 'F');
+        doc.setTextColor(204, 163, 0);
+        doc.text('Noch offen', margin.left + 75, margin.top + 28);
+  
+        doc.setTextColor(0, 0, 0); // Zurücksetzen
+      }
     };
-
-    // Create enhanced data with details and proper styling
-    const enrichedData = formattedData.map(row => {
+  
+    // Spaltenüberschriften
+    const columnHeaders = isReportView
+      ? {
+          'Nr.': 'Nr.',
+          'Nachname': 'Nachname',
+          'Vorname': 'Vorname',
+          'Klasse': 'Klasse',
+          'Unentschuldigte Verspätungen': 'Unentsch. Verspätungen',
+          'Unentschuldigte Fehlzeiten': 'Unentsch. Fehlzeiten'
+        }
+      : {
+          'Nachname': 'Nachname',
+          'Vorname': 'Vorname',
+          'Klasse': 'Klasse',
+          'Verspätungen (E)': 'Versp. (E)',
+          'Verspätungen (U)': 'Versp. (U)',
+          'Verspätungen (O)': 'Versp. (O)',
+          'Fehlzeiten (E)': 'Fehlz. (E)',
+          'Fehlzeiten (U)': 'Fehlz. (U)',
+          'Fehlzeiten (O)': 'Fehlz. (O)',
+          'SJ-Verspätungen': 'SJ-Versp.',
+          'SJ-Fehlzeiten': 'SJ-Fehlz.',
+          'SJ-Fehlzeiten (Ges.)': 'SJ-Fehlz. (Ges.)',
+          'Letzte Wochen (V)': `${selectedWeeks}W (V)`,
+          'Letzte Wochen (F)': `${selectedWeeks}W (F)`
+        };
+  
+    // Daten mit Details vorbereiten
+    const detailsData = formattedData.map((row, index) => {
       const studentName = `${row['Nachname']}, ${row['Vorname']}`;
-      if (!expandedStudents.has(studentName)) return row;
-      
+      if (!expandedStudents.has(studentName)) return { ...row, 'Nr.': index + 1, _hasDetails: false };
+  
       const filterType = activeFilters.get(studentName);
-      if (!filterType) return row;
-      
+      if (!filterType) return { ...row, 'Nr.': index + 1, _hasDetails: false };
+  
       const details = getStudentDetails(studentName, filterType);
-      if (details.length === 0) return row;
-      
-      const formattedDetailLines = formatDetails(details);
-      if (formattedDetailLines.length === 0) return row;
-      
-      const header = getDetailHeader(filterType);
-      
+      if (details.length === 0) return { ...row, 'Nr.': index + 1, _hasDetails: false };
+  
+      const categorizedDetails = groupDetailsByCategory(details, filterType);
+  
       return {
         ...row,
-        'Details': `${header}\n${formattedDetailLines.join('\n')}`,
-        '_filterType': filterType // Store filter type for coloring (will be removed before rendering)
+        'Nr.': index + 1,
+        _hasDetails: true,
+        _filterType: filterType,
+        _detailsCategories: categorizedDetails
       };
     });
-
-    // Calculate column widths
+  
+    // Spaltenbreiten berechnen
     const calculateColumnWidths = () => {
-      const baseWidths = isReportView ? 
-        [8, 25, 25, 12, 55, 55] : 
-        [20, 20, 12, 12, 12, 12, 12, 12, 12, 15, 15, 20, 20];
-
+      const baseWidths = isReportView
+        ? [8, 25, 25, 12, 55, 55] // Report-Ansicht
+        : [20, 20, 12, 12, 12, 12, 12, 12, 12, 15, 15, 20, 20]; // Normalansicht
+  
       if (isReportView) return baseWidths;
-
-      let totalFixedWidth = baseWidths.reduce((sum, w) => sum + w, 0);
+  
+      const totalFixedWidth = baseWidths.reduce((sum, w) => sum + w, 0);
       const availableWidth = maxPageWidth - totalFixedWidth;
-      
-      // Adjust the last two columns to have proportional width
       const adjustedWidths = [...baseWidths];
-      adjustedWidths[11] = availableWidth / 2;
-      adjustedWidths[12] = availableWidth / 2;
-      
+      adjustedWidths[11] = availableWidth / 2; // Letzte Wochen (V)
+      adjustedWidths[12] = availableWidth / 2; // Letzte Wochen (F)
       return adjustedWidths;
     };
-
-    const hasDetails = enrichedData.some(row => row['Details']);
+  
     const calculatedWidths = calculateColumnWidths();
-    
-    // Create columnStyles object for autoTable
+  
+    // Spaltenstile für autoTable
     const baseColumnStyles: { [key: string]: any } = {};
     Object.keys(columnHeaders).forEach((key, index) => {
       if (calculatedWidths[index]) {
-        baseColumnStyles[key] = { 
+        baseColumnStyles[key] = {
           cellWidth: calculatedWidths[index],
           halign: ['Nachname', 'Vorname', 'Klasse'].includes(key) ? 'left' : 'center'
         };
       }
     });
-
-    const columnStyles = hasDetails ? {
-      ...baseColumnStyles,
-      'Details': { cellWidth: 0, minCellWidth: 60 }
-    } : baseColumnStyles;
-
-    // Transform data for autoTable - rename headers and handle details rows
-    const tableData = {
-      head: [Object.values(columnHeaders)],
-      body: enrichedData.flatMap(row => {
-        // Create a copy without internal properties
-        const displayRow = { ...row };
-        const filterType = displayRow['_filterType'];
-        delete displayRow['_filterType'];
-        
-        if (displayRow['Details']) {
-          // Get color for the details based on filter type
-          const bgColor = filterType ? getFilterTypeColor(filterType) : [245, 245, 245];
-          
-          const mainRow = Object.values(displayRow).slice(0, -1);
-          return [
-            mainRow,
-            [{ 
-              content: displayRow['Details'], 
-              colSpan: mainRow.length, 
-              styles: { 
-                fillColor: bgColor,
-                textColor: [60, 60, 60],
-                fontSize: 10,
-                cellPadding: 4,
-                fontStyle: 'normal'
-              }
-            }]
-          ];
-        }
-        return [Object.values(displayRow)];
-      })
-    };
-
-    // Calculate appropriate starting Y position based on header content
-    const headerHeight = isReportView ? 25 : 35;
-
+  
+    // Header auf erster Seite rendern
+    addHeader(true);
+    let currentY = margin.top + (isReportView ? 25 : 35);
+  
+    // Haupttabelle rendern (ohne Details)
     autoTable(doc, {
-      head: tableData.head,
-      body: tableData.body,
-      startY: margin.top + headerHeight,
+      head: [Object.values(columnHeaders)],
+      body: detailsData.map(row => Object.keys(columnHeaders).map(key => row[key] || '')),
+      startY: currentY,
       margin: margin,
       styles: {
         fontSize: 8,
@@ -595,20 +579,76 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
         valign: 'middle',
         fontSize: 9
       },
-      columnStyles: columnStyles,
+      columnStyles: baseColumnStyles,
       alternateRowStyles: {
         fillColor: [248, 248, 248]
       },
-      didParseCell: (data) => {
-        if (data.cell.colSpan && data.cell.colSpan > 1) {
-          data.cell.styles.fillColor = data.cell.styles.fillColor || [245, 245, 245];
-          data.cell.styles.fontStyle = 'italic';
-          data.cell.styles.fontSize = 10;
-          data.cell.styles.cellPadding = 4;
-        }
+      didDrawPage: (data) => {
+        currentY = data.cursor.y;
       }
     });
-
+  
+    // Details für expandierte Schüler rendern
+    detailsData.forEach((row, rowIndex) => {
+      if (!row._hasDetails) return;
+  
+      const filterType = row._filterType;
+      const categories = row._detailsCategories;
+      const bgColor = getFilterTypeColor(filterType);
+  
+      // Prüfe verfügbaren Platz auf der Seite
+      const pageHeight = doc.internal.pageSize.height;
+      const remainingSpace = pageHeight - currentY - margin.bottom;
+      const estimatedDetailHeight =
+        categories.reduce((sum, cat) => sum + cat.entries.length * 8 + 10, 0) + 10; // 8mm pro Detailzeile + 10mm pro Kategorie
+  
+      if (remainingSpace < estimatedDetailHeight + 20) {
+        doc.addPage();
+        addHeader(); // Header auf neuer Seite wiederholen
+        currentY = margin.top + (isReportView ? 25 : 35);
+      }
+  
+      // Kategorien durchlaufen (z. B. Verspätungen und Fehlzeiten bei 'details')
+      categories.forEach((category, catIndex) => {
+        const formattedDetails = formatDetailEntriesForPDF(category.entries);
+  
+        // Titel der Kategorie
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(60, 60, 60);
+        doc.text(category.title, margin.left, currentY + 5);
+        currentY += 8;
+  
+        // Detailzeilen
+        formattedDetails.forEach((detail, detailIndex) => {
+          const detailY = currentY + detailIndex * 6; // Mehr Abstand zwischen Zeilen (6mm)
+  
+          if (detailY + 6 > pageHeight - margin.bottom) {
+            doc.addPage();
+            addHeader();
+            currentY = margin.top + (isReportView ? 25 : 35);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(60, 60, 60);
+            doc.text(category.title, margin.left, currentY + 5); // Titel wiederholen
+            currentY += 8;
+          }
+  
+          doc.setFontSize(detail.styles.fontSize);
+          doc.setTextColor(...detail.styles.textColor);
+          doc.setFont('helvetica', detail.styles.fontStyle);
+          doc.text(detail.content, margin.left + 5, currentY + detailIndex * 6 + 4);
+        });
+  
+        currentY += formattedDetails.length * 6 + 4; // Abstand nach Kategorie
+      });
+  
+      // Trennlinie nach den Details
+      doc.setDrawColor(200, 200, 200);
+      doc.line(margin.left, currentY, maxPageWidth + margin.left, currentY);
+      currentY += 5;
+    });
+  
     doc.save(`Anwesenheitsstatistik_${startDate}_${endDate}.pdf`);
   };
   
